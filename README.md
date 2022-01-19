@@ -41,4 +41,7 @@ the sync will continue.
 The API is the authoritative source, i.e. the source of truth. If a conflict occurs, the
 API's state wins and will overwrite any local data.
 
+Relay respects Keygen's API rate limiter, so syncing a large backlog of events may take
+some time. The status of the sync will be displayed on stderr.
+
 Data is stored in an encrypted SQLite database.

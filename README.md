@@ -22,8 +22,10 @@ relay serve --port=1337 [--offline]
 Syncs data from the local network to Keygen's API. This can be run periodically in air-gapped
 environments to ensure licensing state is up-to-date. Requires internet access to run.
 
+When ran `--offline` the user may be prompted for license file upload(s) as needed.
+
 ```
-relay sync
+relay sync [--offline]
 ```
 
 ## Architecture

@@ -47,6 +47,9 @@ returns the license file.
 This request-return lifecycle ensures that no more than 250 licenses are
 "claimed" at any point in time.
 
+The CLI can be based off [`keygen-cli`](https://github.com/keygen-sh/keygen-cli),
+which is built on Go and [Cobra](https://github.com/spf13/cobra).
+
 ## Security
 
 All license files are signed with an account's private key, and so they cannot

@@ -27,8 +27,8 @@ from "unclaimed" to "claimed." This may necessitate a `claims` table or
 similar, though I haven't fully fleshed this behavior out yet.
 
 Applications will interact with Relay through the server, by requesting a
-license when during an application's boot lifecycle, and returning it before
-the shutdown lifecyle.
+license during an application's boot lifecycle event, and returning it before
+the shutdown lifecyle event.
 
 For example, a vendor offers a node-based licensing model to their customers.
 They have a customer that has purchased 250 nodes, but this customer runs an

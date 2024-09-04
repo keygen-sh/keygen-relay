@@ -11,6 +11,8 @@ Relay will be distributed as a standalone cross-platform binary.
 
 Relay will use a SQLite database for storage.
 
+Relay will be written in Go.
+
 Relay will have 2 parts: a vendor-facing CLI and an app-facing server. The CLI
 can be used to manage the data served by the server.
 

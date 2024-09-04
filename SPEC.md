@@ -47,15 +47,15 @@ returns the license file.
 This request-return lifecycle ensures that no more than 250 licenses are
 "claimed" at any point in time.
 
-As always, the application is responsible for verifying the license file's
-signature, the license file's expiry, and the license's expiry.
-
 ## Security
 
 All license files are signed with an account's private key, and so they cannot
 be tampered with or forged. Any tampered, forged, or otherwise invalid license
 files added via the CLI will be rejected by the application during signature
 verification. All license files are unique.
+
+As always, the application is responsible for verifying the license file's
+signature, the license file's expiry, and the license's expiry.
 
 All actions will be logged to an `audit_logs` table.
 

@@ -154,7 +154,7 @@ node, the server will return a `404 Not Found`.
 ## SDK
 
 No immediate plans right now. For the time being, integrations will be similar
-to those with Keygen's flagship licensiong API.
+to those with Keygen's flagship licensing API.
 
 Eventually, I'd like to offer a reference SDK in Go for Relay.
 

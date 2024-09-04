@@ -183,8 +183,6 @@ func AddLicense(licenseFile string, licenseKey string) {
   // decrypt the license file
   dataset, err := lic.Decrypt(licenseKey)
   switch {
-  case err == keygen.ErrSystemClockUnsynced:
-    panic("system clock tampering detected!")
   case err == keygen.ErrLicenseFileExpired:
     panic("license file is expired!")
   case err != nil:

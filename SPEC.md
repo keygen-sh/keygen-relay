@@ -30,7 +30,9 @@ similar, though I haven't fully fleshed this behavior out yet.
 
 Applications will interact with Relay through the server, by requesting a
 license during an application's boot lifecycle event, and returning it before
-the shutdown lifecyle event.
+the shutdown lifecyle event. In the case of crashes, a heartbeat system coupled
+with a TTL is used to reap zombie nodes, where the higher the TTL the longer
+zombies may sit around.
 
 For example, a vendor offers a node-based licensing model to their customers.
 They have a customer that has purchased 250 nodes, but this customer runs an
@@ -44,9 +46,6 @@ returns the license file.
 
 This request-return lifecycle ensures that no more than 250 licenses are
 "claimed" at any point in time.
-
-In the case of crashes, a heartbeat system coupled with a TTL is used to reap
-zombie nodes, where the higher the TTL the longer zombies may sit.
 
 As always, the application is responsible for verifying the license file's
 signature, the license file's expiry, and the license's expiry.

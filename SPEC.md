@@ -26,10 +26,10 @@ distributed along side license files for decryption purposes.
 License uniqueness will be asserted by license ID. The ID will be obtained by
 decrypting the license file when adding it to the pool.
 
-There should be `license_files`, `license_keys`, and `nodes` tables. For
-claiming, I'd like to use `FOR UPDATE SKIP LOCKED` to atomically move a license
-from "unclaimed" to "claimed." This may necessitate a `claims` table or
-similar, though I haven't fully fleshed this behavior out yet.
+There should be `licenses` and `nodes` tables. For claiming, I'd like to use
+`WHERE node_id = null FOR UPDATE SKIP LOCKED` to atomically move a license from
+"unclaimed" to "claimed." Though I haven't fully fleshed out this behavior, so
+open to other approaches.
 
 Applications will interact with Relay through the server, by requesting a
 license during an application's boot lifecycle event, and returning it before

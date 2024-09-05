@@ -127,7 +127,7 @@ Relay can be used via the following API endpoints.
 ### `PUT /v1/nodes/:node_id`
 
 Claim a license from the relay server for a node, blocking others from claiming
-it. This is an atomic operation.
+it for `--ttl`. This is an atomic operation.
 
 Accepts a `node_id`, where `node_id` is some fingerprint identifying the node.
 
@@ -148,7 +148,7 @@ node, the server will return a `404 Not Found`.
 
 ### `PATCH /v1/nodes/:node_id`
 
-Keep a claim on a license, extending the claim TTL past the default.
+Keep a claim on a license, extending the claim TTL past the default by `--ttl`.
 
 Accepts a `node_id`, where `node_id` is a fingerprint used for the claim.
 

@@ -24,7 +24,10 @@ Alongide license files, Relay will also store license keys, which will be
 distributed along side license files for decryption purposes.
 
 License uniqueness will be asserted by license ID. The ID will be obtained by
-decrypting the license file when adding it to the pool.
+decrypting the license file when adding it to the pool. This asserts that new
+licenses must be issued for additional nodes, e.g. in cases where a self-serve
+portal is available, a bad actor will not be able to checkout new license files
+for the same license and load them into Relay.
 
 There should be `licenses` and `nodes` tables. For claiming, I'd like to use
 `WHERE node_id = null FOR UPDATE SKIP LOCKED` to atomically move a license from

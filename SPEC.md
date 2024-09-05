@@ -207,8 +207,8 @@ func AddLicense(licenseFile string, licenseKey string) {
     panic(err)
   }
 
-  // store everything
-  save(
+  // store the license
+  insertLicense(
     license.ID,
     license.Key,
     lic,

@@ -105,12 +105,12 @@ Prints identifers of the added licenses.
 
 This is an atomic operation.
 
-### `del`
+### `rem`
 
 Delete a license from the local relay server's pool.
 
 ```sh
-relay del --id xxx [--id=yyy]
+relay rem --id xxx [--id=yyy]
 ```
 
 Prints identifers of the deleted licenses.

@@ -80,7 +80,7 @@ Relay can be managed via the following CLI commands.
 Runs a local relay server accessible at `--port`.
 
 ```sh
-relay serve [--port=1337 --ttl=30s --lifo --fifo --rand --no-audit]
+relay serve [--port=1337 --ttl=30s --lifo --fifo --rand --no-audit --no-heartbeats]
 
 relay serve             # serve on default port
 relay serve --port 1337 # serve on custom port

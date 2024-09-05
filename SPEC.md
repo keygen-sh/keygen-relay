@@ -142,6 +142,13 @@ available to be claimed, i.e. no licenses exist or all have been claimed,
 the server will return `410 Gone`. If a claim already exists for the node,
 the claim is extended by `--ttl`.
 
+```sh
+while true; do
+  curl -X PUT http://localhost:1337/v1/nodes/703fc29f219e45e689b4e3b318900025
+  sleep 30
+done
+```
+
 ### `DELETE /v1/nodes/:fingerprint`
 
 Release a claim on a license. This allows the license to be claimed and used by
@@ -151,6 +158,10 @@ Accepts a `fingerprint`, the node fingerprint used for the claim.
 
 Returns `204 No Content` with no content. If a claim does not exist for the
 node, the server will return a `404 Not Found`.
+
+```sh
+curl -X DELETE http://localhost:1337/v1/nodes/703fc29f219e45e689b4e3b318900025
+```
 
 ## SDK
 

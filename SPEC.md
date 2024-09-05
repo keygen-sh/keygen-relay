@@ -130,33 +130,33 @@ relay stat --id xxx [--id=yyy]
 
 Relay can be used via the following API endpoints.
 
-### `PUT /v1/nodes/:node_id`
+### `PUT /v1/nodes/:fingerprint`
 
 Claim a license from the relay server for a node, blocking others from claiming
 it for `--ttl`. This is an atomic operation.
 
-Accepts a `node_id`, where `node_id` is some fingerprint identifying the node.
+Accepts a `fingerprint`, an arbitrary string identifying the node.
 
 Returns `200 OK` with a `license_file` and `license_key`. If no licenses are
 available to be claimed, i.e. no licenses exist or all have been claimed,
 the server will return `410 Gone`. If a claim already exists for the node,
 a `409 Conflict` will be returned.
 
-### `DELETE /v1/nodes/:node_id`
+### `DELETE /v1/nodes/:fingerprint`
 
 Release a claim on a license. This allows the license to be claimed and used by
 other nodes. This is an atomic operation.
 
-Accepts a `node_id`, where `node_id` is a fingerprint used for the claim.
+Accepts a `fingerprint`, the node fingerprint used for the claim.
 
 Returns `204 No Content` with no content. If a claim does not exist for the
 node, the server will return a `404 Not Found`.
 
-### `PATCH /v1/nodes/:node_id`
+### `PATCH /v1/nodes/:fingerprint`
 
 Keep a claim on a license, extending the claim TTL past the default by `--ttl`.
 
-Accepts a `node_id`, where `node_id` is a fingerprint used for the claim.
+Accepts a `fingerprint`, the node fingerprint used for the claim.
 
 Returns `204 No Content` with no content. If a claim does not exist for the
 node, the server will return a `404 Not Found`.

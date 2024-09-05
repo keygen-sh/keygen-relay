@@ -23,6 +23,9 @@ implement a leasing model in an offline or air-gapped environment.
 Alongide license files, Relay will also store license keys, which will be
 distributed along side license files for decryption purposes.
 
+License uniqueness will be asserted by license ID. The ID will be obtained by
+decrypting the license file when adding it to the pool.
+
 There should be `license_files`, `license_keys`, and `nodes` tables. For
 claiming, I'd like to use `FOR UPDATE SKIP LOCKED` to atomically move a license
 from "unclaimed" to "claimed." This may necessitate a `claims` table or

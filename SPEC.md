@@ -146,7 +146,7 @@ return `410 Gone`.
 
 ```sh
 while true; do
-  curl -X PUT http://localhost:1337/v1/nodes/703fc29f219e45e689b4e3b318900025
+  curl -X PUT "http://localhost:1337/v1/nodes/$(cat /etc/machine-id)"
   sleep 30
 done
 ```
@@ -162,7 +162,7 @@ Returns `204 No Content` with no content. If a claim does not exist for the
 node, the server will return a `404 Not Found`.
 
 ```sh
-curl -X DELETE http://localhost:1337/v1/nodes/703fc29f219e45e689b4e3b318900025
+curl -X DELETE "http://localhost:1337/v1/nodes/$(cat /etc/machine-id)"
 ```
 
 ## SDK

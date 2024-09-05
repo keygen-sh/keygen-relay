@@ -153,8 +153,7 @@ return `410 Gone`.
 
 ```sh
 while true; do
-  curl -X PUT "http://localhost:1337/v1/nodes/$(cat /etc/machine-id)"
-  sleep 30
+  curl -X PUT "http://localhost:1337/v1/nodes/$(cat /etc/machine-id)" && sleep 30 || exit
 done
 ```
 

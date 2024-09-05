@@ -209,3 +209,25 @@ func AddLicense(licenseFile string, licenseKey string) {
   )
 }
 ```
+
+---
+
+## Future
+
+Future ideas for Relay.
+
+### API
+
+Additional API endpoints could be created to claim licenses by user email.
+
+#### `PUT /v1/users/:email`
+
+Claim a license from the relay server, looking up the license by user.
+
+#### `DELETE /v1/users/:email`
+
+Release a claim on a license.
+
+#### `PATCH /v1/users/:email`
+
+Keep a claim on a license.

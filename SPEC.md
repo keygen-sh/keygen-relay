@@ -179,10 +179,14 @@ import (
   "github.com/keygen-sh/keygen-go/v3"
 )
 
-func AddLicense(licenseFile string, licenseKey string) {
-  lic := &keygen.LicenseFile{Certificate: licenseFile}
+func AddLicense(licenseFilePath string, licenseKey string) {
+  cert, err := ioutil.ReadFile(licenseFilePath)
+  if err != nil {
+    panic("license file is missing!")
+  }
 
   // crytographically verify the license file
+  lic := &keygen.LicenseFile{Certificate: string(cert)}
   err = lic.Verify()
   switch {
   case err == keygen.ErrLicenseFileNotGenuine:

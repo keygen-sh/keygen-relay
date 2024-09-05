@@ -45,7 +45,10 @@ boots, it requests a license file from Relay, and each time it shuts down, it
 returns the license file.
 
 This request-return lifecycle ensures that no more than 250 licenses are
-"claimed" at any point in time.
+"claimed" at any point in time. The hearbeat system also ensures that even if
+a license file is manually shared with multiple nodes by a bad actor, only the
+latest node will have actually "claimed" it, invalidating the other nodes
+within the TTL.
 
 The CLI can be based off [`keygen-cli`](https://github.com/keygen-sh/keygen-cli),
 which is built on Go and [Cobra](https://github.com/spf13/cobra).

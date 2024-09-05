@@ -37,7 +37,7 @@ zombies may sit around.
 For example, a vendor offers a node-based licensing model to their customers.
 They have a customer that has purchased 250 nodes, but this customer runs an
 air-gapped environment. The vendor can use Relay by storing 250 license files
-and distributing them to nodes on the local network in a FIFO order.
+and distributing them to nodes on the local network in a FIFO or LIFO order.
 
 In this example, Relay runs on the customer's local network, and is loaded by
 the vendor with 250 license files and keys. Each time the vendor's application

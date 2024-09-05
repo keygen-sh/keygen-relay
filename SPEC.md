@@ -69,11 +69,11 @@ which is built on Go and [Cobra](https://github.com/spf13/cobra).
 All license files are signed with an account's private key, and so they cannot
 be tampered with or forged. Any tampered, forged, or otherwise invalid license
 files added via the CLI will be rejected by the application during signature
-verification using an account's public key.
+verification using the public key.
 
 As always, the application is responsible for verifying the license file's
 signature, the license file's expiry, and the license's expiry.
-Integration-wise, verification would be no different from an offline-licensing
+Integration-wise, verification will be no different from an offline-licensing
 integration with Keygen Cloud.
 
 All actions will be logged to an `audit_logs` table.

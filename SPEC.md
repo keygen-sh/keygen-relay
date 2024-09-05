@@ -140,21 +140,12 @@ Accepts a `fingerprint`, an arbitrary string identifying the node.
 Returns `200 OK` with a `license_file` and `license_key`. If no licenses are
 available to be claimed, i.e. no licenses exist or all have been claimed,
 the server will return `410 Gone`. If a claim already exists for the node,
-a `409 Conflict` will be returned.
+the claim is extended by `--ttl`.
 
 ### `DELETE /v1/nodes/:fingerprint`
 
 Release a claim on a license. This allows the license to be claimed and used by
 other nodes. This is an atomic operation.
-
-Accepts a `fingerprint`, the node fingerprint used for the claim.
-
-Returns `204 No Content` with no content. If a claim does not exist for the
-node, the server will return a `404 Not Found`.
-
-### `PATCH /v1/nodes/:fingerprint`
-
-Keep a claim on a license, extending the claim TTL past the default by `--ttl`.
 
 Accepts a `fingerprint`, the node fingerprint used for the claim.
 
@@ -232,12 +223,9 @@ Additional API endpoints could be created to claim licenses by user email.
 
 #### `PUT /v1/users/:email`
 
-Claim a license from the relay server, looking up the license by user.
+Claim a license from the relay server, looking up the license by user. If the
+user already exists, it extends the claim.
 
 #### `DELETE /v1/users/:email`
 
 Release a claim on a license.
-
-#### `PATCH /v1/users/:email`
-
-Keep a claim on a license.

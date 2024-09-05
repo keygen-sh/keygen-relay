@@ -138,10 +138,11 @@ it for `--ttl`. This is an atomic operation.
 Accepts a `fingerprint`, an arbitrary string identifying the node.
 
 Returns `201 Created` with a `license_file` and `license_key` for new nodes. If
-no licenses are available to be claimed, i.e. no licenses exist or all have
-been claimed, the server will return `410 Gone`. If a claim already exists for
-the node, the claim is extended by `--ttl` and the server will return
-`202 Accepted`.
+a claim already exists for the node, the claim is extended by `--ttl` and the
+server will return `202 Accepted`, unless heartbeats are disabled and in that
+case a `409 Conflict` will be returned. If no licenses are available to be
+claimed, i.e. no licenses exist or all have been claimed, the server will
+return `410 Gone`.
 
 ```sh
 while true; do

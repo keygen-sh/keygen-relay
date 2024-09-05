@@ -13,8 +13,13 @@ Relay will use a SQLite database for storage.
 
 Relay will be written in Go.
 
-Relay will have 2 parts: a vendor-facing CLI and an app-facing server. The CLI
-can be used to manage the data served by the server, and to start the server.
+Relay will have 2 parts:
+
+1. a vendor-facing CLI; and
+2. an app-facing server.
+
+The CLI can be used to manage the data served by the server, and to start and
+stop the server.
 
 Relay will be responsible for storing [License Files](https://keygen.sh/docs/api/licenses/#licenses-actions-check-out)
 and distributing license files to nodes on a local network, offering a way to

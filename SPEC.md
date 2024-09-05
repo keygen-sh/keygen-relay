@@ -21,7 +21,7 @@ and distributing license files to nodes on a local network, offering a way to
 implement a leasing model in an offline or air-gapped environment.
 
 Alongide license files, Relay will also store license keys, which will be
-distributed along side license files for decryption purposes.
+distributed alongside license files for decryption purposes.
 
 License uniqueness will be asserted by license ID. The ID will be obtained by
 decrypting the license file when adding it to the pool. This asserts that new

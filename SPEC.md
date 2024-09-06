@@ -13,7 +13,7 @@ internet connection. Whether self-hosting Keygen EE, or using Keygen Cloud,
 the issue remains the same.
 
 Since Keygen is an API, it can't communicate to the nodes inside these isolated
-environments, and that means it can't easily track which nodes and being used
+environments, and that means it can't easily track which nodes are being used
 and which nodes are not. It also has no visibility into how many nodes there
 are currently vs how many nodes are allowed in total. Some vendors may be able
 to whitelist Keygen in the customer's firewall, but that's rare.

@@ -3,6 +3,43 @@
 **Synopsis:** `relay` is a small command line utility that distributes license
 files to nodes on a local network.
 
+## Background
+
+Relay was born out of a limitation in Keygen — and really, a limitation in all
+licensing APIs — the limitation being that implementing a node-based licensing
+model, e.g. floating licenses, is hard in an air-gapped or otherwise offline
+environment using an external API, due to the nature of APIs needing an
+internet connection. Whether self-hosting Keygen EE, or using Keygen Cloud,
+the issue remains the same.
+
+Since Keygen is an API, it can't communicate to the nodes inside these isolated
+environments, and that means it can't easily track which nodes and being used
+and which nodes are not. It also has no visibility into how many nodes there
+are currently vs how many nodes are allowed in total. Some vendors may be able
+to whitelist Keygen in the customer's firewall, but that's rare.
+
+In the past, we've seen workarounds for this problem. Most of them consist of
+using an intermediary between the offline world and the online world —
+typically a mobile device or a tablet. In this case, the intermediary acts on
+behalf of the offline node, activating it via an online portal, and passing
+on a signed payload, e.g. a license file, for verification.
+
+As an alternative, some customers have even asked if they can self-host Keygen
+on-premise for customers — but that's inherently unsafe, since customers would
+have full access to Keygen, thus access to granting themselves licenses,
+adjusting policy rules, etc.
+
+While the aforementioned intermediary-based workaround can work — it's brittle.
+And it requires human intervention, which just doesn't really work in the age
+of cloud computing and autoscaling. For example, you couldn't use this
+workaround to license an on-premise server, where you wanted to only allow the
+customer to use 20 concurrent processes at one time — it just wouldn't be
+feasible to ask a human to hop on their phone and activate nodes in an
+autoscaling k8s cluster as it autoscales.
+
+Thus, the idea for Relay was born — a bridge between Keygen and the offline
+universe.
+
 ## Distribution
 
 Relay will be distributed as a standalone cross-platform binary.
@@ -74,7 +111,7 @@ verification using the public key.
 As always, the application is responsible for verifying the license file's
 signature, the license file's expiry, and the license's expiry.
 Integration-wise, verification will be no different from an offline-licensing
-integration with Keygen Cloud.
+integration with Keygen EE or Keygen Cloud.
 
 All actions will be logged to an `audit_logs` table.
 

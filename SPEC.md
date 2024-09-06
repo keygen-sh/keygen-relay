@@ -32,7 +32,7 @@ adjusting policy rules, etc.
 While the aforementioned intermediary-based workaround can work — it's brittle.
 And it requires human intervention, which just doesn't really work in the age
 of cloud computing and autoscaling. For example, you couldn't use this
-workaround to license an on-premise server, where you wanted to only allow the
+workaround to license on-premise software, where you wanted to only allow the
 customer to use 20 concurrent processes at one time — it just wouldn't be
 feasible to ask a human to hop on their phone and activate nodes in an
 autoscaling k8s cluster as it autoscales.

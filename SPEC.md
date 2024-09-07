@@ -243,7 +243,7 @@ func AddLicense(licenseFilePath string, licenseKey string) {
   }
 
   // decrypt the license file
-  dataset, err := lic.Decrypt(licenseKey)
+  dec, err := lic.Decrypt(licenseKey)
   switch {
   case err == keygen.ErrLicenseFileExpired:
     panic("license file is expired!")
@@ -251,17 +251,10 @@ func AddLicense(licenseFilePath string, licenseKey string) {
     panic(err)
   }
 
-  // unmarshal the license
-  license := keygen.License{}
-  err = jsonapi.Unmarshal(dataset, license)
-  if err != nil {
-    panic(err)
-  }
-
   // store the license
   insertLicense(
-    license.ID,
-    license.Key,
+    dec.License.ID,
+    dec.License.Key,
     lic,
   )
 }

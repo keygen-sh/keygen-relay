@@ -221,10 +221,7 @@ Relay will be backed by Keygen's [Go SDK](https://github.com/keygen-sh/keygen-go
 For example, when adding a license file, one could e.g. do:
 
 ```go
-import (
-  "github.com/keygen-sh/jsonapi-go"
-  "github.com/keygen-sh/keygen-go/v3"
-)
+import "github.com/keygen-sh/keygen-go/v3"
 
 func AddLicense(licenseFilePath string, licenseKey string) {
   cert, err := ioutil.ReadFile(licenseFilePath)

@@ -76,6 +76,35 @@ There should be `licenses` and `nodes` tables. For claiming, I'd like to use
 "unclaimed" to "claimed." Though I haven't fully fleshed out this behavior, so
 open to other approaches.
 
+What I'm thinking in terms of schema:
+
+```sql
+CREATE TABLE IF NOT EXISTS licenses (
+  id TEXT PRIMARY KEY,
+  file TEXT UNIQUE NOT NULL,
+  key TEXT UNIQUE NOT NULL,
+  claims BIGINT DEFAULT 0,
+  last_claimed  DATETIME,
+  last_released DATETIME,
+  node_id       BIGINT,
+  FOREIGN KEY (node_id) REFERENCES nodes(id)
+);
+
+CREATE TABLE IF NOT EXISTS nodes (
+  id BIGINT PRIMARY KEY AUTOINCREMENT,
+  fingerprint TEXT UNIQUE NOT NULL,
+  claimed_at DATETIME
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGINT PRIMARY KEY AUTOINCREMENT,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
 Applications will interact with Relay through the server, by requesting a
 license during an application's boot lifecycle event, and returning it before
 the shutdown lifecyle event. In the case of crashes, a heartbeat system coupled

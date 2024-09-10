@@ -82,25 +82,25 @@ I haven't fully fleshed out this behavior, so open to other approaches.
 What I'm thinking in terms of schema:
 
 ```sql
-CREATE TABLE IF NOT EXISTS licenses (
+CREATE TABLE licenses (
   id TEXT PRIMARY KEY, -- NB: should be license's actual UUID
   file BLOB UNIQUE NOT NULL,
   key TEXT UNIQUE NOT NULL,
   claims INTEGER DEFAULT 0,
   last_claimed_at DATETIME,
   last_released_at DATETIME,
-  node_id INTEGER,
+  node_id INTEGER UNIQUE,
   FOREIGN KEY (node_id) REFERENCES nodes(id)
 );
 
-CREATE TABLE IF NOT EXISTS nodes (
+CREATE TABLE nodes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   fingerprint TEXT UNIQUE NOT NULL,
   claimed_at DATETIME,
   last_heartbeat_at DATETIME
 );
 
-CREATE TABLE IF NOT EXISTS audit_logs (
+CREATE TABLE audit_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   action TEXT NOT NULL,
   entity_type TEXT NOT NULL,

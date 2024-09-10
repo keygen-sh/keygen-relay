@@ -80,13 +80,13 @@ What I'm thinking in terms of schema:
 
 ```sql
 CREATE TABLE IF NOT EXISTS licenses (
-  id TEXT PRIMARY KEY,
-  file TEXT UNIQUE NOT NULL,
+  id TEXT PRIMARY KEY, -- NB: should be license's actual UUID
+  file BLOB UNIQUE NOT NULL,
   key TEXT UNIQUE NOT NULL,
   claims BIGINT DEFAULT 0,
-  last_claimed  DATETIME,
-  last_released DATETIME,
-  node_id       BIGINT,
+  last_claimed_at DATETIME,
+  last_released_at DATETIME,
+  node_id BIGINT,
   FOREIGN KEY (node_id) REFERENCES nodes(id)
 );
 

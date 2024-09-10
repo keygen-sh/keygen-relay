@@ -72,9 +72,9 @@ portal is available, a bad actor will not be able to checkout multiple license
 files for the same license and load them into Relay.
 
 There should be `licenses` and `nodes` tables. For claiming, I'd like to use
-`WHERE node_id = null FOR UPDATE SKIP LOCKED` to atomically move a license from
-"unclaimed" to "claimed." Though I haven't fully fleshed out this behavior, so
-open to other approaches.
+`SELECT * FROM licenses WHERE node_id IS NULL FOR UPDATE SKIP LOCKED LIMIT 1`
+to atomically move a license from "unclaimed" to "claimed." Though I haven't
+fully fleshed out this behavior, so open to other approaches.
 
 What I'm thinking in terms of schema:
 
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS licenses (
   id TEXT PRIMARY KEY, -- NB: should be license's actual UUID
   file BLOB UNIQUE NOT NULL,
   key TEXT UNIQUE NOT NULL,
-  claims BIGINT DEFAULT 0,
+  claims INTEGER DEFAULT 0,
   last_claimed_at DATETIME,
   last_released_at DATETIME,
   node_id BIGINT,
@@ -91,13 +91,13 @@ CREATE TABLE IF NOT EXISTS licenses (
 );
 
 CREATE TABLE IF NOT EXISTS nodes (
-  id BIGINT PRIMARY KEY AUTOINCREMENT,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   fingerprint TEXT UNIQUE NOT NULL,
   claimed_at DATETIME
 );
 
 CREATE TABLE IF NOT EXISTS audit_logs (
-  id BIGINT PRIMARY KEY AUTOINCREMENT,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   action TEXT NOT NULL,
   entity_type TEXT NOT NULL,
   entity_id TEXT NOT NULL,

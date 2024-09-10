@@ -96,7 +96,8 @@ CREATE TABLE IF NOT EXISTS licenses (
 CREATE TABLE IF NOT EXISTS nodes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   fingerprint TEXT UNIQUE NOT NULL,
-  claimed_at DATETIME
+  claimed_at DATETIME,
+  last_heartbeat_at DATETIME
 );
 
 CREATE TABLE IF NOT EXISTS audit_logs (

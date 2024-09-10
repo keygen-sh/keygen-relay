@@ -200,6 +200,8 @@ Print the local relay server's license pool, with stats for each license.
 relay ls
 ```
 
+Prints a table of licenses.
+
 ### `stat`
 
 Print stats for a license in the local relay server's pool.
@@ -207,6 +209,8 @@ Print stats for a license in the local relay server's pool.
 ```sh
 relay stat --id xxx [--id=yyy]
 ```
+
+Prints a license table.
 
 ## API
 

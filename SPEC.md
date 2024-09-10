@@ -73,9 +73,11 @@ files for the same license and load them into Relay.
 
 There should be `licenses` and `nodes` tables. For claiming, I'd like to use
 `SELECT * FROM licenses WHERE node_id IS NULL FOR UPDATE SKIP LOCKED LIMIT 1`
-to atomically move a license from "unclaimed" to "claimed."
+to atomically move a license from "unclaimed" to "claimed." (SQLite doesn't
+actually support `FOR UPDATE SKIP LOCKED` — since it's not needed AFAICT — so
+I'm just using this as an example.)
 
-Though I haven't fully fleshed out this behavior, so open to other approaches.
+I haven't fully fleshed out this behavior, so open to other approaches.
 
 What I'm thinking in terms of schema:
 

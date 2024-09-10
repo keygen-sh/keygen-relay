@@ -119,12 +119,17 @@ All actions will be logged to an `audit_logs` table.
 
 Relay can be managed via the following CLI commands.
 
+The CLI should have the following global flags:
+
+- `--database=/var/lib/relay.sqlite` — control database (default: `./relay.sqlite`)
+- `-v[vv]` — control verbosity level
+
 ### `serve`
 
 Runs a local relay server accessible at `--port`.
 
 ```sh
-relay serve [--port=1337 --ttl=30s --database=/var/lib/relay.sqlite --lifo --fifo --rand --no-audit --no-heartbeats]
+relay serve [--port=1337 --ttl=30s --lifo --fifo --rand --no-audit --no-heartbeats]
 
 relay serve             # serve on default port
 relay serve --port 1337 # serve on custom port

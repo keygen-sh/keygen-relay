@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS licenses (
   claims INTEGER DEFAULT 0,
   last_claimed_at DATETIME,
   last_released_at DATETIME,
-  node_id BIGINT,
+  node_id INTEGER,
   FOREIGN KEY (node_id) REFERENCES nodes(id)
 );
 

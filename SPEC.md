@@ -73,8 +73,9 @@ files for the same license and load them into Relay.
 
 There should be `licenses` and `nodes` tables. For claiming, I'd like to use
 `SELECT * FROM licenses WHERE node_id IS NULL FOR UPDATE SKIP LOCKED LIMIT 1`
-to atomically move a license from "unclaimed" to "claimed." Though I haven't
-fully fleshed out this behavior, so open to other approaches.
+to atomically move a license from "unclaimed" to "claimed."
+
+Though I haven't fully fleshed out this behavior, so open to other approaches.
 
 What I'm thinking in terms of schema:
 

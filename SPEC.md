@@ -231,7 +231,7 @@ Relay can be used via the following API endpoints.
 ### `PUT /v1/nodes/:fingerprint`
 
 Claim a license from the relay server for a node, blocking others from claiming
-it for `--ttl`. This is an atomic operation.
+it for `--ttl`.
 
 Accepts a `fingerprint`, an arbitrary string identifying the node.
 
@@ -248,10 +248,12 @@ while true; do
 done
 ```
 
+This should be an atomic operation.
+
 ### `DELETE /v1/nodes/:fingerprint`
 
 Release a claim on a license. This allows the license to be claimed and used by
-other nodes. This is an atomic operation.
+other nodes.
 
 Accepts a `fingerprint`, the node fingerprint used for the claim.
 
@@ -261,6 +263,8 @@ node, the server will return a `404 Not Found`.
 ```sh
 curl -X DELETE "http://localhost:1337/v1/nodes/$(cat /etc/machine-id)"
 ```
+
+This should be an atomic operation.
 
 ## SDK
 

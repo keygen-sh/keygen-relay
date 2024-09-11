@@ -173,7 +173,7 @@ relay serve --port 1337 # serve on custom port
 Push a license to the local relay server's pool.
 
 ```sh
-relay add --file xxx.lic --key xxx [--file=yyy.lic --key=yyy]
+relay add --file xxx.lic --key xxx [--file=yyy.lic --key=yyy --public-key=$KEYGEN_PUBLIC_KEY]
 ```
 
 Prints identifers of the added licenses.

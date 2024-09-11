@@ -178,7 +178,14 @@ relay add --file xxx.lic --key xxx [--file=yyy.lic --key=yyy --public-key=$KEYGE
 
 Prints identifers of the added licenses.
 
-This is an atomic operation.
+Upon `add`, the following should happen:
+
+1. The license file payload will be decoded from the certificate e.g. using [the Go SDK](https://github.com/keygen-sh/keygen-go).
+1. The payload will be cryptographically verified using the `--public-key`.
+1. The payload will be decrypted using the `--key`.
+1. The decrypted license primary key, `--file`, and `--key` will be stored in the `licenses` table.
+
+This should be an atomic operation.
 
 ### `rem`
 
@@ -190,7 +197,12 @@ relay rem --id xxx [--id=yyy]
 
 Prints identifers of the deleted licenses.
 
-This is an atomic operation.
+Upon `rem`, the following should happen:
+
+1. The license will be looked up by primary key to assert it exists.
+1. The license will be deleted from the `licenses` table.
+
+This should be an atomic operation.
 
 ### `ls`
 

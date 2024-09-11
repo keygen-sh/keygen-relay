@@ -268,8 +268,9 @@ This should be an atomic operation.
 
 ## SDK
 
-No immediate plans right now. For the time being, integrations will be similar
-to those with Keygen's flagship licensing API.
+No immediate plans right now. For the time being, especially since Relay's API
+is so small, integrations will be similar to those with Keygen's flagship
+licensing API, i.e. interacting via any standard HTTP client.
 
 Eventually, I'd like to offer a reference SDK in Go for Relay.
 

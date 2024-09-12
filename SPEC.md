@@ -322,6 +322,12 @@ func AddLicense(licenseFilePath string, licenseKey string) {
 
 Future ideas for Relay.
 
+### Migrations
+
+Eventually, the schema is going to change. When that happens, we'll need to add
+some sort of database migration system, either as part of the upgrade process
+itself, or just-in-time migration e.g. during next restart.
+
 ### API
 
 Additional API endpoints could be created to claim licenses by user email.

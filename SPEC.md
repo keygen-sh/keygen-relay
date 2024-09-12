@@ -334,3 +334,9 @@ user already exists, it extends the claim.
 #### `DELETE /v1/users/:email`
 
 Release a claim on a license.
+
+### H/W
+
+Distributing branded hardware USB-drives to customers, with Relay pre-installed
+on them, might be a neat little token for larger customers serving air-gap
+users. Something to think about.

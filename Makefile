@@ -1,7 +1,5 @@
 .PHONY: build dist test bench clean
 
-#COMMIT := $(shell git log --pretty=format:"%h" -n 1)
-#VERSION := $(shell git tag -l --sort=-version:refname "v*" | head -n1)
 LD_FLAGS := "-s -w"
 
 PLATFORMS = linux darwin

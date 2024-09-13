@@ -1,5 +1,3 @@
-
--- +migrate Up
 CREATE TABLE nodes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     fingerprint TEXT UNIQUE NOT NULL,
@@ -25,8 +23,3 @@ CREATE TABLE audit_logs (
     entity_id TEXT NOT NULL,
     timestamp TEXT DEFAULT CURRENT_TIMESTAMP
 );
-
--- +migrate Down
-DROP TABLE audit_logs;
-DROP TABLE licenses;
-DROP TABLE nodes;

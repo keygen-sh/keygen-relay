@@ -2,13 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/keygen-sh/keygen-relay/internal/db"
+	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/spf13/cobra"
-	"os"
 )
 
-func addCmd(queries *db.Queries) *cobra.Command {
+func AddCmd(manager licenses.Manager) *cobra.Command {
 	var (
 		filePath  string
 		key       string
@@ -19,15 +17,7 @@ func addCmd(queries *db.Queries) *cobra.Command {
 		Use:   "add",
 		Short: "Push a license to the local relay server's pool",
 		Run: func(cmd *cobra.Command, args []string) {
-			fileContent, err := os.ReadFile(filePath)
-			if err != nil {
-				fmt.Printf("Error reading file: %v\n", err)
-				return
-			}
-
-			//TODO: add verifying, decrypting and move it to service
-			id := uuid.New().String()
-			err = queries.InsertLicense(cmd.Context(), db.InsertLicenseParams{File: fileContent, Key: key, ID: id})
+			err := manager.AddLicense(cmd.Context(), filePath, key, publicKey)
 			if err != nil {
 				fmt.Println("error creating license record", err)
 				return

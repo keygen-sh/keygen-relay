@@ -20,6 +20,15 @@ func (q *Queries) ClaimNode(ctx context.Context, id int64) error {
 	return err
 }
 
+const deleteNodeByFingerprint = `-- name: DeleteNodeByFingerprint :exec
+DELETE FROM nodes WHERE fingerprint = ?
+`
+
+func (q *Queries) DeleteNodeByFingerprint(ctx context.Context, fingerprint string) error {
+	_, err := q.db.ExecContext(ctx, deleteNodeByFingerprint, fingerprint)
+	return err
+}
+
 const getAllNodes = `-- name: GetAllNodes :many
 SELECT id, fingerprint, claimed_at, last_heartbeat_at
 FROM nodes
@@ -54,6 +63,24 @@ func (q *Queries) GetAllNodes(ctx context.Context) ([]Node, error) {
 	return items, nil
 }
 
+const getNodeByFingerprint = `-- name: GetNodeByFingerprint :one
+SELECT id, fingerprint, claimed_at, last_heartbeat_at
+FROM nodes
+WHERE fingerprint = ?
+`
+
+func (q *Queries) GetNodeByFingerprint(ctx context.Context, fingerprint string) (Node, error) {
+	row := q.db.QueryRowContext(ctx, getNodeByFingerprint, fingerprint)
+	var i Node
+	err := row.Scan(
+		&i.ID,
+		&i.Fingerprint,
+		&i.ClaimedAt,
+		&i.LastHeartbeatAt,
+	)
+	return i, err
+}
+
 const getNodeByID = `-- name: GetNodeByID :one
 SELECT id, fingerprint, claimed_at, last_heartbeat_at
 FROM nodes
@@ -82,13 +109,13 @@ func (q *Queries) InsertNode(ctx context.Context, fingerprint string) error {
 	return err
 }
 
-const updateNodeHeartbeat = `-- name: UpdateNodeHeartbeat :exec
+const updateNodeHeartbeatByFingerprint = `-- name: UpdateNodeHeartbeatByFingerprint :exec
 UPDATE nodes
 SET last_heartbeat_at = CURRENT_TIMESTAMP
-WHERE id = ?
+WHERE fingerprint = ?
 `
 
-func (q *Queries) UpdateNodeHeartbeat(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, updateNodeHeartbeat, id)
+func (q *Queries) UpdateNodeHeartbeatByFingerprint(ctx context.Context, fingerprint string) error {
+	_, err := q.db.ExecContext(ctx, updateNodeHeartbeatByFingerprint, fingerprint)
 	return err
 }

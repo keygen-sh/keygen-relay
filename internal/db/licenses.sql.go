@@ -138,13 +138,24 @@ func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) er
 	return err
 }
 
-const releaseLicense = `-- name: ReleaseLicense :exec
+const releaseLicenseByID = `-- name: ReleaseLicenseByID :exec
 UPDATE licenses
 SET node_id = NULL, last_released_at = CURRENT_TIMESTAMP
 WHERE id = ? AND node_id IS NOT NULL
 `
 
-func (q *Queries) ReleaseLicense(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, releaseLicense, id)
+func (q *Queries) ReleaseLicenseByID(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, releaseLicenseByID, id)
+	return err
+}
+
+const releaseLicenseByNodeID = `-- name: ReleaseLicenseByNodeID :exec
+UPDATE licenses
+SET node_id = NULL, last_released_at = CURRENT_TIMESTAMP
+WHERE node_id = ?
+`
+
+func (q *Queries) ReleaseLicenseByNodeID(ctx context.Context, nodeID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, releaseLicenseByNodeID, nodeID)
 	return err
 }

@@ -1,11 +1,10 @@
 package main
 
 import (
+	"github.com/keygen-sh/keygen-relay/cli"
 	"os"
-
-	"github.com/keygen-sh/keygen-relay/internal/cmd"
 )
 
 func main() {
-	os.Exit(cmd.Do(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
+	os.Exit(cli.Run())
 }

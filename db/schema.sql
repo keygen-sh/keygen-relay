@@ -9,7 +9,7 @@ CREATE TABLE licenses (
     id TEXT PRIMARY KEY,
     file BLOB UNIQUE NOT NULL,
     key TEXT UNIQUE NOT NULL,
-    claims INTEGER DEFAULT 0,
+    claims INTEGER DEFAULT 0 NOT NULL,
     last_claimed_at TEXT,
     last_released_at TEXT,
     node_id INTEGER UNIQUE,

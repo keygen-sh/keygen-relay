@@ -53,8 +53,8 @@ ORDER BY timestamp DESC
 `
 
 type GetAuditLogsByEntityParams struct {
-	EntityID   string `json:"entity_id"`
-	EntityType string `json:"entity_type"`
+	EntityID   string
+	EntityType string
 }
 
 func (q *Queries) GetAuditLogsByEntity(ctx context.Context, arg GetAuditLogsByEntityParams) ([]AuditLog, error) {
@@ -92,9 +92,9 @@ VALUES (?, ?, ?)
 `
 
 type InsertAuditLogParams struct {
-	Action     string `json:"action"`
-	EntityType string `json:"entity_type"`
-	EntityID   string `json:"entity_id"`
+	Action     string
+	EntityType string
+	EntityID   string
 }
 
 func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error {

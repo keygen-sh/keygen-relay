@@ -60,8 +60,9 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 	}
 
 	id := dec.License.ID
+	key := dec.License.Key
 
-	if err := m.store.InsertLicense(ctx, id, cert, licenseKey); err != nil {
+	if err := m.store.InsertLicense(ctx, id, cert, key); err != nil {
 		return fmt.Errorf("failed to insert license: %w", err)
 	}
 

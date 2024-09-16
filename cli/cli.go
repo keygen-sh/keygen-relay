@@ -13,6 +13,7 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/logger"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func Run() int {
@@ -40,6 +41,9 @@ func Run() int {
 	manager := licenses.NewManager(store, cfg.License)
 
 	rootCmd.AddCommand(cmd.AddCmd(manager))
+	rootCmd.AddCommand(cmd.RemCmd(manager))
+	rootCmd.AddCommand(cmd.LsCmd(manager))
+	rootCmd.AddCommand(cmd.StatCmd(manager))
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)

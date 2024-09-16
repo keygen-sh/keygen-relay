@@ -17,8 +17,8 @@ WHERE id = ? AND node_id IS NULL
 `
 
 type ClaimLicenseParams struct {
-	NodeID sql.NullInt64 `json:"node_id"`
-	ID     string        `json:"id"`
+	NodeID sql.NullInt64
+	ID     string
 }
 
 func (q *Queries) ClaimLicense(ctx context.Context, arg ClaimLicenseParams) error {
@@ -122,10 +122,10 @@ VALUES (?, ?, ?, ?, NULL)
 `
 
 type InsertLicenseParams struct {
-	ID     string        `json:"id"`
-	File   []byte        `json:"file"`
-	Key    string        `json:"key"`
-	Claims sql.NullInt64 `json:"claims"`
+	ID     string
+	File   []byte
+	Key    string
+	Claims int64
 }
 
 func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) error {

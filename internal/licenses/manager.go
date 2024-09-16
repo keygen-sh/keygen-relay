@@ -9,7 +9,7 @@ import (
 )
 
 type Store interface {
-	InsertLicense(ctx context.Context, params db.InsertLicenseParams) error
+	InsertLicense(ctx context.Context, id string, file []byte, key string) error
 	DeleteLicenseByID(ctx context.Context, id string) error
 	GetAllLicenses(ctx context.Context) ([]db.License, error)
 	GetLicenseByID(ctx context.Context, id string) (db.License, error)
@@ -17,7 +17,7 @@ type Store interface {
 	GetNodeByFingerprint(ctx context.Context, fingerprint string) (db.Node, error)
 	UpdateNodeHeartbeat(ctx context.Context, fingerprint string) error
 	DeleteNodeByFingerprint(ctx context.Context, fingerprint string) error
-	InsertAuditLog(ctx context.Context, params db.InsertAuditLogParams) error
+	InsertAuditLog(ctx context.Context, action, entityType, entityID string) error
 }
 
 type Manager interface {
@@ -59,27 +59,19 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 		return fmt.Errorf("license decryption failed: %w", err)
 	}
 
-	params := db.InsertLicenseParams{
-		ID:   dec.License.ID,
-		File: cert,
-		Key:  licenseKey,
-	}
+	id := dec.License.ID
 
-	if err := m.store.InsertLicense(ctx, params); err != nil {
+	if err := m.store.InsertLicense(ctx, id, cert, licenseKey); err != nil {
 		return fmt.Errorf("failed to insert license: %w", err)
 	}
 
-	// Log the action
 	if m.config.EnabledAudit {
-		auditParams := db.InsertAuditLogParams{
-			Action:     "add",
-			EntityType: "license",
-			EntityID:   dec.License.ID,
+		if err := m.store.InsertAuditLog(ctx, "add", "license", id); err != nil {
+			return fmt.Errorf("failed to insert audit log: %w", err)
 		}
-		_ = m.store.InsertAuditLog(ctx, auditParams)
 	}
 
-	fmt.Printf("Added license ID: %s\n", dec.License.ID)
+	fmt.Printf("Added license ID: %s\n", id)
 	return nil
 }
 
@@ -88,14 +80,10 @@ func (m *manager) RemoveLicense(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to remove license: %w", err)
 	}
 
-	// Log the action
 	if m.config.EnabledAudit {
-		auditParams := db.InsertAuditLogParams{
-			Action:     "remove",
-			EntityType: "license",
-			EntityID:   id,
+		if err := m.store.InsertAuditLog(ctx, "remove", "license", id); err != nil {
+			return fmt.Errorf("failed to insert audit log: %w", err)
 		}
-		_ = m.store.InsertAuditLog(ctx, auditParams)
 	}
 
 	fmt.Printf("Removed license ID: %s\n", id)

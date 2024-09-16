@@ -15,7 +15,12 @@ func NewStore(queries *Queries) *Store {
 	}
 }
 
-func (s *Store) InsertLicense(ctx context.Context, params InsertLicenseParams) error {
+func (s *Store) InsertLicense(ctx context.Context, id string, file []byte, key string) error {
+	params := InsertLicenseParams{
+		ID:   id,
+		File: file,
+		Key:  key,
+	}
 	return s.queries.InsertLicense(ctx, params)
 }
 
@@ -55,6 +60,11 @@ func (s *Store) GetNodeByFingerprint(ctx context.Context, fingerprint string) (N
 	return s.queries.GetNodeByFingerprint(ctx, fingerprint)
 }
 
-func (s *Store) InsertAuditLog(ctx context.Context, params InsertAuditLogParams) error {
+func (s *Store) InsertAuditLog(ctx context.Context, action, entityType, entityID string) error {
+	params := InsertAuditLogParams{
+		Action:     action,
+		EntityType: entityType,
+		EntityID:   entityID,
+	}
 	return s.queries.InsertAuditLog(ctx, params)
 }

@@ -7,4 +7,3 @@ sql:
       go:
         package: "db"
         out: "internal/db"
-        emit_json_tags: true

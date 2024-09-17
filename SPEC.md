@@ -187,17 +187,17 @@ Upon `add`, the following should happen:
 
 This should be an atomic operation.
 
-### `rem`
+### `del`
 
 Delete a license from the local relay server's pool.
 
 ```sh
-relay rem --id xxx [--id=yyy]
+relay del --id xxx [--id=yyy]
 ```
 
 Prints identifers of the deleted licenses.
 
-Upon `rem`, the following should happen:
+Upon `del`, the following should happen:
 
 1. The license will be looked up by primary key to assert it exists.
 1. The license will be deleted from the `licenses` table.

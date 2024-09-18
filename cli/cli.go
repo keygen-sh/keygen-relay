@@ -17,20 +17,19 @@ import (
 func Run() int {
 	cfg := config.New()
 	ctx := context.Background()
+
 	rootCmd := &cobra.Command{
 		Use:   "relay",
 		Short: "Keygen Relay CLI",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			logger.Init(cfg.Logger, os.Stdout)
+
+			return nil
+		},
 	}
 
 	rootCmd.PersistentFlags().StringVar(&cfg.DB.DatabaseFilePath, "database", "./relay.sqlite", "specify an alternate database path")
 	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", "counted verbosity")
-
-	if err := rootCmd.PersistentFlags().Parse(os.Args); err != nil {
-		slog.Error("error parsing flags:", "error", err)
-		return 1
-	}
-
-	logger.Init(cfg.Logger, os.Stdout)
 
 	store, dbConn, err := initStore(ctx, cfg)
 	if err != nil {

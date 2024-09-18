@@ -15,6 +15,7 @@ func DelCmd(manager licenses.Manager) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := manager.RemoveLicense(cmd.Context(), id)
 			if err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "error removing license record: %v\n", err)
 				return err
 			}
 

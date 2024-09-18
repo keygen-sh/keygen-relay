@@ -19,6 +19,7 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := manager.AddLicense(cmd.Context(), filePath, key, publicKey)
 			if err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "error creating license record: %v\n", err)
 				return err
 			}
 

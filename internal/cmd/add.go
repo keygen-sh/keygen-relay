@@ -16,12 +16,15 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "Push a license to the local relay server's pool",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			err := manager.AddLicense(cmd.Context(), filePath, key, publicKey)
 			if err != nil {
-				fmt.Println("error creating license record", err)
-				return
+				return err
 			}
+
+			fmt.Fprintln(cmd.OutOrStdout(), "License added successfully.")
+
+			return nil
 		},
 	}
 
@@ -29,8 +32,9 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 	cmd.Flags().StringVar(&key, "key", "", "license key")
 	cmd.Flags().StringVar(&publicKey, "public-key", "", "public key for cryptographically verified")
 
-	cmd.MarkFlagRequired("file")
-	cmd.MarkFlagRequired("key")
+	_ = cmd.MarkFlagRequired("file")
+	_ = cmd.MarkFlagRequired("key")
+	_ = cmd.MarkFlagRequired("public-key")
 
 	return cmd
 }

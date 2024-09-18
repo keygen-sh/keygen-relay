@@ -3,17 +3,15 @@ package cli
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"github.com/spf13/cobra"
-	"log"
-	"os"
-
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
 	"github.com/keygen-sh/keygen-relay/internal/config"
 	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/logger"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/spf13/cobra"
+	"log/slog"
+	"os"
 )
 
 func Run() int {
@@ -28,25 +26,29 @@ func Run() int {
 	rootCmd.PersistentFlags().StringVar(&cfg.DB.DatabaseFilePath, "database", "./relay.sqlite", "specify an alternate database path (default: ./relay.sqlite)")
 	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", "counted verbosity")
 
-	logger.Init(cfg.Logger.Verbosity)
+	logger.Init(cfg.Logger, os.Stdout)
 
 	store, dbConn, err := initStore(ctx, cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
+		slog.Error("failed to initialize store", "error", err)
 		return 1
 	}
 
-	defer dbConn.Close()
+	defer func() {
+		if err := dbConn.Close(); err != nil {
+			slog.Error("failed to close database connection", "error", err)
+		}
+	}()
 
-	manager := licenses.NewManager(store, cfg.License)
+	manager := licenses.NewManager(store, cfg.License, os.ReadFile, licenses.NewKeygenLicenseVerifier)
 
 	rootCmd.AddCommand(cmd.AddCmd(manager))
-	rootCmd.AddCommand(cmd.RemCmd(manager))
+	rootCmd.AddCommand(cmd.DelCmd(manager))
 	rootCmd.AddCommand(cmd.LsCmd(manager))
 	rootCmd.AddCommand(cmd.StatCmd(manager))
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
+		slog.Error("failed to execute command", "error", err)
 		return 1
 	}
 
@@ -57,33 +59,38 @@ func initStore(ctx context.Context, cfg *config.Config) (licenses.Store, *sql.DB
 	dbExists := fileExists(cfg.DB.DatabaseFilePath)
 	dbConn, err := sql.Open("sqlite3", cfg.DB.DatabaseFilePath)
 	if err != nil {
+		slog.Error("failed to open database", "error", err)
 		return nil, nil, err
 	}
 
 	if err := dbConn.Ping(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error connecting to database: %v\n", err)
+		slog.Error("failed to connect to database", "error", err)
 		return nil, nil, err
 	}
 
 	if !dbExists {
-		log.Println("Database does not exist, applying schema")
-
+		slog.Info("database does not exist, applying schema")
 		schema, err := os.ReadFile("db/schema.sql")
 		if err != nil {
+			slog.Error("failed to read schema file", "error", err)
 			return nil, nil, err
 		}
 
 		if _, err := dbConn.ExecContext(ctx, string(schema)); err != nil {
+			slog.Error("failed to execute schema", "error", err)
 			return nil, nil, err
 		}
 	}
 
 	queries := db.New(dbConn)
-
 	return db.NewStore(queries), dbConn, nil
 }
 
 func fileExists(filename string) bool {
 	info, err := os.Stat(filename)
-	return err == nil && !info.IsDir()
+	if err != nil {
+		slog.Warn("file does not exist", "filename", filename)
+		return false
+	}
+	return !info.IsDir()
 }

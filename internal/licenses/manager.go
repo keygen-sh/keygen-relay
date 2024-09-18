@@ -71,7 +71,7 @@ func NewManager(store Store, config *Config, dataReader FileReaderFunc, verifier
 }
 
 func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licenseKey string, publicKey string) error {
-	slog.Info("adding license", "filePath", licenseFilePath)
+	slog.Debug("Starting to add a new license", "filePath", licenseFilePath)
 
 	cert, err := m.dataReader(licenseFilePath)
 	if err != nil {
@@ -79,8 +79,9 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 		return fmt.Errorf("failed to read license file: %w", err)
 	}
 
-	lic := m.verifier(cert)
+	slog.Debug("Successfully read the license file", "filePath", licenseFilePath)
 
+	lic := m.verifier(cert)
 	keygen.PublicKey = publicKey
 
 	if err := lic.Verify(); err != nil {
@@ -114,6 +115,8 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 }
 
 func (m *manager) RemoveLicense(ctx context.Context, id string) error {
+	slog.Debug("Starting to remove license", "id", id)
+
 	if err := m.store.DeleteLicenseByID(ctx, id); err != nil {
 		slog.Error("failed to remove license", "licenseID", id, "error", err)
 		return fmt.Errorf("failed to remove license: %w", err)
@@ -131,6 +134,8 @@ func (m *manager) RemoveLicense(ctx context.Context, id string) error {
 }
 
 func (m *manager) ListLicenses(ctx context.Context) ([]License, error) {
+	slog.Debug("Fetching licenses")
+
 	licenses, err := m.store.GetAllLicenses(ctx)
 	if err != nil {
 		slog.Error("failed to fetch licenses", "error", err)
@@ -142,6 +147,8 @@ func (m *manager) ListLicenses(ctx context.Context) ([]License, error) {
 }
 
 func (m *manager) GetLicenseByID(ctx context.Context, id string) (License, error) {
+	slog.Debug("Fetching license", "id", id)
+
 	license, err := m.store.GetLicenseByID(ctx, id)
 	if err != nil {
 		slog.Error("failed to fetch license by ID", "licenseID", id, "error", err)

@@ -16,16 +16,16 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ls",
 		Short: "Print the local relay server's license pool, with stats for each license",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			licensesList, err := manager.ListLicenses(cmd.Context())
 			if err != nil {
-				fmt.Println("Error fetching license records:", err)
-				return
+				return err
 			}
 
 			if len(licensesList) == 0 {
-				fmt.Println("No licenses found.")
-				return
+				fmt.Fprintf(cmd.OutOrStdout(), "No licenses found.")
+
+				return nil
 			}
 
 			columns := []table.Column{
@@ -62,13 +62,20 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 				BorderForeground(lipgloss.Color("240")).
 				BorderBottom(true).
 				Bold(true)
-
+			s.Selected = s.Selected.
+				Foreground(lipgloss.Color("229")).
+				Background(lipgloss.Color("57")).
+				Bold(false)
 			t.SetStyles(s)
 
 			m := common.TableModel{Table: t}
 			if _, err := tea.NewProgram(m).Run(); err != nil {
-				fmt.Println("Error running program:", err)
+				fmt.Fprintf(cmd.ErrOrStderr(), "Error running program: %v", err)
+
+				return err
 			}
+
+			return nil
 		},
 	}
 

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"github.com/keygen-sh/keygen-relay/internal/licenses"
 )
 
 type Store struct {
@@ -28,12 +29,27 @@ func (s *Store) DeleteLicenseByID(ctx context.Context, id string) error {
 	return s.queries.DeleteLicenseByID(ctx, id)
 }
 
-func (s *Store) GetAllLicenses(ctx context.Context) ([]License, error) {
-	return s.queries.GetAllLicenses(ctx)
+func (s *Store) GetAllLicenses(ctx context.Context) ([]licenses.License, error) {
+	dbLicenses, err := s.queries.GetAllLicenses(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	licensesList := make([]licenses.License, len(dbLicenses))
+	for i, dbLic := range dbLicenses {
+		licensesList[i] = convertToLicense(dbLic)
+	}
+
+	return licensesList, nil
 }
 
-func (s *Store) GetLicenseByID(ctx context.Context, id string) (License, error) {
-	return s.queries.GetLicenseByID(ctx, id)
+func (s *Store) GetLicenseByID(ctx context.Context, id string) (licenses.License, error) {
+	dbLicense, err := s.queries.GetLicenseByID(ctx, id)
+	if err != nil {
+		return licenses.License{}, err
+	}
+
+	return convertToLicense(dbLicense), nil
 }
 
 func (s *Store) ClaimLicense(ctx context.Context, params ClaimLicenseParams) error {
@@ -56,8 +72,18 @@ func (s *Store) DeleteNodeByFingerprint(ctx context.Context, fingerprint string)
 	return s.queries.DeleteNodeByFingerprint(ctx, fingerprint)
 }
 
-func (s *Store) GetNodeByFingerprint(ctx context.Context, fingerprint string) (Node, error) {
-	return s.queries.GetNodeByFingerprint(ctx, fingerprint)
+func (s *Store) GetNodeByFingerprint(ctx context.Context, fingerprint string) (licenses.Node, error) {
+	node, err := s.queries.GetNodeByFingerprint(ctx, fingerprint)
+	if err != nil {
+		return licenses.Node{}, err
+	}
+
+	return licenses.Node{
+		ID:              node.ID,
+		Fingerprint:     node.Fingerprint,
+		ClaimedAt:       node.ClaimedAt,
+		LastHeartbeatAt: node.LastHeartbeatAt,
+	}, nil
 }
 
 func (s *Store) InsertAuditLog(ctx context.Context, action, entityType, entityID string) error {
@@ -67,4 +93,14 @@ func (s *Store) InsertAuditLog(ctx context.Context, action, entityType, entityID
 		EntityID:   entityID,
 	}
 	return s.queries.InsertAuditLog(ctx, params)
+}
+
+func convertToLicense(dbLic License) licenses.License {
+	return licenses.License{
+		ID:     dbLic.ID,
+		File:   dbLic.File,
+		Key:    dbLic.Key,
+		Claims: dbLic.Claims,
+		NodeID: dbLic.NodeID,
+	}
 }

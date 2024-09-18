@@ -30,11 +30,10 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stat",
 		Short: "Print stats for a license in the local relay server's pool",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			license, err := manager.GetLicenseByID(cmd.Context(), licenseID)
 			if err != nil {
-				fmt.Printf("Error fetching stats for license ID %s: %v\n", licenseID, err)
-				return
+				return err
 			}
 
 			columns := []table.Column{
@@ -79,13 +78,17 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 
 			m := common.TableModel{Table: t}
 			if _, err := tea.NewProgram(m).Run(); err != nil {
-				fmt.Println("Error running program:", err)
+				fmt.Fprintf(cmd.ErrOrStderr(), "Error running program: %v", err)
+
+				return err
 			}
+
+			return nil
 		},
 	}
 
 	cmd.Flags().StringVar(&licenseID, "id", "", "License ID to print stats for")
-	cmd.MarkFlagRequired("id")
+	_ = cmd.MarkFlagRequired("id")
 
 	return cmd
 }

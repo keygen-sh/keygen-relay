@@ -3,6 +3,7 @@ package licenses
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/keygen-sh/keygen-go/v3"
 	"log/slog"
@@ -13,6 +14,7 @@ type FileReaderFunc func(filename string) ([]byte, error)
 type Store interface {
 	InsertLicense(ctx context.Context, id string, file []byte, key string) error
 	DeleteLicenseByID(ctx context.Context, id string) error
+	DeleteLicenseByIDTx(ctx context.Context, id string) error
 	GetAllLicenses(ctx context.Context) ([]License, error)
 	GetLicenseByID(ctx context.Context, id string) (License, error)
 	InsertNode(ctx context.Context, fingerprint string) error
@@ -121,9 +123,13 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 func (m *manager) RemoveLicense(ctx context.Context, id string) error {
 	slog.Debug("Starting to remove license", "id", id)
 
-	if err := m.store.DeleteLicenseByID(ctx, id); err != nil {
-		slog.Error("failed to remove license", "licenseID", id, "error", err)
-		return fmt.Errorf("failed to remove license: %w", err)
+	err := m.store.DeleteLicenseByIDTx(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("license with ID %s not found", id)
+		}
+		slog.Error("failed to delete license", "licenseID", id, "error", err)
+		return fmt.Errorf("failed to delete license: %w", err)
 	}
 
 	if m.config.EnabledAudit {
@@ -155,8 +161,10 @@ func (m *manager) GetLicenseByID(ctx context.Context, id string) (License, error
 
 	license, err := m.store.GetLicenseByID(ctx, id)
 	if err != nil {
-		slog.Error("failed to fetch license by ID", "licenseID", id, "error", err)
-		return License{}, err
+		msg := fmt.Errorf("license with ID %s not found", id)
+		slog.Error("failed to fetch license by ID", "licenseID", id, "error", msg)
+
+		return License{}, msg
 	}
 
 	slog.Info("fetched license", "licenseID", id)

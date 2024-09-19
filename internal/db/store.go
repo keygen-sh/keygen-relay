@@ -3,16 +3,19 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 )
 
 type Store struct {
-	queries *Queries
+	queries    *Queries
+	connection *sql.DB
 }
 
-func NewStore(queries *Queries) *Store {
+func NewStore(queries *Queries, connection *sql.DB) *Store {
 	return &Store{
-		queries: queries,
+		queries:    queries,
+		connection: connection,
 	}
 }
 
@@ -27,6 +30,32 @@ func (s *Store) InsertLicense(ctx context.Context, id string, file []byte, key s
 
 func (s *Store) DeleteLicenseByID(ctx context.Context, id string) error {
 	return s.queries.DeleteLicenseByID(ctx, id)
+}
+
+func (s *Store) DeleteLicenseByIDTx(ctx context.Context, id string) error {
+	tx, err := s.connection.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	qtx := s.queries.WithTx(tx)
+
+	_, err = qtx.GetLicenseByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	err = qtx.DeleteLicenseByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete license: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Store) GetAllLicenses(ctx context.Context) ([]licenses.License, error) {

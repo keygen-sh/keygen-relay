@@ -8,11 +8,11 @@ func (m *FakeLicenseVerifier) Verify() error {
 	return nil
 }
 
-func (m *FakeLicenseVerifier) Decrypt(_ string) (*keygen.LicenseFileDataset, error) {
+func (m *FakeLicenseVerifier) Decrypt(key string) (*keygen.LicenseFileDataset, error) {
 	return &keygen.LicenseFileDataset{
 		License: keygen.License{
-			ID:  "fake_id",
-			Key: "fake_key",
+			ID:  "license_" + key,
+			Key: key,
 		},
 	}, nil
 }

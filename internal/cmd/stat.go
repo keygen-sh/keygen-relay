@@ -26,8 +26,9 @@ func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Co
 	var licenseID string
 
 	cmd := &cobra.Command{
-		Use:   "stat",
-		Short: "Print stats for a license in the local relay server's pool",
+		Use:          "stat",
+		Short:        "Print stats for a license in the local relay server's pool",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			license, err := manager.GetLicenseByID(cmd.Context(), licenseID)
 			if err != nil {

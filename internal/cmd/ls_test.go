@@ -32,8 +32,8 @@ func TestLsCmd_Success(t *testing.T) {
 	err := lsCmd.Execute()
 	assert.NoError(t, err)
 
-	assert.Contains(t, outBuf.String(), "License_Key_1")
-	assert.Contains(t, outBuf.String(), "License_Key_2")
+	assert.Contains(t, outBuf.String(), "License_1")
+	assert.Contains(t, outBuf.String(), "License_2")
 }
 
 func TestLsCmd_NoLicenses(t *testing.T) {

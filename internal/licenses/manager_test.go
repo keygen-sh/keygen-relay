@@ -2,7 +2,6 @@ package licenses_test
 
 import (
 	"context"
-	"errors"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -10,14 +9,8 @@ import (
 )
 
 func TestAddLicense_Success(t *testing.T) {
-	fakeStore := &testutils.FakeStore{
-		InsertLicenseFn: func(ctx context.Context, id string, file []byte, key string) error {
-			return nil
-		},
-		InsertAuditLogFn: func(ctx context.Context, action, entityType, entityID string) error {
-			return nil
-		},
-	}
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
 
 	manager := licenses.NewManager(
 		&licenses.Config{
@@ -31,18 +24,20 @@ func TestAddLicense_Success(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(fakeStore)
+	manager.AttachStore(store)
 
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
+
+	// Check if the license was added to the database
+	license, err := manager.GetLicenseByID(context.Background(), "license_test_key")
+	assert.NoError(t, err)
+	assert.Equal(t, "test_key", license.Key)
 }
 
 func TestAddLicense_Failure(t *testing.T) {
-	fakeStore := &testutils.FakeStore{
-		InsertLicenseFn: func(ctx context.Context, id string, file []byte, key string) error {
-			return errors.New("failed to insert license")
-		},
-	}
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
 
 	manager := licenses.NewManager(
 		&licenses.Config{
@@ -56,22 +51,22 @@ func TestAddLicense_Failure(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(fakeStore)
+	manager.AttachStore(store)
 
+	// Insert a license to cause a unique constraint violation
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
+	assert.NoError(t, err)
+
+	// Try to insert the same license again, which should cause a failure
+	err = manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to insert license")
 }
 
 func TestRemoveLicense_Success(t *testing.T) {
-	fakeStore := &testutils.FakeStore{
-		DeleteLicenseByIDFn: func(ctx context.Context, id string) error {
-			return nil
-		},
-		InsertAuditLogFn: func(ctx context.Context, action, entityType, entityID string) error {
-			return nil
-		},
-	}
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
 
 	manager := licenses.NewManager(
 		&licenses.Config{
@@ -85,18 +80,29 @@ func TestRemoveLicense_Success(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(fakeStore)
+	manager.AttachStore(store)
 
-	err := manager.RemoveLicense(context.Background(), "test_id")
-	assert.NoError(t, err)
+	// Add a license that to be deleted
+	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	assert.NoError(t, err, "Failed to add license")
+
+	// Check that the license was created
+	_, err = manager.GetLicenseByID(ctx, "license_test_key")
+	assert.NoError(t, err, "License should exist")
+
+	// Remove the license
+	err = manager.RemoveLicense(ctx, "license_test_key")
+	assert.NoError(t, err, "Failed to remove license")
+
+	// Ensure the license is removed
+	_, err = manager.GetLicenseByID(context.Background(), "license_test_key")
+	assert.Error(t, err, "License should not exist after deletion")
+	assert.Contains(t, err.Error(), "license with ID license_test_key not found")
 }
 
 func TestRemoveLicense_Failure(t *testing.T) {
-	fakeStore := &testutils.FakeStore{
-		DeleteLicenseByIDFn: func(ctx context.Context, id string) error {
-			return errors.New("failed to remove license")
-		},
-	}
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
 
 	manager := licenses.NewManager(
 		&licenses.Config{
@@ -110,62 +116,49 @@ func TestRemoveLicense_Failure(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(fakeStore)
+	manager.AttachStore(store)
 
-	err := manager.RemoveLicense(context.Background(), "test_id")
+	err := manager.RemoveLicense(context.Background(), "invalid_id")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to remove license")
+	assert.Contains(t, err.Error(), "license with ID invalid_id not found")
 }
 
 func TestListLicenses_Success(t *testing.T) {
-	fakeStore := &testutils.FakeStore{
-		GetAllLicensesFn: func(ctx context.Context) ([]licenses.License, error) {
-			return []licenses.License{
-				{
-					ID:     "test_id_1",
-					Key:    "test_key_1",
-					Claims: 1,
-				},
-				{
-					ID:     "test_id_2",
-					Key:    "test_key_2",
-					Claims: 2,
-				},
-			}, nil
-		},
-	}
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
 
 	manager := licenses.NewManager(
 		&licenses.Config{
 			EnabledAudit: true,
 		},
 		func(filename string) ([]byte, error) {
-			return []byte("mock_certificate"), nil
+			if filename == "test_license_1.lic" {
+				return []byte("mock_certificate_1"), nil
+			}
+			return []byte("mock_certificate_2"), nil
 		},
 		func(cert []byte) licenses.LicenseVerifier {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
 
-	manager.AttachStore(fakeStore)
+	manager.AttachStore(store)
+
+	err := manager.AddLicense(context.Background(), "test_license_1.lic", "test_key_1", "test_public_key_1")
+	assert.NoError(t, err)
+	err = manager.AddLicense(context.Background(), "test_license_2.lic", "test_key_2", "test_public_key_2")
+	assert.NoError(t, err)
 
 	licenseList, err := manager.ListLicenses(context.Background())
 	assert.NoError(t, err)
 	assert.Len(t, licenseList, 2)
-	assert.Equal(t, "test_id_1", licenseList[0].ID)
 	assert.Equal(t, "test_key_1", licenseList[0].Key)
+	assert.Equal(t, "test_key_2", licenseList[1].Key)
 }
 
 func TestGetLicenseByID_Success(t *testing.T) {
-	fakeStore := &testutils.FakeStore{
-		GetLicenseByIDFn: func(ctx context.Context, id string) (licenses.License, error) {
-			return licenses.License{
-				ID:     "test_id",
-				Key:    "test_key",
-				Claims: 1,
-			}, nil
-		},
-	}
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
 
 	manager := licenses.NewManager(
 		&licenses.Config{
@@ -179,20 +172,19 @@ func TestGetLicenseByID_Success(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(fakeStore)
+	manager.AttachStore(store)
 
-	license, err := manager.GetLicenseByID(context.Background(), "test_id")
+	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
-	assert.Equal(t, "test_id", license.ID)
+
+	license, err := manager.GetLicenseByID(context.Background(), "license_test_key")
+	assert.NoError(t, err)
 	assert.Equal(t, "test_key", license.Key)
 }
 
 func TestGetLicenseByID_Failure(t *testing.T) {
-	fakeStore := &testutils.FakeStore{
-		GetLicenseByIDFn: func(ctx context.Context, id string) (licenses.License, error) {
-			return licenses.License{}, errors.New("license not found")
-		},
-	}
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
 
 	manager := licenses.NewManager(
 		&licenses.Config{
@@ -206,9 +198,9 @@ func TestGetLicenseByID_Failure(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(fakeStore)
+	manager.AttachStore(store)
 
 	_, err := manager.GetLicenseByID(context.Background(), "invalid_id")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "license not found")
+	assert.Contains(t, err.Error(), "license with ID invalid_id not found")
 }

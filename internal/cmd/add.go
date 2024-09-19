@@ -14,8 +14,9 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "add",
-		Short: "Push a license to the local relay server's pool",
+		Use:          "add",
+		Short:        "Push a license to the local relay server's pool",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := manager.AddLicense(cmd.Context(), filePath, key, publicKey)
 			if err != nil {

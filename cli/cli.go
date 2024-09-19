@@ -24,8 +24,9 @@ func Run() int {
 	manager := licenses.NewManager(cfg.License, os.ReadFile, licenses.NewKeygenLicenseVerifier)
 
 	rootCmd := &cobra.Command{
-		Use:   "relay",
-		Short: "Keygen Relay CLI",
+		Use:          "relay",
+		Short:        "Keygen Relay CLI",
+		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			logger.Init(cfg.Logger, os.Stdout)
 
@@ -98,7 +99,7 @@ func initStore(ctx context.Context, cfg *config.Config) (licenses.Store, *sql.DB
 	}
 
 	queries := db.New(dbConn)
-	return db.NewStore(queries), dbConn, nil
+	return db.NewStore(queries, dbConn), dbConn, nil
 }
 
 func fileExists(filename string) bool {

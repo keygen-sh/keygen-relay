@@ -12,8 +12,9 @@ import (
 
 func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ls",
-		Short: "Print the local relay server's license pool, with stats for each license",
+		Use:          "ls",
+		Short:        "Print the local relay server's license pool, with stats for each license",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			licensesList, err := manager.ListLicenses(cmd.Context())
 			if err != nil {

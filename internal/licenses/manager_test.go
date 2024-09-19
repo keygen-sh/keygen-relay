@@ -29,7 +29,6 @@ func TestAddLicense_Success(t *testing.T) {
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
-	// Check if the license was added to the database
 	license, err := manager.GetLicenseByID(context.Background(), "license_test_key")
 	assert.NoError(t, err)
 	assert.Equal(t, "test_key", license.Key)
@@ -53,11 +52,9 @@ func TestAddLicense_Failure(t *testing.T) {
 
 	manager.AttachStore(store)
 
-	// Insert a license to cause a unique constraint violation
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
-	// Try to insert the same license again, which should cause a failure
 	err = manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to insert license")

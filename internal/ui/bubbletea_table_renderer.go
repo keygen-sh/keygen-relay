@@ -5,7 +5,6 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/keygen-sh/keygen-relay/internal/common"
 	"os"
 )
 
@@ -35,7 +34,7 @@ func (r *BubbleteaTableRenderer) Render(rows []table.Row, columns []table.Column
 		Bold(false)
 	t.SetStyles(s)
 
-	m := common.TableModel{Table: t}
+	m := TableModel{Table: t}
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running program: %v", err)
 

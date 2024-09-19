@@ -37,7 +37,6 @@ func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Co
 
 			columns := []table.Column{
 				{Title: "ID", Width: 36},
-				{Title: "Key", Width: 36},
 				{Title: "Claims", Width: 8},
 				{Title: "NodeID", Width: 8},
 				{Title: "Last Claimed At", Width: 20},
@@ -57,7 +56,7 @@ func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Co
 			lastReleasedAtStr := formatTime(license.LastReleasedAt)
 
 			tableRows := []table.Row{
-				{license.ID, license.Key, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
+				{license.ID, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
 			}
 
 			if err := tableRenderer.Render(tableRows, columns); err != nil {

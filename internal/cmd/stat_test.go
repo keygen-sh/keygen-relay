@@ -39,7 +39,6 @@ func TestStatCmd_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Contains(t, outBuf.String(), "License_1")
-	assert.Contains(t, outBuf.String(), "License_Key1")
 	assert.Contains(t, outBuf.String(), "123")
 	assert.Contains(t, outBuf.String(), "2024-01-01 00:00:00")
 	assert.Contains(t, outBuf.String(), "2024-01-05 10:00:00")

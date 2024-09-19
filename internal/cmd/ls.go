@@ -29,9 +29,10 @@ func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Comm
 
 			columns := []table.Column{
 				{Title: "ID", Width: 36},
-				{Title: "Key", Width: 50},
-				{Title: "Claims", Width: 6},
+				{Title: "Claims", Width: 8},
 				{Title: "NodeID", Width: 8},
+				{Title: "Last Claimed At", Width: 20},
+				{Title: "Last Released At", Width: 20},
 			}
 
 			tableRows := make([]table.Row, 0, len(licensesList))
@@ -45,7 +46,10 @@ func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Comm
 					nodeIDStr = "-"
 				}
 
-				tableRows = append(tableRows, table.Row{lic.ID, lic.Key, claimsStr, nodeIDStr})
+				lastClaimedAtStr := formatTime(lic.LastClaimedAt)
+				lastReleasedAtStr := formatTime(lic.LastReleasedAt)
+
+				tableRows = append(tableRows, table.Row{lic.ID, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr})
 			}
 
 			if err := tableRenderer.Render(tableRows, columns); err != nil {

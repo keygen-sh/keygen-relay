@@ -8,15 +8,20 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/logger"
+	"github.com/keygen-sh/keygen-relay/internal/ui"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 	"log/slog"
 	"os"
 )
 
+var dbConnection *sql.DB
+
 func Run() int {
 	cfg := config.New()
 	ctx := context.Background()
+
+	manager := licenses.NewManager(cfg.License, os.ReadFile, licenses.NewKeygenLicenseVerifier)
 
 	rootCmd := &cobra.Command{
 		Use:   "relay",
@@ -24,6 +29,25 @@ func Run() int {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			logger.Init(cfg.Logger, os.Stdout)
 
+			// Initialization database connection in PersistentPreRun hook for getting persistent flags
+			store, dbConn, err := initStore(ctx, cfg)
+			if err != nil {
+				slog.Error("failed to initialize store", "error", err)
+				return err
+			}
+
+			dbConnection = dbConn
+
+			manager.AttachStore(store)
+			return nil
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			if dbConnection != nil {
+				if err := dbConnection.Close(); err != nil {
+					slog.Error("failed to close database connection", "error", err)
+					return err
+				}
+			}
 			return nil
 		},
 	}
@@ -31,24 +55,12 @@ func Run() int {
 	rootCmd.PersistentFlags().StringVar(&cfg.DB.DatabaseFilePath, "database", "./relay.sqlite", "specify an alternate database path")
 	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", "counted verbosity")
 
-	store, dbConn, err := initStore(ctx, cfg)
-	if err != nil {
-		slog.Error("failed to initialize store", "error", err)
-		return 1
-	}
-
-	defer func() {
-		if err := dbConn.Close(); err != nil {
-			slog.Error("failed to close database connection", "error", err)
-		}
-	}()
-
-	manager := licenses.NewManager(store, cfg.License, os.ReadFile, licenses.NewKeygenLicenseVerifier)
+	tableRenderer := ui.NewBubbleteaTableRenderer()
 
 	rootCmd.AddCommand(cmd.AddCmd(manager))
 	rootCmd.AddCommand(cmd.DelCmd(manager))
-	rootCmd.AddCommand(cmd.LsCmd(manager))
-	rootCmd.AddCommand(cmd.StatCmd(manager))
+	rootCmd.AddCommand(cmd.LsCmd(manager, tableRenderer))
+	rootCmd.AddCommand(cmd.StatCmd(manager, tableRenderer))
 
 	if err := rootCmd.Execute(); err != nil {
 		slog.Error("failed to execute command", "error", err)

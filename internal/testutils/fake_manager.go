@@ -6,6 +6,7 @@ import (
 )
 
 type FakeManager struct {
+	store            licenses.Store
 	AddLicenseFn     func(ctx context.Context, filePath, key, publicKey string) error
 	RemoveLicenseFn  func(ctx context.Context, id string) error
 	ListLicensesFn   func(ctx context.Context) ([]licenses.License, error)
@@ -38,4 +39,8 @@ func (f *FakeManager) GetLicenseByID(ctx context.Context, id string) (licenses.L
 		return f.GetLicenseByIDFn(ctx, id)
 	}
 	return licenses.License{}, nil
+}
+
+func (f *FakeManager) AttachStore(store licenses.Store) {
+	f.store = store
 }

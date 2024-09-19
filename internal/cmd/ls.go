@@ -2,17 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"strconv"
 
 	"github.com/charmbracelet/bubbles/table"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/keygen-sh/keygen-relay/internal/common"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/spf13/cobra"
 )
 
-func LsCmd(manager licenses.Manager) *cobra.Command {
+func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ls",
 		Short: "Print the local relay server's license pool, with stats for each license",
@@ -49,29 +47,8 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 				tableRows = append(tableRows, table.Row{lic.ID, lic.Key, claimsStr, nodeIDStr})
 			}
 
-			t := table.New(
-				table.WithColumns(columns),
-				table.WithRows(tableRows),
-				table.WithFocused(true),
-				table.WithHeight(10),
-			)
-
-			s := table.DefaultStyles()
-			s.Header = s.Header.
-				BorderStyle(lipgloss.NormalBorder()).
-				BorderForeground(lipgloss.Color("240")).
-				BorderBottom(true).
-				Bold(true)
-			s.Selected = s.Selected.
-				Foreground(lipgloss.Color("229")).
-				Background(lipgloss.Color("57")).
-				Bold(false)
-			t.SetStyles(s)
-
-			m := common.TableModel{Table: t}
-			if _, err := tea.NewProgram(m).Run(); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error running program: %v", err)
-
+			if err := tableRenderer.Render(tableRows, columns); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering table: %v", err)
 				return err
 			}
 

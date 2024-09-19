@@ -20,7 +20,6 @@ func TestAddLicense_Success(t *testing.T) {
 	}
 
 	manager := licenses.NewManager(
-		fakeStore,
 		&licenses.Config{
 			EnabledAudit: true,
 		},
@@ -31,6 +30,8 @@ func TestAddLicense_Success(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
+
+	manager.AttachStore(fakeStore)
 
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
@@ -44,7 +45,6 @@ func TestAddLicense_Failure(t *testing.T) {
 	}
 
 	manager := licenses.NewManager(
-		fakeStore,
 		&licenses.Config{
 			EnabledAudit: true,
 		},
@@ -55,6 +55,8 @@ func TestAddLicense_Failure(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
+
+	manager.AttachStore(fakeStore)
 
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.Error(t, err)
@@ -72,7 +74,6 @@ func TestRemoveLicense_Success(t *testing.T) {
 	}
 
 	manager := licenses.NewManager(
-		fakeStore,
 		&licenses.Config{
 			EnabledAudit: true,
 		},
@@ -83,6 +84,8 @@ func TestRemoveLicense_Success(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
+
+	manager.AttachStore(fakeStore)
 
 	err := manager.RemoveLicense(context.Background(), "test_id")
 	assert.NoError(t, err)
@@ -96,7 +99,6 @@ func TestRemoveLicense_Failure(t *testing.T) {
 	}
 
 	manager := licenses.NewManager(
-		fakeStore,
 		&licenses.Config{
 			EnabledAudit: true,
 		},
@@ -107,6 +109,8 @@ func TestRemoveLicense_Failure(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
+
+	manager.AttachStore(fakeStore)
 
 	err := manager.RemoveLicense(context.Background(), "test_id")
 	assert.Error(t, err)
@@ -132,7 +136,6 @@ func TestListLicenses_Success(t *testing.T) {
 	}
 
 	manager := licenses.NewManager(
-		fakeStore,
 		&licenses.Config{
 			EnabledAudit: true,
 		},
@@ -143,6 +146,8 @@ func TestListLicenses_Success(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
+
+	manager.AttachStore(fakeStore)
 
 	licenseList, err := manager.ListLicenses(context.Background())
 	assert.NoError(t, err)
@@ -163,7 +168,6 @@ func TestGetLicenseByID_Success(t *testing.T) {
 	}
 
 	manager := licenses.NewManager(
-		fakeStore,
 		&licenses.Config{
 			EnabledAudit: true,
 		},
@@ -174,6 +178,8 @@ func TestGetLicenseByID_Success(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
+
+	manager.AttachStore(fakeStore)
 
 	license, err := manager.GetLicenseByID(context.Background(), "test_id")
 	assert.NoError(t, err)
@@ -189,7 +195,6 @@ func TestGetLicenseByID_Failure(t *testing.T) {
 	}
 
 	manager := licenses.NewManager(
-		fakeStore,
 		&licenses.Config{
 			EnabledAudit: true,
 		},
@@ -200,6 +205,8 @@ func TestGetLicenseByID_Failure(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
+
+	manager.AttachStore(fakeStore)
 
 	_, err := manager.GetLicenseByID(context.Background(), "invalid_id")
 	assert.Error(t, err)

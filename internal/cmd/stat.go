@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"strconv"
 	"time"
 
 	"database/sql"
 	"github.com/charmbracelet/bubbles/table"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/keygen-sh/keygen-relay/internal/common"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/spf13/cobra"
 )
@@ -18,13 +16,13 @@ func formatTime(t sql.NullString) string {
 	if t.Valid {
 		parsedTime, err := time.Parse(time.RFC3339, t.String)
 		if err == nil {
-			return parsedTime.Format("2000-01-01 00:00:00")
+			return parsedTime.Format("2006-01-02 15:04:05")
 		}
 	}
 	return "-"
 }
 
-func StatCmd(manager licenses.Manager) *cobra.Command {
+func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Command {
 	var licenseID string
 
 	cmd := &cobra.Command{
@@ -38,6 +36,7 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 
 			columns := []table.Column{
 				{Title: "ID", Width: 36},
+				{Title: "Key", Width: 36},
 				{Title: "Claims", Width: 8},
 				{Title: "NodeID", Width: 8},
 				{Title: "Last Claimed At", Width: 20},
@@ -57,29 +56,11 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 			lastReleasedAtStr := formatTime(license.LastReleasedAt)
 
 			tableRows := []table.Row{
-				{license.ID, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
+				{license.ID, license.Key, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
 			}
 
-			t := table.New(
-				table.WithColumns(columns),
-				table.WithRows(tableRows),
-				table.WithFocused(true),
-				table.WithHeight(5),
-			)
-
-			s := table.DefaultStyles()
-			s.Header = s.Header.
-				BorderStyle(lipgloss.NormalBorder()).
-				BorderForeground(lipgloss.Color("240")).
-				BorderBottom(true).
-				Bold(true)
-
-			t.SetStyles(s)
-
-			m := common.TableModel{Table: t}
-			if _, err := tea.NewProgram(m).Run(); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error running program: %v", err)
-
+			if err := tableRenderer.Render(tableRows, columns); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering table: %v", err)
 				return err
 			}
 

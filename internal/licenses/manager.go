@@ -27,6 +27,7 @@ type Manager interface {
 	RemoveLicense(ctx context.Context, id string) error
 	ListLicenses(ctx context.Context) ([]License, error)
 	GetLicenseByID(ctx context.Context, id string) (License, error)
+	AttachStore(store Store)
 }
 
 type manager struct {
@@ -61,13 +62,16 @@ type AuditLog struct {
 	Timestamp  sql.NullString
 }
 
-func NewManager(store Store, config *Config, dataReader FileReaderFunc, verifier func(cert []byte) LicenseVerifier) Manager {
+func NewManager(config *Config, dataReader FileReaderFunc, verifier func(cert []byte) LicenseVerifier) Manager {
 	return &manager{
-		store:      store,
 		config:     config,
 		dataReader: dataReader,
 		verifier:   verifier,
 	}
+}
+
+func (m *manager) AttachStore(store Store) {
+	m.store = store
 }
 
 func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licenseKey string, publicKey string) error {

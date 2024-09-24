@@ -2,7 +2,8 @@ CREATE TABLE nodes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     fingerprint TEXT UNIQUE NOT NULL,
     claimed_at TEXT,
-    last_heartbeat_at TEXT
+    last_heartbeat_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE licenses (
@@ -13,7 +14,8 @@ CREATE TABLE licenses (
     last_claimed_at TEXT,
     last_released_at TEXT,
     node_id INTEGER UNIQUE,
-    FOREIGN KEY (node_id) REFERENCES nodes(id)
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE SET NULL
 );
 
 CREATE TABLE audit_logs (

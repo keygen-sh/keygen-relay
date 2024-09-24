@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"strconv"
+	"time"
 
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
@@ -40,8 +41,8 @@ func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Comm
 				claimsStr := fmt.Sprintf("%d", lic.Claims)
 
 				var nodeIDStr string
-				if lic.NodeID.Valid {
-					nodeIDStr = strconv.FormatInt(lic.NodeID.Int64, 10)
+				if lic.NodeID != nil {
+					nodeIDStr = strconv.FormatInt(*lic.NodeID, 10)
 				} else {
 					nodeIDStr = "-"
 				}
@@ -62,4 +63,17 @@ func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Comm
 	}
 
 	return cmd
+}
+
+func formatTime(t *string) string {
+	if t == nil {
+		return "-"
+	}
+
+	parsedTime, err := time.Parse(time.RFC3339, *t)
+	if err != nil {
+		return "-"
+	}
+
+	return parsedTime.Format("2006-01-02 15:04:05")
 }

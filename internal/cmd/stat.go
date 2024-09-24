@@ -2,25 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/keygen-sh/keygen-relay/internal/ui"
-	"strconv"
-	"time"
-
-	"database/sql"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/spf13/cobra"
+	"strconv"
 )
-
-func formatTime(t sql.NullString) string {
-	if t.Valid {
-		parsedTime, err := time.Parse(time.RFC3339, t.String)
-		if err == nil {
-			return parsedTime.Format("2006-01-02 15:04:05")
-		}
-	}
-	return "-"
-}
 
 func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Command {
 	var licenseID string
@@ -46,8 +33,8 @@ func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Co
 			claimsStr := fmt.Sprintf("%d", license.Claims)
 
 			var nodeIDStr string
-			if license.NodeID.Valid {
-				nodeIDStr = strconv.FormatInt(license.NodeID.Int64, 10)
+			if license.NodeID != nil {
+				nodeIDStr = strconv.FormatInt(*license.NodeID, 10)
 			} else {
 				nodeIDStr = "-"
 			}

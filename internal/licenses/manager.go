@@ -7,21 +7,48 @@ import (
 	"fmt"
 	"github.com/keygen-sh/keygen-go/v3"
 	"log/slog"
+	"strconv"
+	"time"
 )
+
+type OperationStatus int
+
+const (
+	OperationStatusSuccess OperationStatus = iota
+	OperationStatusCreated
+	OperationStatusExtended
+	OperationStatusConflict
+	OperationStatusNotFound
+	OperationStatusNoLicensesAvailable
+)
+
+type LicenseOperationResult struct {
+	License *License
+	Status  OperationStatus
+}
 
 type FileReaderFunc func(filename string) ([]byte, error)
 
 type Store interface {
+	BeginTx(ctx context.Context) (*sql.Tx, error)
+	WithTx(tx *sql.Tx) Store
 	InsertLicense(ctx context.Context, id string, file []byte, key string) error
 	DeleteLicenseByID(ctx context.Context, id string) error
 	DeleteLicenseByIDTx(ctx context.Context, id string) error
 	GetAllLicenses(ctx context.Context) ([]License, error)
 	GetLicenseByID(ctx context.Context, id string) (License, error)
-	InsertNode(ctx context.Context, fingerprint string) error
+	GetLicenseByNodeID(ctx context.Context, nodeID *int64) (License, error)
+	InsertNode(ctx context.Context, fingerprint string) (Node, error)
 	GetNodeByFingerprint(ctx context.Context, fingerprint string) (Node, error)
 	UpdateNodeHeartbeat(ctx context.Context, fingerprint string) error
+	UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx context.Context, fingerprint string) error
 	DeleteNodeByFingerprint(ctx context.Context, fingerprint string) error
+	ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64) error
 	InsertAuditLog(ctx context.Context, action, entityType, entityID string) error
+	ClaimUnclaimedLicenseRandom(ctx context.Context, nodeID *int64) (License, error)
+	ClaimUnclaimedLicenseLIFO(ctx context.Context, nodeID *int64) (License, error)
+	ClaimUnclaimedLicenseFIFO(ctx context.Context, nodeID *int64) (License, error)
+	DeleteInactiveNodes(ctx context.Context, ttl time.Duration) error
 }
 
 type Manager interface {
@@ -30,6 +57,10 @@ type Manager interface {
 	ListLicenses(ctx context.Context) ([]License, error)
 	GetLicenseByID(ctx context.Context, id string) (License, error)
 	AttachStore(store Store)
+	ClaimLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error)
+	ReleaseLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error)
+	Config() *Config
+	CleanupInactiveNodes(ctx context.Context, ttl time.Duration) error
 }
 
 type manager struct {
@@ -44,16 +75,18 @@ type License struct {
 	File           []byte
 	Key            string
 	Claims         int64
-	LastClaimedAt  sql.NullString
-	LastReleasedAt sql.NullString
-	NodeID         sql.NullInt64
+	LastClaimedAt  *string
+	LastReleasedAt *string
+	NodeID         *int64
+	CreatedAt      *string
 }
 
 type Node struct {
 	ID              int64
 	Fingerprint     string
-	ClaimedAt       sql.NullString
-	LastHeartbeatAt sql.NullString
+	ClaimedAt       *string
+	LastHeartbeatAt *string
+	CreatedAt       *string
 }
 
 type AuditLog struct {
@@ -61,7 +94,8 @@ type AuditLog struct {
 	Action     string
 	EntityType string
 	EntityID   string
-	Timestamp  sql.NullString
+	Timestamp  *string
+	CreatedAt  *string
 }
 
 func NewManager(config *Config, dataReader FileReaderFunc, verifier func(cert []byte) LicenseVerifier) Manager {
@@ -169,4 +203,165 @@ func (m *manager) GetLicenseByID(ctx context.Context, id string) (License, error
 
 	slog.Info("fetched license", "licenseID", id)
 	return license, nil
+}
+
+func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error) {
+	tx, err := m.store.BeginTx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	storeWithTx := m.store.WithTx(tx)
+	defer tx.Rollback()
+
+	node, err := m.fetchOrCreateNode(ctx, storeWithTx, fingerprint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch or create node: %w", err)
+	}
+
+	claimedLicense, err := storeWithTx.GetLicenseByNodeID(ctx, &node.ID)
+
+	if err == nil {
+		if !m.config.ExtendOnHeartbeat { // if heartbeat is disabled, we can't extend the claimed license
+			return &LicenseOperationResult{Status: OperationStatusConflict}, nil
+		}
+
+		if err := storeWithTx.UpdateNodeHeartbeat(ctx, fingerprint); err != nil {
+			return nil, fmt.Errorf("failed to update node heartbeat: %w", err)
+		}
+
+		if err := tx.Commit(); err != nil {
+			return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		}
+
+		if m.config.EnabledAudit {
+			if err := m.store.InsertAuditLog(ctx, "claimed", "license", claimedLicense.ID); err != nil {
+				slog.Error("failed to insert audit log", "licenseID", claimedLicense.ID, "error", err)
+			}
+		}
+
+		return &LicenseOperationResult{
+			License: &claimedLicense,
+			Status:  OperationStatusExtended,
+		}, nil
+	}
+
+	// claim a new license based on the strategy
+	newLicense, err := m.selectLicenseClaimStrategy(ctx, storeWithTx, &node.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &LicenseOperationResult{Status: OperationStatusNoLicensesAvailable}, nil
+		}
+		return nil, fmt.Errorf("failed to claim license: %w", err)
+	}
+
+	// Update node claim timestamp
+	if err := storeWithTx.UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx, fingerprint); err != nil {
+		return nil, fmt.Errorf("failed to update node claim: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	if m.config.EnabledAudit {
+		if err := m.store.InsertAuditLog(ctx, "claimed", "license", newLicense.ID); err != nil {
+			slog.Error("failed to insert audit log", "licenseID", newLicense.ID, "error", err)
+		}
+	}
+
+	return &LicenseOperationResult{
+		License: &newLicense,
+		Status:  OperationStatusCreated,
+	}, nil
+}
+
+func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error) {
+	tx, err := m.store.BeginTx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	storeWithTx := m.store.WithTx(tx)
+	defer tx.Rollback()
+
+	node, err := storeWithTx.GetNodeByFingerprint(ctx, fingerprint)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &LicenseOperationResult{Status: OperationStatusNotFound}, nil
+		}
+		return nil, fmt.Errorf("failed to fetch node: %w", err)
+	}
+
+	claimedLicense, err := storeWithTx.GetLicenseByNodeID(ctx, &node.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &LicenseOperationResult{Status: OperationStatusNotFound}, nil
+		}
+		return nil, fmt.Errorf("failed to fetch claimed license: %w", err)
+	}
+
+	if err := storeWithTx.ReleaseLicenseByNodeID(ctx, &node.ID); err != nil {
+		return nil, fmt.Errorf("failed to release license: %w", err)
+	}
+
+	if err := storeWithTx.DeleteNodeByFingerprint(ctx, fingerprint); err != nil {
+		return nil, fmt.Errorf("failed to delete node: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	if m.config.EnabledAudit {
+		if err := m.store.InsertAuditLog(ctx, "released", "license", claimedLicense.ID); err != nil {
+			slog.Error("failed to insert audit log", "licenseID", claimedLicense.ID, "error", err)
+		}
+	}
+
+	return &LicenseOperationResult{Status: OperationStatusSuccess}, nil
+}
+
+func (m *manager) Config() *Config {
+	return m.config
+}
+
+func (m *manager) fetchOrCreateNode(ctx context.Context, store Store, fingerprint string) (Node, error) {
+	node, err := store.GetNodeByFingerprint(ctx, fingerprint)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			node, err = store.InsertNode(ctx, fingerprint)
+
+			if err != nil {
+				return Node{}, fmt.Errorf("failed to insert node: %w", err)
+			}
+
+			if m.config.EnabledAudit {
+				err = store.InsertAuditLog(ctx, "inserted", "node", strconv.FormatInt(node.ID, 10))
+
+				if err != nil {
+					return Node{}, fmt.Errorf("failed to insert audit log: %w", err)
+				}
+			}
+		} else {
+			return Node{}, fmt.Errorf("failed to fetch node: %w", err)
+		}
+	}
+
+	return node, nil
+}
+
+func (m *manager) selectLicenseClaimStrategy(ctx context.Context, store Store, nodeID *int64) (License, error) {
+	switch m.config.Strategy {
+	case "fifo":
+		return store.ClaimUnclaimedLicenseFIFO(ctx, nodeID)
+	case "lifo":
+		return store.ClaimUnclaimedLicenseLIFO(ctx, nodeID)
+	case "random":
+		return store.ClaimUnclaimedLicenseRandom(ctx, nodeID)
+	default:
+		return store.ClaimUnclaimedLicenseFIFO(ctx, nodeID)
+	}
+}
+
+func (m *manager) CleanupInactiveNodes(ctx context.Context, ttl time.Duration) error {
+	return m.store.DeleteInactiveNodes(ctx, ttl)
 }

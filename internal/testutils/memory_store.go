@@ -12,9 +12,14 @@ import (
 )
 
 func NewMemoryStore(t *testing.T) (*db.Store, *sql.DB) {
-	dbConn, err := sql.Open("sqlite3", ":memory:")
+	dbConn, err := sql.Open("sqlite3", ":memory:?_pragma=foreign_keys(on)")
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
+	}
+
+	_, err = dbConn.Exec("PRAGMA foreign_keys = ON")
+	if err != nil {
+		log.Fatal("Failed to enable foreign keys:", err)
 	}
 
 	schema, err := os.ReadFile("../../db/schema.sql")

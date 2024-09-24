@@ -33,7 +33,6 @@ type Store interface {
 	BeginTx(ctx context.Context) (*sql.Tx, error)
 	WithTx(tx *sql.Tx) Store
 	InsertLicense(ctx context.Context, id string, file []byte, key string) error
-	DeleteLicenseByID(ctx context.Context, id string) error
 	DeleteLicenseByIDTx(ctx context.Context, id string) error
 	GetAllLicenses(ctx context.Context) ([]License, error)
 	GetLicenseByID(ctx context.Context, id string) (License, error)

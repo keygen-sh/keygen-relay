@@ -2,28 +2,17 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/keygen-sh/keygen-relay/internal/ui"
-	"strconv"
-	"time"
-
-	"database/sql"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/output"
+	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/spf13/cobra"
+	"strconv"
 )
 
-func formatTime(t sql.NullString) string {
-	if t.Valid {
-		parsedTime, err := time.Parse(time.RFC3339, t.String)
-		if err == nil {
-			return parsedTime.Format("2006-01-02 15:04:05")
-		}
-	}
-	return "-"
-}
-
-func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Command {
+func StatCmd(manager licenses.Manager) *cobra.Command {
 	var licenseID string
+	var plain bool
 
 	cmd := &cobra.Command{
 		Use:          "stat",
@@ -32,7 +21,9 @@ func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Co
 		RunE: func(cmd *cobra.Command, args []string) error {
 			license, err := manager.GetLicenseByID(cmd.Context(), licenseID)
 			if err != nil {
-				return err
+				output.PrintError(cmd.ErrOrStderr(), err.Error())
+
+				return nil
 			}
 
 			columns := []table.Column{
@@ -46,8 +37,8 @@ func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Co
 			claimsStr := fmt.Sprintf("%d", license.Claims)
 
 			var nodeIDStr string
-			if license.NodeID.Valid {
-				nodeIDStr = strconv.FormatInt(license.NodeID.Int64, 10)
+			if license.NodeID != nil {
+				nodeIDStr = strconv.FormatInt(*license.NodeID, 10)
 			} else {
 				nodeIDStr = "-"
 			}
@@ -59,9 +50,17 @@ func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Co
 				{license.ID, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
 			}
 
-			if err := tableRenderer.Render(tableRows, columns); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering table: %v", err)
-				return err
+			var renderer ui.TableRenderer
+			if plain {
+				renderer = ui.NewSimpleTableRenderer(cmd.OutOrStdout())
+			} else {
+				renderer = ui.NewBubbleteaTableRenderer()
+			}
+
+			if err := renderer.Render(tableRows, columns); err != nil {
+				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("Error rendering table: %v", err))
+
+				return nil
 			}
 
 			return nil
@@ -70,6 +69,8 @@ func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Co
 
 	cmd.Flags().StringVar(&licenseID, "id", "", "License ID to print stats for")
 	_ = cmd.MarkFlagRequired("id")
+
+	cmd.Flags().BoolVar(&plain, "plain", false, "display the table in plain text format")
 
 	return cmd
 }

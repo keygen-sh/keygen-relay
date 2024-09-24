@@ -2,15 +2,17 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/keygen-sh/keygen-relay/internal/ui"
-	"strconv"
-
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/output"
+	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/spf13/cobra"
+	"strconv"
 )
 
-func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Command {
+func LsCmd(manager licenses.Manager) *cobra.Command {
+	var plain bool
+
 	cmd := &cobra.Command{
 		Use:          "ls",
 		Short:        "Print the local relay server's license pool, with stats for each license",
@@ -18,13 +20,22 @@ func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Comm
 		RunE: func(cmd *cobra.Command, args []string) error {
 			licensesList, err := manager.ListLicenses(cmd.Context())
 			if err != nil {
-				return err
+				output.PrintError(cmd.ErrOrStderr(), err.Error())
+
+				return nil
 			}
 
 			if len(licensesList) == 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "No licenses found.")
+				output.PrintSuccess(cmd.OutOrStdout(), "No licenses found.")
 
 				return nil
+			}
+
+			var renderer ui.TableRenderer
+			if plain {
+				renderer = ui.NewSimpleTableRenderer(cmd.OutOrStdout())
+			} else {
+				renderer = ui.NewBubbleteaTableRenderer()
 			}
 
 			columns := []table.Column{
@@ -40,8 +51,8 @@ func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Comm
 				claimsStr := fmt.Sprintf("%d", lic.Claims)
 
 				var nodeIDStr string
-				if lic.NodeID.Valid {
-					nodeIDStr = strconv.FormatInt(lic.NodeID.Int64, 10)
+				if lic.NodeID != nil {
+					nodeIDStr = strconv.FormatInt(*lic.NodeID, 10)
 				} else {
 					nodeIDStr = "-"
 				}
@@ -52,8 +63,9 @@ func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Comm
 				tableRows = append(tableRows, table.Row{lic.ID, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr})
 			}
 
-			if err := tableRenderer.Render(tableRows, columns); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering table: %v", err)
+			if err := renderer.Render(tableRows, columns); err != nil {
+				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("Error rendering table: %v", err))
+
 				return err
 			}
 
@@ -61,5 +73,15 @@ func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Comm
 		},
 	}
 
+	cmd.Flags().BoolVar(&plain, "plain", false, "display the table in plain text format")
+
 	return cmd
+}
+
+func formatTime(t *string) string {
+	if t == nil {
+		return "-"
+	}
+
+	return *t
 }

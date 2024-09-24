@@ -2,16 +2,23 @@ package testutils
 
 import "github.com/keygen-sh/keygen-go/v3"
 
-type FakeLicenseVerifier struct{}
+type FakeLicenseVerifier struct {
+	LicenseID  string
+	LicenseKey string
+}
 
-func (m *FakeLicenseVerifier) Verify() error {
+func (f *FakeLicenseVerifier) Verify() error {
 	return nil
 }
 
-func (m *FakeLicenseVerifier) Decrypt(key string) (*keygen.LicenseFileDataset, error) {
+func (f *FakeLicenseVerifier) Decrypt(key string) (*keygen.LicenseFileDataset, error) {
+	licenseID := "license_" + key
+	f.LicenseID = licenseID
+	f.LicenseKey = key
+
 	return &keygen.LicenseFileDataset{
 		License: keygen.License{
-			ID:  "license_" + key,
+			ID:  licenseID,
 			Key: key,
 		},
 	}, nil

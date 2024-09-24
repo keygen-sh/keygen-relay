@@ -1,8 +1,12 @@
 package logger
 
 import (
+	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 	"io"
 	"log/slog"
+	"os"
+	"time"
 )
 
 func Init(config *Config, output io.Writer) {
@@ -10,20 +14,25 @@ func Init(config *Config, output io.Writer) {
 
 	switch config.Verbosity {
 	case 0:
-		programLevel.Set(slog.LevelInfo)
+		programLevel.Set(slog.LevelError)
 	case 1:
-		programLevel.Set(slog.LevelWarn)
+		programLevel.Set(slog.LevelError)
 	case 2:
-		programLevel.Set(slog.LevelDebug)
+		programLevel.Set(slog.LevelWarn)
 	case 3:
-		programLevel.Set(slog.LevelError)
+		programLevel.Set(slog.LevelInfo)
 	default:
-		programLevel.Set(slog.LevelError)
+		programLevel.Set(slog.LevelDebug)
 	}
 
-	logger := slog.New(slog.NewTextHandler(output, &slog.HandlerOptions{
-		Level: programLevel,
-	}))
+	handler := tint.NewHandler(output, &tint.Options{
+		Level:      programLevel,
+		TimeFormat: time.DateTime,
+		NoColor:    config.DisableColor || !isatty.IsTerminal(os.Stdout.Fd()),
+		AddSource:  true,
+	})
+
+	logger := slog.New(handler)
 
 	slog.SetDefault(logger)
 }

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"log/slog"
+	"time"
 )
 
 type Store struct {
@@ -19,6 +21,22 @@ func NewStore(queries *Queries, connection *sql.DB) *Store {
 	}
 }
 
+func (s *Store) BeginTx(ctx context.Context) (*sql.Tx, error) {
+	tx, err := s.connection.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	return tx, nil
+}
+
+// WithTx returns a new Store that uses the transaction queries
+func (s *Store) WithTx(tx *sql.Tx) licenses.Store {
+	return &Store{
+		queries:    s.queries.WithTx(tx),
+		connection: s.connection,
+	}
+}
+
 func (s *Store) InsertLicense(ctx context.Context, id string, file []byte, key string) error {
 	params := InsertLicenseParams{
 		ID:   id,
@@ -26,10 +44,6 @@ func (s *Store) InsertLicense(ctx context.Context, id string, file []byte, key s
 		Key:  key,
 	}
 	return s.queries.InsertLicense(ctx, params)
-}
-
-func (s *Store) DeleteLicenseByID(ctx context.Context, id string) error {
-	return s.queries.DeleteLicenseByID(ctx, id)
 }
 
 func (s *Store) DeleteLicenseByIDTx(ctx context.Context, id string) error {
@@ -81,16 +95,24 @@ func (s *Store) GetLicenseByID(ctx context.Context, id string) (licenses.License
 	return convertToLicense(dbLicense), nil
 }
 
-func (s *Store) ClaimLicense(ctx context.Context, params ClaimLicenseParams) error {
-	return s.queries.ClaimLicense(ctx, params)
-}
-
-func (s *Store) ReleaseLicenseByNodeID(ctx context.Context, nodeID sql.NullInt64) error {
+func (s *Store) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64) error {
 	return s.queries.ReleaseLicenseByNodeID(ctx, nodeID)
 }
 
-func (s *Store) InsertNode(ctx context.Context, fingerprint string) error {
-	return s.queries.InsertNode(ctx, fingerprint)
+func (s *Store) InsertNode(ctx context.Context, fingerprint string) (licenses.Node, error) {
+	node, err := s.queries.InsertNode(ctx, fingerprint)
+
+	if err != nil {
+		return licenses.Node{}, err
+	}
+
+	return licenses.Node{
+		ID:              node.ID,
+		Fingerprint:     node.Fingerprint,
+		ClaimedAt:       node.ClaimedAt,
+		LastHeartbeatAt: node.LastHeartbeatAt,
+		CreatedAt:       node.CreatedAt,
+	}, nil
 }
 
 func (s *Store) UpdateNodeHeartbeat(ctx context.Context, fingerprint string) error {
@@ -112,6 +134,7 @@ func (s *Store) GetNodeByFingerprint(ctx context.Context, fingerprint string) (l
 		Fingerprint:     node.Fingerprint,
 		ClaimedAt:       node.ClaimedAt,
 		LastHeartbeatAt: node.LastHeartbeatAt,
+		CreatedAt:       node.CreatedAt,
 	}, nil
 }
 
@@ -124,12 +147,87 @@ func (s *Store) InsertAuditLog(ctx context.Context, action, entityType, entityID
 	return s.queries.InsertAuditLog(ctx, params)
 }
 
+func (s *Store) ClaimUnclaimedLicenseFIFO(ctx context.Context, nodeID *int64) (licenses.License, error) {
+	dbLicense, err := s.queries.ClaimUnclaimedLicenseFIFO(ctx, nodeID)
+
+	if err != nil {
+		return licenses.License{}, err
+	}
+
+	return convertToLicense(dbLicense), nil
+}
+
+func (s *Store) ClaimUnclaimedLicenseLIFO(ctx context.Context, nodeID *int64) (licenses.License, error) {
+	dbLicense, err := s.queries.ClaimUnclaimedLicenseLIFO(ctx, nodeID)
+
+	if err != nil {
+		return licenses.License{}, err
+	}
+
+	return convertToLicense(dbLicense), nil
+}
+
+func (s *Store) ClaimUnclaimedLicenseRandom(ctx context.Context, nodeID *int64) (licenses.License, error) {
+	dbLicense, err := s.queries.ClaimUnclaimedLicenseRandom(ctx, nodeID)
+
+	if err != nil {
+		return licenses.License{}, err
+	}
+
+	return convertToLicense(dbLicense), nil
+}
+
+func (s *Store) GetLicenseByNodeID(ctx context.Context, nodeID *int64) (licenses.License, error) {
+	dbLicense, err := s.queries.GetLicenseByNodeID(ctx, nodeID)
+
+	if err != nil {
+		return licenses.License{}, err
+	}
+
+	return convertToLicense(dbLicense), nil
+}
+
+func (s *Store) UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx context.Context, fingerprint string) error {
+	return s.queries.UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx, fingerprint)
+}
+
+func (s *Store) ReleaseLicensesFromInactiveNodes(ctx context.Context, ttl time.Duration) ([]licenses.License, error) {
+	ttlDuration := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
+
+	releasedLicenses, err := s.queries.ReleaseLicensesFromInactiveNodes(ctx, ttlDuration)
+	if err != nil {
+		slog.Error("failed to release licenses from inactive nodes", "error", err)
+		return nil, err
+	}
+
+	licensesList := make([]licenses.License, len(releasedLicenses))
+	for i, dbLic := range releasedLicenses {
+		licensesList[i] = convertToLicense(dbLic)
+	}
+
+	return licensesList, nil
+}
+
+func (s *Store) DeleteInactiveNodes(ctx context.Context, ttl time.Duration) error {
+	ttlDuration := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
+
+	if err := s.queries.DeleteInactiveNodes(ctx, ttlDuration); err != nil {
+		slog.Error("failed to delete inactive nodes", "error", err)
+		return err
+	}
+
+	return nil
+}
+
 func convertToLicense(dbLic License) licenses.License {
 	return licenses.License{
-		ID:     dbLic.ID,
-		File:   dbLic.File,
-		Key:    dbLic.Key,
-		Claims: dbLic.Claims,
-		NodeID: dbLic.NodeID,
+		ID:             dbLic.ID,
+		File:           dbLic.File,
+		Key:            dbLic.Key,
+		Claims:         dbLic.Claims,
+		NodeID:         dbLic.NodeID,
+		CreatedAt:      dbLic.CreatedAt,
+		LastClaimedAt:  dbLic.LastClaimedAt,
+		LastReleasedAt: dbLic.LastReleasedAt,
 	}
 }

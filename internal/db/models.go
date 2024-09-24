@@ -4,16 +4,12 @@
 
 package db
 
-import (
-	"database/sql"
-)
-
 type AuditLog struct {
 	ID         int64
 	Action     string
 	EntityType string
 	EntityID   string
-	Timestamp  sql.NullString
+	Timestamp  *string
 }
 
 type License struct {
@@ -21,14 +17,16 @@ type License struct {
 	File           []byte
 	Key            string
 	Claims         int64
-	LastClaimedAt  sql.NullString
-	LastReleasedAt sql.NullString
-	NodeID         sql.NullInt64
+	LastClaimedAt  *string
+	LastReleasedAt *string
+	NodeID         *int64
+	CreatedAt      *string
 }
 
 type Node struct {
 	ID              int64
 	Fingerprint     string
-	ClaimedAt       sql.NullString
-	LastHeartbeatAt sql.NullString
+	ClaimedAt       *string
+	LastHeartbeatAt *string
+	CreatedAt       *string
 }

@@ -15,12 +15,10 @@ type Config struct {
 }
 
 func New() *Config {
-	config := Config{
+	return &Config{
 		Server:  server.NewConfig(),
 		License: licenses.NewConfig(),
 		Logger:  logger.NewConfig(),
 		DB:      db.NewConfig(),
 	}
-
-	return &config
 }

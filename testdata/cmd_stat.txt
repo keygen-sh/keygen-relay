@@ -1,0 +1,8 @@
+# Add the license
+exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
+
+# Get statistics of the license
+exec relay stat --id dcea31a4-1664-4633-9f52-4a1b0b5ea2ef --plain
+
+# Expect output containing the license details
+stdout 'dcea31a4-1664-4633-9f52-4a1b0b5ea2ef'

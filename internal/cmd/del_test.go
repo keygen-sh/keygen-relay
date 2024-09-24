@@ -48,9 +48,9 @@ func TestDelCmd_Error(t *testing.T) {
 
 	delCmd.SetArgs([]string{"--id=test-id"})
 
-	err := delCmd.Execute()
-	assert.Error(t, err)
-	assert.Contains(t, errBuf.String(), "error removing license record: failed to remove license")
+	_ = delCmd.Execute()
+
+	assert.Contains(t, errBuf.String(), "Error: failed to remove license")
 }
 
 func TestDelCmd_MissingID(t *testing.T) {

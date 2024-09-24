@@ -2,9 +2,8 @@ package testutils
 
 import (
 	"database/sql"
-	"github.com/stretchr/testify/require"
+	schema "github.com/keygen-sh/keygen-relay/db"
 	"log"
-	"os"
 	"testing"
 
 	"github.com/keygen-sh/keygen-relay/internal/db"
@@ -12,18 +11,17 @@ import (
 )
 
 func NewMemoryStore(t *testing.T) (*db.Store, *sql.DB) {
-	dbConn, err := sql.Open("sqlite3", ":memory:")
+	dbConn, err := sql.Open("sqlite3", ":memory:?_pragma=foreign_keys(on)")
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
 
-	schema, err := os.ReadFile("../../db/schema.sql")
+	_, err = dbConn.Exec("PRAGMA foreign_keys = ON")
 	if err != nil {
-		t.Fatalf("Failed to read schema file: %v", err)
+		log.Fatal("Failed to enable foreign keys:", err)
 	}
-	require.NoError(t, err)
 
-	if _, err := dbConn.Exec(string(schema)); err != nil {
+	if _, err := dbConn.Exec(schema.SchemaSQL); err != nil {
 		t.Fatalf("Failed to apply schema: %v", err)
 	}
 

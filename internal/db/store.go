@@ -46,10 +46,6 @@ func (s *Store) InsertLicense(ctx context.Context, id string, file []byte, key s
 	return s.queries.InsertLicense(ctx, params)
 }
 
-func (s *Store) DeleteLicenseByID(ctx context.Context, id string) error {
-	return s.queries.DeleteLicenseByID(ctx, id)
-}
-
 func (s *Store) DeleteLicenseByIDTx(ctx context.Context, id string) error {
 	tx, err := s.connection.BeginTx(ctx, nil)
 	if err != nil {
@@ -97,10 +93,6 @@ func (s *Store) GetLicenseByID(ctx context.Context, id string) (licenses.License
 	}
 
 	return convertToLicense(dbLicense), nil
-}
-
-func (s *Store) ClaimLicense(ctx context.Context, params ClaimLicenseParams) error {
-	return s.queries.ClaimLicense(ctx, params)
 }
 
 func (s *Store) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64) error {
@@ -197,15 +189,6 @@ func (s *Store) GetLicenseByNodeID(ctx context.Context, nodeID *int64) (licenses
 
 func (s *Store) UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx context.Context, fingerprint string) error {
 	return s.queries.UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx, fingerprint)
-}
-
-func (s *Store) Heartbeat(ctx context.Context, fingerprint string) error {
-	if err := s.queries.UpdateNodeHeartbeatByFingerprint(ctx, fingerprint); err != nil {
-		slog.Error("failed to update node heartbeat", "fingerprint", fingerprint, "error", err)
-		return fmt.Errorf("failed to update node heartbeat: %w", err)
-	}
-	slog.Info("heartbeat updated", "fingerprint", fingerprint)
-	return nil
 }
 
 func (s *Store) DeleteInactiveNodes(ctx context.Context, ttl time.Duration) error {

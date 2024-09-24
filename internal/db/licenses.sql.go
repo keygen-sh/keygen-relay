@@ -204,29 +204,6 @@ func (q *Queries) GetLicenseByNodeID(ctx context.Context, nodeID *int64) (Licens
 	return i, err
 }
 
-const getUnclaimedLicense = `-- name: GetUnclaimedLicense :one
-SELECT id, file, key, claims, last_claimed_at, last_released_at, node_id, created_at
-FROM licenses
-WHERE node_id IS NULL
-LIMIT 1
-`
-
-func (q *Queries) GetUnclaimedLicense(ctx context.Context) (License, error) {
-	row := q.db.QueryRowContext(ctx, getUnclaimedLicense)
-	var i License
-	err := row.Scan(
-		&i.ID,
-		&i.File,
-		&i.Key,
-		&i.Claims,
-		&i.LastClaimedAt,
-		&i.LastReleasedAt,
-		&i.NodeID,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
 const insertLicense = `-- name: InsertLicense :exec
 INSERT INTO licenses (id, file, key, claims, node_id)
 VALUES (?, ?, ?, ?, NULL)
@@ -246,17 +223,6 @@ func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) er
 		arg.Key,
 		arg.Claims,
 	)
-	return err
-}
-
-const releaseLicenseByID = `-- name: ReleaseLicenseByID :exec
-UPDATE licenses
-SET node_id = NULL, last_released_at = CURRENT_TIMESTAMP
-WHERE id = ? AND node_id IS NOT NULL
-`
-
-func (q *Queries) ReleaseLicenseByID(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, releaseLicenseByID, id)
 	return err
 }
 

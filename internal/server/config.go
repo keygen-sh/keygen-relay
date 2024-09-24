@@ -45,6 +45,6 @@ func NewConfig() *Config {
 		TTL:              30 * time.Second,
 		EnabledHeartbeat: true,
 		Strategy:         FIFO,
-		CleanupInterval:  10,
+		CleanupInterval:  15,
 	}
 }

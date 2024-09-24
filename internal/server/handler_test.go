@@ -16,7 +16,6 @@ import (
 )
 
 func TestClaimLicense_NewNode_Success(t *testing.T) {
-	// Arrange
 	manager := &testutils.FakeManager{
 		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
 			return &licenses.LicenseOperationResult{
@@ -36,11 +35,8 @@ func TestClaimLicense_NewNode_Success(t *testing.T) {
 
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
-
-	// Act
 	router.ServeHTTP(rr, req)
 
-	// Assert
 	assert.Equal(t, http.StatusCreated, rr.Code)
 
 	var resp server.ClaimLicenseResponse
@@ -51,7 +47,6 @@ func TestClaimLicense_NewNode_Success(t *testing.T) {
 }
 
 func TestClaimLicense_ExistingNode_Extended(t *testing.T) {
-	// Arrange
 	manager := &testutils.FakeManager{
 		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
 			return &licenses.LicenseOperationResult{
@@ -71,11 +66,8 @@ func TestClaimLicense_ExistingNode_Extended(t *testing.T) {
 
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
-
-	// Act
 	router.ServeHTTP(rr, req)
 
-	// Assert
 	assert.Equal(t, http.StatusAccepted, rr.Code)
 
 	var resp server.ClaimLicenseResponse
@@ -86,7 +78,6 @@ func TestClaimLicense_ExistingNode_Extended(t *testing.T) {
 }
 
 func TestClaimLicense_HeartbeatDisabled_Conflict(t *testing.T) {
-	// Arrange
 	manager := &testutils.FakeManager{
 		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
 			return &licenses.LicenseOperationResult{
@@ -102,17 +93,13 @@ func TestClaimLicense_HeartbeatDisabled_Conflict(t *testing.T) {
 
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
-
-	// Act
 	router.ServeHTTP(rr, req)
 
-	// Assert
 	assert.Equal(t, http.StatusConflict, rr.Code)
 	assert.Contains(t, rr.Body.String(), "License claim conflict, heartbeat disabled")
 }
 
 func TestClaimLicense_NoLicensesAvailable(t *testing.T) {
-	// Arrange
 	manager := &testutils.FakeManager{
 		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
 			return &licenses.LicenseOperationResult{
@@ -128,17 +115,13 @@ func TestClaimLicense_NoLicensesAvailable(t *testing.T) {
 
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
-
-	// Act
 	router.ServeHTTP(rr, req)
 
-	// Assert
 	assert.Equal(t, http.StatusGone, rr.Code)
 	assert.Contains(t, rr.Body.String(), "No licenses available")
 }
 
 func TestClaimLicense_InternalServerError(t *testing.T) {
-	// Arrange
 	manager := &testutils.FakeManager{
 		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
 			return nil, errors.New("database error")
@@ -152,17 +135,13 @@ func TestClaimLicense_InternalServerError(t *testing.T) {
 
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
-
-	// Act
 	router.ServeHTTP(rr, req)
 
-	// Assert
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 	assert.Contains(t, rr.Body.String(), "Failed to claim license")
 }
 
 func TestReleaseLicense_Success(t *testing.T) {
-	// Arrange
 	manager := &testutils.FakeManager{
 		ReleaseLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
 			return &licenses.LicenseOperationResult{
@@ -178,17 +157,13 @@ func TestReleaseLicense_Success(t *testing.T) {
 
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
-
-	// Act
 	router.ServeHTTP(rr, req)
 
-	// Assert
 	assert.Equal(t, http.StatusNoContent, rr.Code)
 	assert.Empty(t, rr.Body.Bytes())
 }
 
 func TestReleaseLicense_NotFound(t *testing.T) {
-	// Arrange
 	manager := &testutils.FakeManager{
 		ReleaseLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
 			return &licenses.LicenseOperationResult{
@@ -204,17 +179,13 @@ func TestReleaseLicense_NotFound(t *testing.T) {
 
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
-
-	// Act
 	router.ServeHTTP(rr, req)
 
-	// Assert
 	assert.Equal(t, http.StatusNotFound, rr.Code)
 	assert.Contains(t, rr.Body.String(), "Claim not found")
 }
 
 func TestReleaseLicense_InternalServerError(t *testing.T) {
-	// Arrange
 	manager := &testutils.FakeManager{
 		ReleaseLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
 			return nil, errors.New("database error")
@@ -228,11 +199,8 @@ func TestReleaseLicense_InternalServerError(t *testing.T) {
 
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
-
-	// Act
 	router.ServeHTTP(rr, req)
 
-	// Assert
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 	assert.Contains(t, rr.Body.String(), "Failed to release license")
 }

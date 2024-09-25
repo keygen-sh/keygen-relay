@@ -9,8 +9,9 @@ import (
 	"strconv"
 )
 
-func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Command {
+func StatCmd(manager licenses.Manager) *cobra.Command {
 	var licenseID string
+	var plain bool
 
 	cmd := &cobra.Command{
 		Use:          "stat",
@@ -46,7 +47,14 @@ func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Co
 				{license.ID, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
 			}
 
-			if err := tableRenderer.Render(tableRows, columns); err != nil {
+			var renderer ui.TableRenderer
+			if plain {
+				renderer = ui.NewSimpleTableRenderer(cmd.OutOrStdout())
+			} else {
+				renderer = ui.NewBubbleteaTableRenderer()
+			}
+
+			if err := renderer.Render(tableRows, columns); err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering table: %v", err)
 				return err
 			}
@@ -57,6 +65,8 @@ func StatCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Co
 
 	cmd.Flags().StringVar(&licenseID, "id", "", "License ID to print stats for")
 	_ = cmd.MarkFlagRequired("id")
+
+	cmd.Flags().BoolVar(&plain, "plain", false, "display the table in plain text format")
 
 	return cmd
 }

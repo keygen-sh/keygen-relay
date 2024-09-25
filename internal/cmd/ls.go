@@ -2,16 +2,17 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/keygen-sh/keygen-relay/internal/ui"
-	"strconv"
-	"time"
-
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/spf13/cobra"
+	"strconv"
+	"time"
 )
 
-func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Command {
+func LsCmd(manager licenses.Manager) *cobra.Command {
+	var plain bool
+
 	cmd := &cobra.Command{
 		Use:          "ls",
 		Short:        "Print the local relay server's license pool, with stats for each license",
@@ -23,9 +24,15 @@ func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Comm
 			}
 
 			if len(licensesList) == 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "No licenses found.")
-
+				fmt.Fprintf(cmd.OutOrStdout(), "No licenses found.\n")
 				return nil
+			}
+
+			var renderer ui.TableRenderer
+			if plain {
+				renderer = ui.NewSimpleTableRenderer(cmd.OutOrStdout())
+			} else {
+				renderer = ui.NewBubbleteaTableRenderer()
 			}
 
 			columns := []table.Column{
@@ -53,14 +60,16 @@ func LsCmd(manager licenses.Manager, tableRenderer ui.TableRenderer) *cobra.Comm
 				tableRows = append(tableRows, table.Row{lic.ID, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr})
 			}
 
-			if err := tableRenderer.Render(tableRows, columns); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering table: %v", err)
+			if err := renderer.Render(tableRows, columns); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering table: %v\n", err)
 				return err
 			}
 
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVar(&plain, "plain", false, "display the table in plain text format")
 
 	return cmd
 }

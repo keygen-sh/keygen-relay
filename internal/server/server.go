@@ -39,7 +39,9 @@ func (s *server) Run() error {
 	address := fmt.Sprintf(":%d", s.config.ServerPort)
 	slog.Info("Starting server", "port", s.config.ServerPort)
 
-	go s.startCleanupRoutine(ctx)
+	if s.Config().EnabledHeartbeat {
+		go s.startCleanupRoutine(ctx)
+	}
 
 	err := http.ListenAndServe(address, s.router)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {

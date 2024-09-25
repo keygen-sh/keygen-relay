@@ -71,7 +71,7 @@ func (s *server) Manager() licenses.Manager {
 }
 
 func (s *server) startCleanupRoutine(ctx context.Context) {
-	ticker := time.NewTicker(s.config.CleanupInterval * time.Second)
+	ticker := time.NewTicker(s.config.CleanupInterval)
 	defer ticker.Stop()
 
 	slog.Debug("Starting Cleanup zombie nodes process", "ttl", s.config.TTL, "cleanupInterval", s.config.CleanupInterval)

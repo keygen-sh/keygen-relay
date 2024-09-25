@@ -44,9 +44,13 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.licenseManager.ClaimLicense(r.Context(), fingerprint)
 	if err != nil {
-		http.Error(w, "Failed to claim license", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Failed to claim license"})
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 
 	switch result.Status {
 	case licenses.OperationStatusCreated:
@@ -54,13 +58,16 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 	case licenses.OperationStatusExtended:
 		w.WriteHeader(http.StatusAccepted)
 	case licenses.OperationStatusConflict:
-		http.Error(w, "License claim conflict, heartbeat disabled", http.StatusConflict)
+		w.WriteHeader(http.StatusConflict)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "License claim conflict, heartbeat disabled"})
 		return
 	case licenses.OperationStatusNoLicensesAvailable:
-		http.Error(w, "No licenses available", http.StatusGone)
+		w.WriteHeader(http.StatusGone)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "No licenses available"})
 		return
 	default:
-		http.Error(w, "Unknown claim status", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Unknown claim status"})
 		return
 	}
 
@@ -69,11 +76,7 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 			LicenseFile: result.License.File,
 			LicenseKey:  result.License.Key,
 		}
-		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(resp)
-		if err != nil {
-			slog.Error("Failed to write response: " + err.Error())
-		}
+		_ = json.NewEncoder(w).Encode(resp)
 	}
 }
 
@@ -82,16 +85,22 @@ func (h *handler) ReleaseLicense(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.licenseManager.ReleaseLicense(r.Context(), fingerprint)
 	if err != nil {
-		http.Error(w, "Failed to release license", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Failed to release license"})
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 
 	switch result.Status {
 	case licenses.OperationStatusSuccess:
 		w.WriteHeader(http.StatusNoContent)
 	case licenses.OperationStatusNotFound:
-		http.Error(w, "Claim not found", http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Claim not found"})
 	default:
-		http.Error(w, "Unknown release status", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Unknown release status"})
 	}
 }

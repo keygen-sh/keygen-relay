@@ -18,7 +18,7 @@ func Init(config *Config, output io.Writer) {
 	case 3:
 		programLevel.Set(slog.LevelError)
 	default:
-		programLevel.Set(slog.LevelInfo)
+		programLevel.Set(slog.LevelError)
 	}
 
 	logger := slog.New(slog.NewTextHandler(output, &slog.HandlerOptions{

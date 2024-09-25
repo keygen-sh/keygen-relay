@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	schema "github.com/keygen-sh/keygen-relay/db"
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
 	"github.com/keygen-sh/keygen-relay/internal/config"
 	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/logger"
 	"github.com/keygen-sh/keygen-relay/internal/server"
-	"github.com/keygen-sh/keygen-relay/internal/ui"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 	"log"
@@ -67,12 +67,10 @@ func Run() int {
 	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", "counted verbosity")
 	rootCmd.PersistentFlags().Bool("no-audit", false, "disable audit logs")
 
-	tableRenderer := ui.NewBubbleteaTableRenderer()
-
 	rootCmd.AddCommand(cmd.AddCmd(manager))
 	rootCmd.AddCommand(cmd.DelCmd(manager))
-	rootCmd.AddCommand(cmd.LsCmd(manager, tableRenderer))
-	rootCmd.AddCommand(cmd.StatCmd(manager, tableRenderer))
+	rootCmd.AddCommand(cmd.LsCmd(manager))
+	rootCmd.AddCommand(cmd.StatCmd(manager))
 	rootCmd.AddCommand(cmd.ServeCmd(srv))
 
 	if err := rootCmd.Execute(); err != nil {
@@ -105,13 +103,8 @@ func initStore(ctx context.Context, cfg *config.Config) (licenses.Store, *sql.DB
 
 	if !dbExists {
 		slog.Info("Applying database schema", "path", cfg.DB.DatabaseFilePath)
-		schema, err := os.ReadFile("db/schema.sql")
-		if err != nil {
-			slog.Error("failed to read schema file", "error", err)
-			return nil, nil, err
-		}
 
-		if _, err := dbConn.ExecContext(ctx, string(schema)); err != nil {
+		if _, err := dbConn.ExecContext(ctx, schema.SchemaSQL); err != nil {
 			slog.Error("failed to execute schema", "error", err)
 			return nil, nil, err
 		}

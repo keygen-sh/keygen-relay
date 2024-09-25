@@ -5,11 +5,10 @@ import (
 	"context"
 	"errors"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/testutils"
 	"testing"
 
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
-	"github.com/keygen-sh/keygen-relay/internal/testutils"
-	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,10 +23,10 @@ func TestLsCmd_Success(t *testing.T) {
 	}
 
 	outBuf := new(bytes.Buffer)
-	renderer := ui.NewSimpleTableRenderer(outBuf)
 
-	lsCmd := cmd.LsCmd(manager, renderer)
+	lsCmd := cmd.LsCmd(manager)
 	lsCmd.SetOut(outBuf)
+	lsCmd.SetArgs([]string{"--plain"})
 
 	err := lsCmd.Execute()
 	assert.NoError(t, err)
@@ -44,10 +43,10 @@ func TestLsCmd_NoLicenses(t *testing.T) {
 	}
 
 	outBuf := new(bytes.Buffer)
-	renderer := ui.NewSimpleTableRenderer(outBuf)
 
-	lsCmd := cmd.LsCmd(manager, renderer)
+	lsCmd := cmd.LsCmd(manager)
 	lsCmd.SetOut(outBuf)
+	lsCmd.SetArgs([]string{"--plain"})
 
 	err := lsCmd.Execute()
 	assert.NoError(t, err)
@@ -65,11 +64,10 @@ func TestLsCmd_Error(t *testing.T) {
 	outBuf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 
-	renderer := ui.NewSimpleTableRenderer(outBuf)
-
-	lsCmd := cmd.LsCmd(manager, renderer)
+	lsCmd := cmd.LsCmd(manager)
 	lsCmd.SetOut(outBuf)
 	lsCmd.SetErr(errBuf)
+	lsCmd.SetArgs([]string{"--plain"})
 
 	err := lsCmd.Execute()
 	assert.Error(t, err)

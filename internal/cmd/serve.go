@@ -51,7 +51,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 	cmd.Flags().DurationVarP(&cfg.TTL, "ttl", "t", cfg.TTL, "Time-to-live for license claims")
 	cmd.Flags().Bool("no-heartbeats", false, "Disable heartbeat mechanism")
 	cmd.Flags().Var(&cfg.Strategy, "strategy", `Strategy type for license distribution. Allowed: "fifo", "lifo", "rand"`)
-	cmd.Flags().DurationVar(&cfg.CleanupInterval, "cleanup-interval", cfg.CleanupInterval, "Interval at which to check for inactive nodes")
+	cmd.Flags().DurationVar(&cfg.CleanupInterval, "cleanup-interval", cfg.CleanupInterval, "interval at which to check for inactive nodes.")
 
 	_ = cmd.RegisterFlagCompletionFunc("strategy", strategyTypeCompletion)
 

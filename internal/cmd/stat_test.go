@@ -9,7 +9,6 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
-	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,11 +31,10 @@ func TestStatCmd_Success(t *testing.T) {
 	}
 
 	outBuf := new(bytes.Buffer)
-	renderer := ui.NewSimpleTableRenderer(outBuf)
 
-	statCmd := cmd.StatCmd(manager, renderer)
+	statCmd := cmd.StatCmd(manager)
 	statCmd.SetOut(outBuf)
-	statCmd.SetArgs([]string{"--id=License_1"})
+	statCmd.SetArgs([]string{"--id=License_1", "--plain"})
 
 	err := statCmd.Execute()
 	assert.NoError(t, err)
@@ -53,9 +51,7 @@ func TestStatCmd_MissingFlag(t *testing.T) {
 	outBuf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 
-	renderer := ui.NewSimpleTableRenderer(outBuf)
-
-	statCmd := cmd.StatCmd(manager, renderer)
+	statCmd := cmd.StatCmd(manager)
 	statCmd.SetOut(outBuf)
 	statCmd.SetErr(errBuf)
 
@@ -75,12 +71,10 @@ func TestStatCmd_Error(t *testing.T) {
 	outBuf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 
-	renderer := ui.NewSimpleTableRenderer(outBuf)
-
-	statCmd := cmd.StatCmd(manager, renderer)
+	statCmd := cmd.StatCmd(manager)
 	statCmd.SetOut(outBuf)
 	statCmd.SetErr(errBuf)
-	statCmd.SetArgs([]string{"--id=invalid"})
+	statCmd.SetArgs([]string{"--id=invalid", "--plain"})
 
 	err := statCmd.Execute()
 	assert.Error(t, err)

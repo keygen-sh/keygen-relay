@@ -1,0 +1,29 @@
+# Remove existing database
+rm -f relay.sqlite
+
+# Add the license
+exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
+
+# Set a port as environment variable
+env PORT=8087
+
+# Start the server with heartbeat enabled (for extension to work)
+exec relay serve --port $PORT &server_process_test&
+
+# Wait for the server to start
+exec sleep 1
+
+# Claim a license for the first time
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
+stdout '201'
+
+# Claim the license again with the same fingerprint to trigger an extension
+exec curl -s -o response.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
+stdout '202'
+
+# Expect the response to contain "license_file" and "license_key" fields for extended license
+exec grep '"license_file":' response.txt
+exec grep '"license_key":' response.txt
+
+# Stop the server
+kill server_process_test

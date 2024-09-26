@@ -2,6 +2,7 @@
 
 LD_FLAGS := "-s -w"
 
+# TODO: add needed platforms
 PLATFORMS = linux darwin
 ARCHITECTURES = amd64
 
@@ -19,6 +20,10 @@ build-all: clean
 
 test:
 	go test ./...
+
+# Run integration tests
+test-integration:
+	go test -tags=integrity ./...
 
 bench:
 	go test -bench=. -benchmem -run=^# ./...

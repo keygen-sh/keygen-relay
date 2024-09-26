@@ -20,7 +20,8 @@ func DelCmd(manager licenses.Manager) *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintln(cmd.OutOrStdout(), "License removed successfully.")
+			fmt.Fprintln(cmd.OutOrStdout(), "License deleted successfully.")
+
 			return nil
 		},
 	}

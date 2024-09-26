@@ -1,0 +1,32 @@
+# Set a custom database path
+env DATABASE_PATH=custom_relay.sqlite
+
+# Remove any existing custom database
+rm -f $DATABASE_PATH
+
+# Add a license with a custom database path
+exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788 --database $DATABASE_PATH
+
+# Ensure that the custom database is created
+exec test -f $DATABASE_PATH
+
+# Set a port as environment variable
+env PORT=8087
+
+# Start the server with custom database path
+exec relay serve --port $PORT --database $DATABASE_PATH &server_process_test&
+
+# Wait for the server to start
+exec sleep 1
+
+# Claim a license
+exec curl -s -o response.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
+
+# Expect a success response (status 201)
+stdout '201'
+
+# Stop the server
+kill server_process_test
+
+# Clean up the custom database
+rm -f $DATABASE_PATH

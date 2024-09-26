@@ -1,0 +1,39 @@
+# Remove existing database
+rm -f relay.sqlite
+
+# Add a license
+exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
+
+# Set a short TTL (e.g., 2 seconds)
+env PORT=8088
+env TTL=2s
+
+# Start the server with TTL flag set
+exec relay serve --port $PORT --ttl $TTL --cleanup-interval 1s &server_process_test&
+
+# Wait for the server to start
+exec sleep 1
+
+# Claim a license (first time)
+exec curl -s -o response.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
+
+# Expect a success response (status 201 Created)
+stdout '201'
+
+# Claim the license again before TTL expires
+exec curl -s -o response_extend.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
+
+# Expect a license extension (status 202 Accepted)
+stdout '202'
+
+# Wait for the TTL to expire and cleanup interval to run
+exec sleep 3
+
+# Try claiming the license again after TTL has expired
+exec curl -s -o response_after_ttl.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
+
+# The license should have expired, allowing another claim (status 201 Created)
+stdout '201'
+
+# Stop the server
+kill server_process_test

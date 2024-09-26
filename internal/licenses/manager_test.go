@@ -232,6 +232,8 @@ func TestClaimLicense_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, result.Status, licenses.OperationStatusCreated)
 	assert.NotNil(t, result.License)
+	assert.NotNil(t, result.License.LastClaimedAt)
+	assert.NotNil(t, result.License.CreatedAt)
 	assert.Equal(t, "test_key", result.License.Key)
 }
 

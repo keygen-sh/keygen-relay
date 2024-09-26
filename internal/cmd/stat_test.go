@@ -41,8 +41,8 @@ func TestStatCmd_Success(t *testing.T) {
 
 	assert.Contains(t, outBuf.String(), "License_1")
 	assert.Contains(t, outBuf.String(), "123")
-	assert.Contains(t, outBuf.String(), "2024-01-01 00:00:00")
-	assert.Contains(t, outBuf.String(), "2024-01-05 10:00:00")
+	assert.Contains(t, outBuf.String(), "2024-01-01T00:00:00Z")
+	assert.Contains(t, outBuf.String(), "2024-01-05T10:00:00Z")
 }
 
 func TestStatCmd_MissingFlag(t *testing.T) {

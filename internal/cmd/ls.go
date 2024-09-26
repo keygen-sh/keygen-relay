@@ -7,7 +7,6 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/spf13/cobra"
 	"strconv"
-	"time"
 )
 
 func LsCmd(manager licenses.Manager) *cobra.Command {
@@ -79,10 +78,5 @@ func formatTime(t *string) string {
 		return "-"
 	}
 
-	parsedTime, err := time.Parse(time.RFC3339, *t)
-	if err != nil {
-		return "-"
-	}
-
-	return parsedTime.Format("2006-01-02 15:04:05")
+	return *t
 }

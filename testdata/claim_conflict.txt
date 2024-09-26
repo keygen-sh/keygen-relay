@@ -1,6 +1,3 @@
-# Remove existing database
-rm -f relay.sqlite
-
 # Add the license
 exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
 
@@ -21,5 +18,5 @@ stdout '201'
 exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
 stdout '409'
 
-# Stop the server
+# Kill the process (stop the server)
 kill server_process_test

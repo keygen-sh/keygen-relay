@@ -1,6 +1,3 @@
-# Remove existing database
-rm -f relay.sqlite
-
 # Add a license
 exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
 
@@ -23,7 +20,7 @@ stdout '201'
 # Claim the license again before TTL expires
 exec curl -s -o response_extend.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
 
-# Expect a license extension (status 202 Accepted)
+# Expect a license extension (status 202)
 stdout '202'
 
 # Wait for the TTL to expire and cleanup interval to run
@@ -35,5 +32,5 @@ exec curl -s -o response_after_ttl.txt -w "%{http_code}" -X PUT http://localhost
 # The license should have expired, allowing another claim (status 201 Created)
 stdout '201'
 
-# Stop the server
+# Kill the process (stop the server)
 kill server_process_test

@@ -1,6 +1,3 @@
-# Remove existing database
-rm -f relay.sqlite
-
 # Start the server
 env PORT=8086
 exec relay serve --port $PORT &server_process_test&
@@ -15,5 +12,5 @@ exec curl -s -o response.txt -w "%{http_code}" -X DELETE http://localhost:$PORT/
 stdout '404'
 exec grep '{"error":"Claim not found"}' response.txt
 
-# Stop the server
+# Kill the process (stop the server)
 kill server_process_test

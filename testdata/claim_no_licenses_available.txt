@@ -1,5 +1,4 @@
-# Remove existing database
-rm -f relay.sqlite
+
 
 # Start the server without adding any licenses
 env PORT=8084
@@ -15,4 +14,5 @@ exec curl -s -o response.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/
 stdout '410'
 exec grep 'No licenses available' response.txt
 
+# Kill the process (stop the server)
 kill server_process_test

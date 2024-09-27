@@ -191,42 +191,31 @@ func (s *Store) UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx context.Context
 	return s.queries.UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx, fingerprint)
 }
 
+func (s *Store) ReleaseLicensesFromInactiveNodes(ctx context.Context, ttl time.Duration) ([]licenses.License, error) {
+	ttlDuration := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
+
+	releasedLicenses, err := s.queries.ReleaseLicensesFromInactiveNodes(ctx, ttlDuration)
+	if err != nil {
+		slog.Error("failed to release licenses from inactive nodes", "error", err)
+		return nil, err
+	}
+
+	licensesList := make([]licenses.License, len(releasedLicenses))
+	for i, dbLic := range releasedLicenses {
+		licensesList[i] = convertToLicense(dbLic)
+	}
+
+	return licensesList, nil
+}
+
 func (s *Store) DeleteInactiveNodes(ctx context.Context, ttl time.Duration) error {
 	ttlDuration := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
 
-	tx, err := s.connection.BeginTx(ctx, nil)
-	if err != nil {
-		slog.Error("failed to begin transaction", "error", err)
-		return err
-	}
-	defer tx.Rollback()
-
-	qtx := s.queries.WithTx(tx)
-
-	releasedLicenses, err := qtx.ReleaseLicensesFromInactiveNodes(ctx, ttlDuration)
-	if err != nil {
-		slog.Error("failed to release licenses from inactive nodes", "error", err)
-		return err
-	}
-
-	if err := qtx.DeleteInactiveNodes(ctx, ttlDuration); err != nil {
+	if err := s.queries.DeleteInactiveNodes(ctx, ttlDuration); err != nil {
 		slog.Error("failed to delete inactive nodes", "error", err)
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		slog.Error("failed to commit transaction", "error", err)
-		return err
-	}
-
-	for _, lic := range releasedLicenses {
-		err = s.InsertAuditLog(ctx, "automatically_released", "License", lic.ID)
-		if err != nil {
-			slog.Error("failed to insert audit log", "licenseID", lic.ID, "error", err)
-		}
-	}
-
-	slog.Debug("successfully released licenses and deleted inactive nodes")
 	return nil
 }
 

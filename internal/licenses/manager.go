@@ -53,6 +53,7 @@ type Store interface {
 	ClaimUnclaimedLicenseLIFO(ctx context.Context, nodeID *int64) (License, error)
 	ClaimUnclaimedLicenseFIFO(ctx context.Context, nodeID *int64) (License, error)
 	DeleteInactiveNodes(ctx context.Context, ttl time.Duration) error
+	ReleaseLicensesFromInactiveNodes(ctx context.Context, ttl time.Duration) ([]License, error)
 }
 
 type Manager interface {
@@ -149,7 +150,7 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, "add", "license", id); err != nil {
+		if err := m.store.InsertAuditLog(ctx, "added", "license", id); err != nil {
 			slog.Warn("failed to insert audit log", "licenseID", id, "error", err)
 		}
 	}
@@ -172,7 +173,7 @@ func (m *manager) RemoveLicense(ctx context.Context, id string) error {
 
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, "remove", "license", id); err != nil {
+		if err := m.store.InsertAuditLog(ctx, "removed", "license", id); err != nil {
 			slog.Warn("failed to insert audit log", "licenseID", id, "error", err)
 		}
 	}
@@ -386,5 +387,38 @@ func (m *manager) selectLicenseClaimStrategy(ctx context.Context, store Store, n
 }
 
 func (m *manager) CleanupInactiveNodes(ctx context.Context, ttl time.Duration) error {
-	return m.store.DeleteInactiveNodes(ctx, ttl)
+	tx, err := m.store.BeginTx(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	qtx := m.store.WithTx(tx)
+	defer tx.Rollback()
+
+	releasedLicenses, err := qtx.ReleaseLicensesFromInactiveNodes(ctx, ttl)
+	if err != nil {
+		slog.Error("failed to release licenses from inactive nodes", "error", err)
+		return err
+	}
+
+	if err := qtx.DeleteInactiveNodes(ctx, ttl); err != nil {
+		slog.Error("failed to delete inactive nodes", "error", err)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		slog.Error("failed to commit transaction", "error", err)
+		return err
+	}
+
+	if m.config.EnabledAudit {
+		for _, lic := range releasedLicenses {
+			err = m.store.InsertAuditLog(ctx, "automatically_released", "License", lic.ID)
+			if err != nil {
+				slog.Error("failed to insert audit log", "licenseID", lic.ID, "error", err)
+			}
+		}
+	}
+
+	slog.Debug("successfully released licenses and deleted inactive nodes")
+	return nil
 }

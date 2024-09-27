@@ -237,16 +237,44 @@ func (q *Queries) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64) err
 	return err
 }
 
-const releaseLicensesFromInactiveNodes = `-- name: ReleaseLicensesFromInactiveNodes :exec
+const releaseLicensesFromInactiveNodes = `-- name: ReleaseLicensesFromInactiveNodes :many
 UPDATE licenses
 SET node_id = NULL, last_released_at = CURRENT_TIMESTAMP
 WHERE node_id IN (
     SELECT id FROM nodes
     WHERE datetime(last_heartbeat_at) <= datetime('now', ?)
 )
+RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
-func (q *Queries) ReleaseLicensesFromInactiveNodes(ctx context.Context, datetime interface{}) error {
-	_, err := q.db.ExecContext(ctx, releaseLicensesFromInactiveNodes, datetime)
-	return err
+func (q *Queries) ReleaseLicensesFromInactiveNodes(ctx context.Context, datetime interface{}) ([]License, error) {
+	rows, err := q.db.QueryContext(ctx, releaseLicensesFromInactiveNodes, datetime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []License
+	for rows.Next() {
+		var i License
+		if err := rows.Scan(
+			&i.ID,
+			&i.File,
+			&i.Key,
+			&i.Claims,
+			&i.LastClaimedAt,
+			&i.LastReleasedAt,
+			&i.NodeID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

@@ -97,7 +97,7 @@ func TestRemoveLicense_Success(t *testing.T) {
 	// check that the license is removed
 	_, err = manager.GetLicenseByID(context.Background(), "license_test_key")
 	assert.Error(t, err, "License should not exist after deletion")
-	assert.Contains(t, err.Error(), "license with ID license_test_key not found")
+	assert.Contains(t, err.Error(), "license with ID license_test_key: license not found")
 }
 
 func TestRemoveLicense_Failure(t *testing.T) {
@@ -202,7 +202,7 @@ func TestGetLicenseByID_Failure(t *testing.T) {
 
 	_, err := manager.GetLicenseByID(context.Background(), "invalid_id")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "license with ID invalid_id not found")
+	assert.Contains(t, err.Error(), "license with ID invalid_id: license not found")
 }
 
 func TestClaimLicense_Success(t *testing.T) {

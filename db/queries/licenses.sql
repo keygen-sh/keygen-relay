@@ -67,11 +67,12 @@ WHERE id = (
 )
 RETURNING *;
 
--- name: ReleaseLicensesFromInactiveNodes :exec
+-- name: ReleaseLicensesFromInactiveNodes :many
 UPDATE licenses
 SET node_id = NULL, last_released_at = CURRENT_TIMESTAMP
 WHERE node_id IN (
     SELECT id FROM nodes
     WHERE datetime(last_heartbeat_at) <= datetime('now', ?)
-);
+)
+RETURNING *;
 

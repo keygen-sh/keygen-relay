@@ -203,7 +203,8 @@ func (s *Store) DeleteInactiveNodes(ctx context.Context, ttl time.Duration) erro
 
 	qtx := s.queries.WithTx(tx)
 
-	if err := qtx.ReleaseLicensesFromInactiveNodes(ctx, ttlDuration); err != nil {
+	releasedLicenses, err := qtx.ReleaseLicensesFromInactiveNodes(ctx, ttlDuration)
+	if err != nil {
 		slog.Error("failed to release licenses from inactive nodes", "error", err)
 		return err
 	}
@@ -216,6 +217,13 @@ func (s *Store) DeleteInactiveNodes(ctx context.Context, ttl time.Duration) erro
 	if err := tx.Commit(); err != nil {
 		slog.Error("failed to commit transaction", "error", err)
 		return err
+	}
+
+	for _, lic := range releasedLicenses {
+		err = s.InsertAuditLog(ctx, "automatically_released", "License", lic.ID)
+		if err != nil {
+			slog.Error("failed to insert audit log", "licenseID", lic.ID, "error", err)
+		}
 	}
 
 	slog.Debug("successfully released licenses and deleted inactive nodes")

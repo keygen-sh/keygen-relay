@@ -22,6 +22,11 @@ const (
 	OperationStatusNoLicensesAvailable
 )
 
+var (
+	ErrNoLicenses      = errors.New("no licenses found")
+	ErrLicenseNotFound = errors.New("license not found")
+)
+
 type LicenseOperationResult struct {
 	License *License
 	Status  OperationStatus
@@ -142,14 +147,14 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 		return fmt.Errorf("failed to insert license: %w", err)
 	}
 
+	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
 		if err := m.store.InsertAuditLog(ctx, "add", "license", id); err != nil {
-			slog.Error("failed to insert audit log", "licenseID", id, "error", err)
-			return fmt.Errorf("failed to insert audit log: %w", err)
+			slog.Warn("failed to insert audit log", "licenseID", id, "error", err)
 		}
 	}
 
-	slog.Info("added license", "licenseID", id)
+	slog.Info("added license successfully", "licenseID", id)
 	return nil
 }
 
@@ -165,14 +170,14 @@ func (m *manager) RemoveLicense(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to delete license: %w", err)
 	}
 
+	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
 		if err := m.store.InsertAuditLog(ctx, "remove", "license", id); err != nil {
-			slog.Error("failed to insert audit log", "licenseID", id, "error", err)
-			return fmt.Errorf("failed to insert audit log: %w", err)
+			slog.Warn("failed to insert audit log", "licenseID", id, "error", err)
 		}
 	}
 
-	slog.Info("removed license", "licenseID", id)
+	slog.Info("removed license successfully", "licenseID", id)
 	return nil
 }
 
@@ -181,11 +186,16 @@ func (m *manager) ListLicenses(ctx context.Context) ([]License, error) {
 
 	licenses, err := m.store.GetAllLicenses(ctx)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.Warn("no licenses found")
+			return nil, ErrNoLicenses
+		}
+
 		slog.Error("failed to fetch licenses", "error", err)
 		return nil, err
 	}
 
-	slog.Info("fetched licenses", "count", len(licenses))
+	slog.Info("fetched licenses successfully", "count", len(licenses))
 	return licenses, nil
 }
 
@@ -194,13 +204,16 @@ func (m *manager) GetLicenseByID(ctx context.Context, id string) (License, error
 
 	license, err := m.store.GetLicenseByID(ctx, id)
 	if err != nil {
-		msg := fmt.Errorf("license with ID %s not found", id)
-		slog.Error("failed to fetch license by ID", "licenseID", id, "error", msg)
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.Warn("license not found", "licenseID", id)
+			return License{}, fmt.Errorf("license with ID %s: %w", id, ErrLicenseNotFound)
+		}
 
-		return License{}, msg
+		slog.Error("failed to fetch license by ID", "licenseID", id, "error", err)
+		return License{}, err
 	}
 
-	slog.Info("fetched license", "licenseID", id)
+	slog.Info("fetched license successfully", "licenseID", id)
 	return license, nil
 }
 
@@ -221,6 +234,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 
 	if err == nil {
 		if !m.config.ExtendOnHeartbeat { // if heartbeat is disabled, we can't extend the claimed license
+			slog.Warn("license claim conflict due to heartbeat disabled", "nodeID", node.ID)
 			return &LicenseOperationResult{Status: OperationStatusConflict}, nil
 		}
 
@@ -234,10 +248,11 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 
 		if m.config.EnabledAudit {
 			if err := m.store.InsertAuditLog(ctx, "claimed", "license", claimedLicense.ID); err != nil {
-				slog.Error("failed to insert audit log", "licenseID", claimedLicense.ID, "error", err)
+				slog.Warn("failed to insert audit log", "licenseID", claimedLicense.ID, "error", err)
 			}
 		}
 
+		slog.Info("license extended successfully", "licenseID", claimedLicense.ID)
 		return &LicenseOperationResult{
 			License: &claimedLicense,
 			Status:  OperationStatusExtended,
@@ -248,6 +263,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 	newLicense, err := m.selectLicenseClaimStrategy(ctx, storeWithTx, &node.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			slog.Warn("no licenses available for claim", "nodeID", node.ID)
 			return &LicenseOperationResult{Status: OperationStatusNoLicensesAvailable}, nil
 		}
 		return nil, fmt.Errorf("failed to claim license: %w", err)
@@ -264,10 +280,11 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 
 	if m.config.EnabledAudit {
 		if err := m.store.InsertAuditLog(ctx, "claimed", "license", newLicense.ID); err != nil {
-			slog.Error("failed to insert audit log", "licenseID", newLicense.ID, "error", err)
+			slog.Warn("failed to insert audit log", "licenseID", newLicense.ID, "error", err)
 		}
 	}
 
+	slog.Info("new license claimed successfully", "licenseID", newLicense.ID)
 	return &LicenseOperationResult{
 		License: &newLicense,
 		Status:  OperationStatusCreated,
@@ -285,6 +302,7 @@ func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*Lice
 	node, err := storeWithTx.GetNodeByFingerprint(ctx, fingerprint)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			slog.Warn("license release failed - node not found", "fingerprint", fingerprint)
 			return &LicenseOperationResult{Status: OperationStatusNotFound}, nil
 		}
 		return nil, fmt.Errorf("failed to fetch node: %w", err)
@@ -293,6 +311,7 @@ func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*Lice
 	claimedLicense, err := storeWithTx.GetLicenseByNodeID(ctx, &node.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			slog.Warn("license release failed - claimed license not found", "nodeID", node.ID)
 			return &LicenseOperationResult{Status: OperationStatusNotFound}, nil
 		}
 		return nil, fmt.Errorf("failed to fetch claimed license: %w", err)
@@ -312,10 +331,11 @@ func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*Lice
 
 	if m.config.EnabledAudit {
 		if err := m.store.InsertAuditLog(ctx, "released", "license", claimedLicense.ID); err != nil {
-			slog.Error("failed to insert audit log", "licenseID", claimedLicense.ID, "error", err)
+			slog.Warn("failed to insert audit log", "licenseID", claimedLicense.ID, "error", err)
 		}
 	}
 
+	slog.Info("license released successfully", "licenseID", claimedLicense.ID)
 	return &LicenseOperationResult{Status: OperationStatusSuccess}, nil
 }
 
@@ -330,6 +350,8 @@ func (m *manager) fetchOrCreateNode(ctx context.Context, store Store, fingerprin
 			node, err = store.InsertNode(ctx, fingerprint)
 
 			if err != nil {
+				slog.Error("failed to insert node", "Fingerprint", fingerprint, "error", err)
+
 				return Node{}, fmt.Errorf("failed to insert node: %w", err)
 			}
 
@@ -337,10 +359,12 @@ func (m *manager) fetchOrCreateNode(ctx context.Context, store Store, fingerprin
 				err = store.InsertAuditLog(ctx, "inserted", "node", strconv.FormatInt(node.ID, 10))
 
 				if err != nil {
-					return Node{}, fmt.Errorf("failed to insert audit log: %w", err)
+					slog.Warn("failed to insert audit log", "nodeID", node.ID, "error", err)
 				}
 			}
 		} else {
+			slog.Error("failed to fetch node", "Fingerprint", fingerprint, "error", err)
+
 			return Node{}, fmt.Errorf("failed to fetch node: %w", err)
 		}
 	}

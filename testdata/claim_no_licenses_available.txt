@@ -1,5 +1,3 @@
-
-
 # Start the server without adding any licenses
 env PORT=8084
 exec relay serve --port $PORT &server_process_test&

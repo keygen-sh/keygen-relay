@@ -1,5 +1,3 @@
-exec ls
-
 # Add the license
 exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
 

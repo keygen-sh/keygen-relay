@@ -18,17 +18,24 @@ func (e *StrategyType) String() string {
 }
 
 func (e *StrategyType) Set(v string) error {
-	switch v {
-	case "lifo", "fifo", "rand":
+	if isValidStrategy(v) {
 		*e = StrategyType(v)
 		return nil
-	default:
-		return errors.New(`must be one of "lifo", "fifo", or "rand"`)
 	}
+	return errors.New(`must be one of "lifo", "fifo", or "rand"`)
 }
 
 func (e *StrategyType) Type() string {
 	return "StrategyType"
+}
+
+func isValidStrategy(v string) bool {
+	switch StrategyType(v) {
+	case LIFO, FIFO, RandOrder:
+		return true
+	default:
+		return false
+	}
 }
 
 type Config struct {

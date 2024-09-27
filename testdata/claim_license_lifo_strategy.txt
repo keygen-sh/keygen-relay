@@ -1,5 +1,3 @@
-
-
 # Add the first license
 exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
 
@@ -21,9 +19,6 @@ exec sleep 1
 
 # Claim a license (LIFO: should return the last license)
 exec curl -s -o response.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
-
-# List all licenses for verifying
-exec relay ls --plain
 
 # Expect the first license to be returned
 exec grep '"license_file":' response.txt

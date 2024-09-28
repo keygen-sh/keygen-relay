@@ -7,6 +7,7 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 	"time"
 )
@@ -60,7 +61,31 @@ func TestAddLicense_Failure(t *testing.T) {
 
 	err = manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to insert license")
+	assert.Contains(t, err.Error(), "license with the provided key already exists")
+}
+
+func TestAddLicense_FileNotFound(t *testing.T) {
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			EnabledAudit: true,
+		},
+		func(filename string) ([]byte, error) {
+			return nil, os.ErrNotExist
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+
+	manager.AttachStore(store)
+
+	err := manager.AddLicense(context.Background(), "non_existent.lic", "test_key", "test_public_key")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not found the license file at 'non_existent.lic'")
 }
 
 func TestRemoveLicense_Success(t *testing.T) {

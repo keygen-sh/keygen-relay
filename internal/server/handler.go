@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
-	"log/slog"
 	"net/http"
 )
 
@@ -39,8 +38,6 @@ func (h *handler) RegisterRoutes(r *mux.Router) {
 
 func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 	fingerprint := mux.Vars(r)["fingerprint"]
-
-	slog.Debug("Incoming request", "headers", r.Header, "method", r.Method, "request_uri", r.RequestURI)
 
 	result, err := h.licenseManager.ClaimLicense(r.Context(), fingerprint)
 	if err != nil {

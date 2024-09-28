@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"log/slog"
 	"net/http"
 )
 
@@ -41,6 +42,7 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.licenseManager.ClaimLicense(r.Context(), fingerprint)
 	if err != nil {
+		slog.Error("Failed to claim license", "error", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Failed to claim license"})
@@ -82,6 +84,7 @@ func (h *handler) ReleaseLicense(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.licenseManager.ReleaseLicense(r.Context(), fingerprint)
 	if err != nil {
+		slog.Error("Failed to release license", "error", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Failed to release license"})

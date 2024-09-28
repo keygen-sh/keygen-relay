@@ -7,7 +7,10 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/spf13/cobra"
 	"log/slog"
+	"time"
 )
+
+const minTTL = 30 * time.Second
 
 func ServeCmd(srv server.Server) *cobra.Command {
 	cfg := srv.Config()
@@ -39,6 +42,17 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 			cfg.EnabledHeartbeat = !disableHeartbeat
 
+			ttl, err := cmd.Flags().GetDuration("ttl")
+			if err != nil {
+				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("Failed to parse 'ttl' flag: %v", err))
+				return err
+			}
+
+			if err := validateTTL(ttl); err != nil {
+				output.PrintError(cmd.ErrOrStderr(), err.Error())
+				return err
+			}
+
 			srv.Manager().Config().Strategy = string(cfg.Strategy)
 			srv.Manager().Config().ExtendOnHeartbeat = cfg.EnabledHeartbeat
 
@@ -62,6 +76,13 @@ func ServeCmd(srv server.Server) *cobra.Command {
 	_ = cmd.RegisterFlagCompletionFunc("strategy", strategyTypeCompletion)
 
 	return cmd
+}
+
+func validateTTL(ttl time.Duration) error {
+	if ttl < minTTL {
+		return fmt.Errorf("TTL value must be at least %s", minTTL)
+	}
+	return nil
 }
 
 func strategyTypeCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

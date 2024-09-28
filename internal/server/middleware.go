@@ -26,6 +26,7 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 		start := time.Now()
 		wrappedResponse := wrapResponseWriter(w)
 
@@ -36,6 +37,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			"path", r.URL.Path,
 			"status", wrappedResponse.Status(),
 			"remote_addr", r.RemoteAddr,
+			"user_agent", r.UserAgent(),
 			"duration", time.Since(start),
 		)
 	})

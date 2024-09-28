@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/keygen-sh/keygen-go/v3"
+	"github.com/mattn/go-sqlite3"
 	"log/slog"
+	"os"
 	"strconv"
 	"time"
 )
@@ -120,6 +122,12 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 
 	cert, err := m.dataReader(licenseFilePath)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			slog.Warn("license file not found", "filePath", licenseFilePath)
+			return fmt.Errorf("not found the license file at '%s'", licenseFilePath)
+		}
+
+		slog.Error("failed to read license file", "filePath", licenseFilePath, "error", err)
 		return fmt.Errorf("failed to read license file: %w", err)
 	}
 
@@ -141,6 +149,12 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 	key := dec.License.Key
 
 	if err := m.store.InsertLicense(ctx, id, cert, key); err != nil {
+		slog.Debug("Failed to insert license", "licenseID", id, "error", err)
+
+		if isUniqueConstraintError(err) {
+			return fmt.Errorf("license with the provided key already exists")
+		}
+
 		return fmt.Errorf("failed to insert license: %w", err)
 	}
 
@@ -418,4 +432,16 @@ func (m *manager) CleanupInactiveNodes(ctx context.Context, ttl time.Duration) e
 
 	slog.Debug("successfully released licenses and deleted inactive nodes")
 	return nil
+}
+
+func isUniqueConstraintError(err error) bool {
+	var sqliteErr sqlite3.Error
+
+	ok := errors.As(err, &sqliteErr)
+
+	if ok && errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
+		return true
+	}
+
+	return false
 }

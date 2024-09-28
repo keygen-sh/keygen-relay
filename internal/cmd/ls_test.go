@@ -69,8 +69,7 @@ func TestLsCmd_Error(t *testing.T) {
 	lsCmd.SetErr(errBuf)
 	lsCmd.SetArgs([]string{"--plain"})
 
-	err := lsCmd.Execute()
-	assert.Error(t, err)
+	_ = lsCmd.Execute()
 
 	assert.Contains(t, errBuf.String(), "failed to list licenses")
 }

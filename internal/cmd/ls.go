@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/output"
 	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/spf13/cobra"
 	"strconv"
@@ -19,11 +20,14 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			licensesList, err := manager.ListLicenses(cmd.Context())
 			if err != nil {
-				return err
+				output.PrintError(cmd.ErrOrStderr(), err.Error())
+
+				return nil
 			}
 
 			if len(licensesList) == 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "No licenses found.\n")
+				output.PrintSuccess(cmd.OutOrStdout(), "No licenses found.")
+
 				return nil
 			}
 
@@ -60,7 +64,8 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 			}
 
 			if err := renderer.Render(tableRows, columns); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering table: %v\n", err)
+				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("Error rendering table: %v", err))
+
 				return err
 			}
 

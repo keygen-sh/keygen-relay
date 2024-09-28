@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/keygen-sh/keygen-relay/internal/output"
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/spf13/cobra"
 	"log/slog"
@@ -30,7 +31,8 @@ func ServeCmd(srv server.Server) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			disableHeartbeat, err := cmd.Flags().GetBool("no-heartbeats")
 			if err != nil {
-				return fmt.Errorf("failed to parse 'no-heartbeats' flag: %v", err)
+				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("Failed to parse 'no-heartbeats' flag: %v", err))
+				return err
 			}
 
 			cfg.EnabledHeartbeat = !disableHeartbeat
@@ -38,11 +40,13 @@ func ServeCmd(srv server.Server) *cobra.Command {
 			srv.Manager().Config().Strategy = string(cfg.Strategy)
 			srv.Manager().Config().ExtendOnHeartbeat = cfg.EnabledHeartbeat
 
+			output.PrintSuccess(cmd.OutOrStdout(), "The server is starting")
+
 			if err := srv.Run(); err != nil {
-				return fmt.Errorf("error running server: %v", err)
+				output.PrintError(cmd.ErrOrStderr(), err.Error())
+				return nil
 			}
 
-			fmt.Fprintln(cmd.OutOrStdout(), "The server is starting")
 			return nil
 		},
 	}
@@ -51,7 +55,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 	cmd.Flags().DurationVarP(&cfg.TTL, "ttl", "t", cfg.TTL, "Time-to-live for license claims")
 	cmd.Flags().Bool("no-heartbeats", false, "Disable heartbeat mechanism")
 	cmd.Flags().Var(&cfg.Strategy, "strategy", `Strategy type for license distribution. Allowed: "fifo", "lifo", "rand"`)
-	cmd.Flags().DurationVar(&cfg.CleanupInterval, "cleanup-interval", cfg.CleanupInterval, "interval at which to check for inactive nodes.")
+	cmd.Flags().DurationVar(&cfg.CleanupInterval, "cleanup-interval", cfg.CleanupInterval, "Interval at which to check for inactive nodes.")
 
 	_ = cmd.RegisterFlagCompletionFunc("strategy", strategyTypeCompletion)
 

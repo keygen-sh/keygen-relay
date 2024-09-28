@@ -50,6 +50,7 @@ func Run() int {
 			dbConnection = dbConn
 
 			manager.AttachStore(store)
+
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
@@ -66,6 +67,7 @@ func Run() int {
 	rootCmd.PersistentFlags().StringVar(&cfg.DB.DatabaseFilePath, "database", "./relay.sqlite", "specify an alternate database path")
 	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", "counted verbosity")
 	rootCmd.PersistentFlags().Bool("no-audit", false, "disable audit logs")
+	rootCmd.PersistentFlags().BoolVar(&cfg.Logger.DisableColor, "no-color", false, "Disable color logs")
 
 	rootCmd.AddCommand(cmd.AddCmd(manager))
 	rootCmd.AddCommand(cmd.DelCmd(manager))
@@ -74,7 +76,6 @@ func Run() int {
 	rootCmd.AddCommand(cmd.ServeCmd(srv))
 
 	if err := rootCmd.Execute(); err != nil {
-		slog.Error("failed to execute command", "error", err)
 		return 1
 	}
 

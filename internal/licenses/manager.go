@@ -120,7 +120,6 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 
 	cert, err := m.dataReader(licenseFilePath)
 	if err != nil {
-		slog.Error("failed to read license file", "filePath", licenseFilePath, "error", err)
 		return fmt.Errorf("failed to read license file: %w", err)
 	}
 
@@ -130,13 +129,11 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 	keygen.PublicKey = publicKey
 
 	if err := lic.Verify(); err != nil {
-		slog.Error("license verification failed", "filePath", licenseFilePath, "error", err)
 		return fmt.Errorf("license verification failed: %w", err)
 	}
 
 	dec, err := lic.Decrypt(licenseKey)
 	if err != nil {
-		slog.Error("license decryption failed", "filePath", licenseFilePath, "error", err)
 		return fmt.Errorf("license decryption failed: %w", err)
 	}
 
@@ -144,18 +141,18 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 	key := dec.License.Key
 
 	if err := m.store.InsertLicense(ctx, id, cert, key); err != nil {
-		slog.Error("failed to insert license into store", "licenseID", id, "error", err)
 		return fmt.Errorf("failed to insert license: %w", err)
 	}
 
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
 		if err := m.store.InsertAuditLog(ctx, "added", "license", id); err != nil {
-			slog.Warn("failed to insert audit log", "licenseID", id, "error", err)
+			slog.Debug("failed to insert audit log", "licenseID", id, "error", err)
 		}
 	}
 
-	slog.Info("added license successfully", "licenseID", id)
+	slog.Debug("added license successfully", "licenseID", id)
+
 	return nil
 }
 
@@ -167,18 +164,18 @@ func (m *manager) RemoveLicense(ctx context.Context, id string) error {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("license with ID %s not found", id)
 		}
-		slog.Error("failed to delete license", "licenseID", id, "error", err)
+		slog.Debug("failed to delete license", "licenseID", id, "error", err)
 		return fmt.Errorf("failed to delete license: %w", err)
 	}
 
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
 		if err := m.store.InsertAuditLog(ctx, "removed", "license", id); err != nil {
-			slog.Warn("failed to insert audit log", "licenseID", id, "error", err)
+			slog.Debug("failed to insert audit log", "licenseID", id, "error", err)
 		}
 	}
 
-	slog.Info("removed license successfully", "licenseID", id)
+	slog.Debug("removed license successfully", "licenseID", id)
 	return nil
 }
 
@@ -188,15 +185,15 @@ func (m *manager) ListLicenses(ctx context.Context) ([]License, error) {
 	licenses, err := m.store.GetAllLicenses(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Warn("no licenses found")
+			slog.Debug("no licenses found")
 			return nil, ErrNoLicenses
 		}
 
-		slog.Error("failed to fetch licenses", "error", err)
+		slog.Debug("failed to fetch licenses", "error", err)
 		return nil, err
 	}
 
-	slog.Info("fetched licenses successfully", "count", len(licenses))
+	slog.Debug("fetched licenses successfully", "count", len(licenses))
 	return licenses, nil
 }
 
@@ -206,15 +203,15 @@ func (m *manager) GetLicenseByID(ctx context.Context, id string) (License, error
 	license, err := m.store.GetLicenseByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Warn("license not found", "licenseID", id)
+			slog.Debug("license not found", "licenseID", id)
 			return License{}, fmt.Errorf("license with ID %s: %w", id, ErrLicenseNotFound)
 		}
 
-		slog.Error("failed to fetch license by ID", "licenseID", id, "error", err)
+		slog.Debug("failed to fetch license by ID", "licenseID", id, "error", err)
 		return License{}, err
 	}
 
-	slog.Info("fetched license successfully", "licenseID", id)
+	slog.Debug("fetched license successfully", "licenseID", id)
 	return license, nil
 }
 

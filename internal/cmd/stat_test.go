@@ -76,8 +76,7 @@ func TestStatCmd_Error(t *testing.T) {
 	statCmd.SetErr(errBuf)
 	statCmd.SetArgs([]string{"--id=invalid", "--plain"})
 
-	err := statCmd.Execute()
-	assert.Error(t, err)
+	_ = statCmd.Execute()
 
 	assert.Contains(t, errBuf.String(), "license not found")
 }

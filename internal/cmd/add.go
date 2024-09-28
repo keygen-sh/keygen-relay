@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -20,11 +20,12 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := manager.AddLicense(cmd.Context(), filePath, key, publicKey)
 			if err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "error creating license record: %v\n", err)
-				return err
+				output.PrintError(cmd.ErrOrStderr(), err.Error())
+
+				return nil
 			}
 
-			fmt.Fprintln(cmd.OutOrStdout(), "License added successfully.")
+			output.PrintSuccess(cmd.OutOrStdout(), "License added successfully.")
 
 			return nil
 		},

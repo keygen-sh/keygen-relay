@@ -376,7 +376,7 @@ func (m *manager) selectLicenseClaimStrategy(ctx context.Context, store Store, n
 		return store.ClaimUnclaimedLicenseFIFO(ctx, nodeID)
 	case "lifo":
 		return store.ClaimUnclaimedLicenseLIFO(ctx, nodeID)
-	case "random":
+	case "rand":
 		return store.ClaimUnclaimedLicenseRandom(ctx, nodeID)
 	default:
 		return store.ClaimUnclaimedLicenseFIFO(ctx, nodeID)

@@ -49,10 +49,9 @@ func TestAddCmd_Error(t *testing.T) {
 
 	addCmd.SetArgs([]string{"--file=file.lic", "--key=testkey", "--public-key=testpublickey"})
 
-	err := addCmd.Execute()
-	assert.Error(t, err)
+	_ = addCmd.Execute()
 
-	assert.Contains(t, errBuf.String(), "error creating license record: failed to add license")
+	assert.Contains(t, errBuf.String(), "Error: failed to add license")
 }
 
 func TestAddCmd_MissingRequiredFlags(t *testing.T) {

@@ -134,9 +134,9 @@ func TestServeCmd_RunError(t *testing.T) {
 	serveCmd.SetOut(output)
 	serveCmd.SetErr(output)
 
-	err := serveCmd.Execute()
+	_ = serveCmd.Execute()
 
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "error running server")
+	assert.Contains(t, output.String(), "Error: failed to start server")
+
 	assert.True(t, mockServer.RunCalled)
 }

@@ -1,7 +1,8 @@
 package logger
 
 type Config struct {
-	Verbosity int
+	Verbosity    int
+	DisableColor bool
 }
 
 func NewConfig() *Config {

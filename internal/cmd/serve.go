@@ -22,6 +22,8 @@ func ServeCmd(srv server.Server) *cobra.Command {
 		return nil
 	})
 
+	router.Use(server.LoggingMiddleware)
+
 	// Mount the router to the server
 	srv.Mount(router)
 

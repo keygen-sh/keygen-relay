@@ -140,3 +140,30 @@ func TestServeCmd_RunError(t *testing.T) {
 
 	assert.True(t, mockServer.RunCalled)
 }
+
+func TestServeCmd_InvalidTTL(t *testing.T) {
+	cfg := &config.Config{
+		Server: &server.Config{
+			ServerPort:       8080,
+			TTL:              30 * time.Second,
+			EnabledHeartbeat: true,
+			Strategy:         server.FIFO,
+		},
+	}
+
+	mockServer := testutils.NewMockServer(cfg.Server, &testutils.FakeManager{})
+	serveCmd := cmd.ServeCmd(mockServer)
+
+	serveCmd.SetArgs([]string{
+		"--ttl", "10s",
+	})
+
+	output := &bytes.Buffer{}
+	serveCmd.SetOut(output)
+	serveCmd.SetErr(output)
+
+	_ = serveCmd.Execute()
+
+	assert.Contains(t, output.String(), "TTL value must be at least 30s")
+	assert.False(t, mockServer.RunCalled)
+}

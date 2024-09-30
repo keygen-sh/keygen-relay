@@ -24,7 +24,7 @@ func Init(config *Config, output io.Writer) {
 	case config.Verbosity >= 4:
 		programLevel.Set(slog.LevelDebug)
 	default:
-		programLevel.Set(slog.LevelError)
+		programLevel.Set(slog.LevelDebug)
 	}
 
 	handler := tint.NewHandler(output, &tint.Options{

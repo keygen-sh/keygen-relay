@@ -69,12 +69,7 @@ func TestClaimLicense_ExistingNode_Extended(t *testing.T) {
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusAccepted, rr.Code)
-
-	var resp server.ClaimLicenseResponse
-	err := json.NewDecoder(rr.Body).Decode(&resp)
-	assert.NoError(t, err)
-	assert.Equal(t, []byte("test_license_file"), resp.LicenseFile)
-	assert.Equal(t, "test_license_key", resp.LicenseKey)
+	assert.Empty(t, rr.Body.Bytes())
 }
 
 func TestClaimLicense_HeartbeatDisabled_Conflict(t *testing.T) {

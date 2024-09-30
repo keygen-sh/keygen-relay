@@ -246,7 +246,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 
 	if err == nil {
 		if !m.config.ExtendOnHeartbeat { // if heartbeat is disabled, we can't extend the claimed license
-			slog.Warn("license claim conflict due to heartbeat disabled", "nodeID", node.ID)
+			slog.Warn("license claim conflict due to heartbeat disabled", "nodeID", node.ID, "Fingerprint", node.Fingerprint)
 			return &LicenseOperationResult{Status: OperationStatusConflict}, nil
 		}
 
@@ -275,7 +275,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 	newLicense, err := m.selectLicenseClaimStrategy(ctx, storeWithTx, &node.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Warn("no licenses available for claim", "nodeID", node.ID)
+			slog.Warn("no licenses available for claim", "Fingerprint", node.Fingerprint)
 			return &LicenseOperationResult{Status: OperationStatusNoLicensesAvailable}, nil
 		}
 		return nil, fmt.Errorf("failed to claim license: %w", err)
@@ -323,7 +323,7 @@ func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*Lice
 	claimedLicense, err := storeWithTx.GetLicenseByNodeID(ctx, &node.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Warn("license release failed - claimed license not found", "nodeID", node.ID)
+			slog.Warn("license release failed - claimed license not found", "Fingerprint", node.Fingerprint)
 			return &LicenseOperationResult{Status: OperationStatusNotFound}, nil
 		}
 		return nil, fmt.Errorf("failed to fetch claimed license: %w", err)
@@ -371,7 +371,7 @@ func (m *manager) fetchOrCreateNode(ctx context.Context, store Store, fingerprin
 				err = store.InsertAuditLog(ctx, "inserted", "node", strconv.FormatInt(node.ID, 10))
 
 				if err != nil {
-					slog.Warn("failed to insert audit log", "nodeID", node.ID, "error", err)
+					slog.Warn("failed to insert audit log", "nodeID", node.ID, "Fingerprint", node.Fingerprint, "error", err)
 				}
 			}
 		} else {
@@ -430,7 +430,9 @@ func (m *manager) CleanupInactiveNodes(ctx context.Context, ttl time.Duration) e
 		}
 	}
 
-	slog.Debug("successfully released licenses and deleted inactive nodes")
+	licenseCount := len(releasedLicenses)
+	slog.Debug("successfully released licenses and deleted inactive nodes", "count", licenseCount)
+
 	return nil
 }
 

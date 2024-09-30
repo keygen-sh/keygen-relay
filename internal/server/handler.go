@@ -54,6 +54,13 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 	switch result.Status {
 	case licenses.OperationStatusCreated:
 		w.WriteHeader(http.StatusCreated)
+		if result.License != nil {
+			resp := ClaimLicenseResponse{
+				LicenseFile: result.License.File,
+				LicenseKey:  result.License.Key,
+			}
+			_ = json.NewEncoder(w).Encode(resp)
+		}
 	case licenses.OperationStatusExtended:
 		w.WriteHeader(http.StatusAccepted)
 	case licenses.OperationStatusConflict:
@@ -68,14 +75,6 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Unknown claim status"})
 		return
-	}
-
-	if result.License != nil {
-		resp := ClaimLicenseResponse{
-			LicenseFile: result.License.File,
-			LicenseKey:  result.License.Key,
-		}
-		_ = json.NewEncoder(w).Encode(resp)
 	}
 }
 

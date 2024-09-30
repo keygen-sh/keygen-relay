@@ -12,14 +12,16 @@ import (
 func Init(config *Config, output io.Writer) {
 	var programLevel = new(slog.LevelVar)
 
-	switch config.Verbosity {
-	case 1:
+	switch {
+	case config.Verbosity == 0:
 		programLevel.Set(slog.LevelError)
-	case 2:
+	case config.Verbosity == 1:
+		programLevel.Set(slog.LevelError)
+	case config.Verbosity == 2:
 		programLevel.Set(slog.LevelWarn)
-	case 3:
+	case config.Verbosity == 3:
 		programLevel.Set(slog.LevelInfo)
-	case 4:
+	case config.Verbosity >= 4:
 		programLevel.Set(slog.LevelDebug)
 	default:
 		programLevel.Set(slog.LevelError)

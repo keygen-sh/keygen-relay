@@ -198,17 +198,17 @@ make build # or make build-all
 Keygen Relay comes with a suite of tests, including integration tests that
 verify behavior with the real server.
 
-- To run regular tests:
+To run regular tests:
 
-  ```bash
-  make test
-  ```
+```bash
+make test
+```
 
-- To run integration tests (which are tagged with `// +build integrity`):
+To run integration tests (which are tagged with `// +build integrity`):
 
-  ```bash
-  make test-integration
-  ```
+```bash
+make test-integration
+```
 
 ## License
 

@@ -166,6 +166,13 @@ case a `409 Conflict` will be returned. If no licenses are available to be
 claimed, i.e. no licenses exist or all have been claimed, the server will
 return `410 Gone`.
 
+```json
+{
+  "license_file": "LS0tLS1CRUdJTiBMSUNFTlNFIEZJTEUtLS0tL...S0NCg0K",
+  "license_key": "9A96B8-FD08CD-8C433B-7657C8-8A8655-V3"
+}
+```
+
 #### Release license
 
 Nodes can release a license by sending a `DELETE` request to the same endpoint:

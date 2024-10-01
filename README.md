@@ -65,7 +65,7 @@ curl -sSL https://get.keygen.sh/keygen/relay/latest/install.sh | sh
 
 #### Add license
 
-You can add a new license to the system using the add command:
+You can add a new license to the system using the `add` command:
 
 ```bash
 relay add --file license.lic --key xxx --public-key xxx

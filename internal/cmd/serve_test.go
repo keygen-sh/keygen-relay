@@ -3,19 +3,20 @@ package cmd_test
 import (
 	"bytes"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
 	"github.com/keygen-sh/keygen-relay/internal/config"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestServeCmd_Defaults(t *testing.T) {
 	cfg := &server.Config{
-		ServerPort:       8080,
+		ServerPort:       6349,
 		TTL:              30 * time.Second,
 		EnabledHeartbeat: true,
 		Strategy:         server.FIFO,
@@ -35,7 +36,7 @@ func TestServeCmd_Defaults(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, output.String(), "The server is starting")
 	assert.True(t, mockServer.RunCalled)
-	assert.Equal(t, 8080, cfg.ServerPort)
+	assert.Equal(t, 6349, cfg.ServerPort)
 	assert.Equal(t, 30*time.Second, cfg.TTL)
 	assert.True(t, cfg.EnabledHeartbeat)
 	assert.Equal(t, server.FIFO, cfg.Strategy)
@@ -44,7 +45,7 @@ func TestServeCmd_Defaults(t *testing.T) {
 func TestServeCmd_Flags(t *testing.T) {
 	cfg := &config.Config{
 		Server: &server.Config{
-			ServerPort:       8080,
+			ServerPort:       6349,
 			TTL:              30 * time.Second,
 			EnabledHeartbeat: true,
 			Strategy:         server.FIFO,
@@ -90,7 +91,7 @@ func TestServeCmd_Flags(t *testing.T) {
 func TestServeCmd_InvalidStrategy(t *testing.T) {
 	cfg := &config.Config{
 		Server: &server.Config{
-			ServerPort:       8080,
+			ServerPort:       6349,
 			TTL:              30 * time.Second,
 			EnabledHeartbeat: true,
 			Strategy:         server.FIFO,
@@ -118,7 +119,7 @@ func TestServeCmd_InvalidStrategy(t *testing.T) {
 func TestServeCmd_RunError(t *testing.T) {
 	cfg := &config.Config{
 		Server: &server.Config{
-			ServerPort:       8080,
+			ServerPort:       6349,
 			TTL:              30 * time.Second,
 			EnabledHeartbeat: true,
 			Strategy:         server.FIFO,
@@ -144,7 +145,7 @@ func TestServeCmd_RunError(t *testing.T) {
 func TestServeCmd_InvalidTTL(t *testing.T) {
 	cfg := &config.Config{
 		Server: &server.Config{
-			ServerPort:       8080,
+			ServerPort:       6349,
 			TTL:              30 * time.Second,
 			EnabledHeartbeat: true,
 			Strategy:         server.FIFO,

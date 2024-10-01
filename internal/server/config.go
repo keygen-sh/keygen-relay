@@ -48,7 +48,7 @@ type Config struct {
 
 func NewConfig() *Config {
 	return &Config{
-		ServerPort:       8080,
+		ServerPort:       6349,
 		TTL:              30 * time.Second,
 		EnabledHeartbeat: true,
 		Strategy:         FIFO,

@@ -61,68 +61,7 @@ curl -sSL https://get.keygen.sh/keygen/relay/latest/install.sh | sh
 
 ## Usage
 
-### Server
-
-To start the relay server, use the following command:
-
-```bash
-relay serve --port 8080
-```
-
-The `serve` command supports the following flags:
-
-| Flag                 | Description                                                                                                                                                | Default          |
-|:---------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------|
-| `--port`, `-p`       | Specifies the port on which the relay server will run.                                                                                                     | `8080`           |
-| `--no-heartbeats`    | Disables the heartbeat mechanism. When this flag is enabled, the server will not track node activity.                                                      | `false`          |
-| `--strategy`         | Specifies the license assignment strategy. Options: `fifo`, `lifo`, `rand`.                                                                                | `fifo`           |
-| `--ttl`, `-t`        | Sets the Time-to-Live (TTL) for license claims. After this period, licenses will be automatically released. Accepts durations like `30s`, `1m`, `1h`, etc. | `30s`            |
-| `--cleanup-interval` | Specifies how often the server should check for inactive nodes to clean up.                                                                                | `15s`            |
-| `--database`         | Specify a custom database file for storing the license and node data.                                                                                      | `./relay.sqlite` |
-
-### Example Usage
-
-#### Start the server
-
-To start the server on port `8080`, with a 30 second node TTL and FIFO
-distribution strategy:
-
-```bash
-./bin/relay serve --port 8080 --ttl 30s --strategy fifo
-```
-
-#### Claim license
-
-Nodes can claim a license by sending a `PUT` request to the
-`/v1/nodes/{fingerprint}` endpoint:
-
-```bash
-curl -v -X PUT "http://localhost:8080/v1/nodes/$(cat /etc/machine-id)"
-```
-
-Accepts a `fingerprint`, an arbitrary string identifying the node.
-
-Returns `201 Created` with a `license_file` and `license_key` for new nodes. If
-a claim already exists for the node, the claim is extended by `--ttl` and the
-server will return `202 Accepted`, unless heartbeats are disabled and in that
-case a `409 Conflict` will be returned. If no licenses are available to be
-claimed, i.e. no licenses exist or all have been claimed, the server will
-return `410 Gone`.
-
-#### Release license
-
-Nodes can release a license by sending a `DELETE` request to the same endpoint:
-
-```bash
-curl -v -X DELETE "http://localhost:8080/v1/nodes/$(cat /etc/machine-id)"
-```
-
-Accepts a `fingerprint`, the node fingerprint used for the claim.
-
-Returns `204 No Content` with no content. If a claim does not exist for the
-node, the server will return a `404 Not Found`.
-
-### Admin
+### CLI
 
 #### Add license
 
@@ -175,6 +114,67 @@ The `stat` command supports the following flags:
 | Flag   | Description                                          |
 |:-------|:-----------------------------------------------------|
 | `--id` | The unique ID of the license to retrieve info about. |
+
+### Server
+
+To start the relay server, use the following command:
+
+```bash
+relay serve --port 8080
+```
+
+The `serve` command supports the following flags:
+
+| Flag                 | Description                                                                                                                                                | Default          |
+|:---------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------|
+| `--port`, `-p`       | Specifies the port on which the relay server will run.                                                                                                     | `8080`           |
+| `--no-heartbeats`    | Disables the heartbeat mechanism. When this flag is enabled, the server will not track node activity.                                                      | `false`          |
+| `--strategy`         | Specifies the license assignment strategy. Options: `fifo`, `lifo`, `rand`.                                                                                | `fifo`           |
+| `--ttl`, `-t`        | Sets the Time-to-Live (TTL) for license claims. After this period, licenses will be automatically released. Accepts durations like `30s`, `1m`, `1h`, etc. | `30s`            |
+| `--cleanup-interval` | Specifies how often the server should check for inactive nodes to clean up.                                                                                | `15s`            |
+| `--database`         | Specify a custom database file for storing the license and node data.                                                                                      | `./relay.sqlite` |
+
+#### Starting
+
+To start the server on port `8080`, with a 30 second node TTL and FIFO
+distribution strategy:
+
+```bash
+./bin/relay serve --port 8080 --ttl 30s --strategy fifo
+```
+
+### API
+
+#### Claim license
+
+Nodes can claim a license by sending a `PUT` request to the
+`/v1/nodes/{fingerprint}` endpoint:
+
+```bash
+curl -v -X PUT "http://localhost:8080/v1/nodes/$(cat /etc/machine-id)"
+```
+
+Accepts a `fingerprint`, an arbitrary string identifying the node.
+
+Returns `201 Created` with a `license_file` and `license_key` for new nodes. If
+a claim already exists for the node, the claim is extended by `--ttl` and the
+server will return `202 Accepted`, unless heartbeats are disabled and in that
+case a `409 Conflict` will be returned. If no licenses are available to be
+claimed, i.e. no licenses exist or all have been claimed, the server will
+return `410 Gone`.
+
+#### Release license
+
+Nodes can release a license by sending a `DELETE` request to the same endpoint:
+
+```bash
+curl -v -X DELETE "http://localhost:8080/v1/nodes/$(cat /etc/machine-id)"
+```
+
+Accepts a `fingerprint`, the node fingerprint used for the claim.
+
+Returns `204 No Content` with no content. If a claim does not exist for the
+node, the server will return a `404 Not Found`.
 
 ## Developing
 

@@ -225,7 +225,7 @@ The CLA is available [here](https://keygen.sh/cla/).
 ## Security
 
 We take security at Keygen very seriously. If you believe you've found a
-vulnerability, please see our [`SECURITY.md`](https://github.com/keygen-sh/keygen-api/blob/master/SECURITY.md)
+vulnerability, please see our [`SECURITY.md`](https://github.com/keygen-sh/keygen-relay/blob/master/SECURITY.md)
 file.
 
 ## Is it any good?

@@ -173,6 +173,8 @@ return `410 Gone`.
 }
 ```
 
+The `license_file` will be base64 encoded.
+
 #### Release license
 
 Nodes can release a license by sending a `DELETE` request to the same endpoint:

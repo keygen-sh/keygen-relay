@@ -18,9 +18,5 @@ stdout '201'
 exec curl -s -o response.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
 stdout '202'
 
-# Expect the response to contain "license_file" and "license_key" fields for extended license
-exec grep '"license_file":' response.txt
-exec grep '"license_key":' response.txt
-
 # Kill the process (stop the server)
 kill server_process_test

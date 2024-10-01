@@ -63,6 +63,8 @@ curl -sSL https://get.keygen.sh/keygen/relay/latest/install.sh | sh
 
 ### CLI
 
+The CLI can be used by the vendor to setup and manage customer environments.
+
 #### Add license
 
 You can add a new license to the system using the `add` command:
@@ -134,9 +136,7 @@ The `serve` command supports the following flags:
 | `--cleanup-interval` | Specifies how often the server should check for inactive nodes to clean up.                                                                                | `15s`            |
 | `--database`         | Specify a custom database file for storing the license and node data.                                                                                      | `./relay.sqlite` |
 
-#### Starting
-
-To start the server on port `8080`, with a 30 second node TTL and FIFO
+E.g. to start the server on port `8080`, with a 30 second node TTL and FIFO
 distribution strategy:
 
 ```bash
@@ -144,6 +144,9 @@ distribution strategy:
 ```
 
 ### API
+
+The API can be consumed by the vendor's application to claim and release a
+license on behalf of a node.
 
 #### Claim license
 

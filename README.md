@@ -2,8 +2,8 @@
 # Keygen Relay
 
 Relay is an offline-first on-premise licensing server backed by [Keygen](https://keygen.sh).
-Use Relay to securely manage distribution of license files across nodes in
-offline or air-gapped environments.
+Use Relay to securely manage distribution of cryptographically signed and
+encrypted license files across nodes in offline or air-gapped environments.
 
 Relay has a vendor-facing CLI that can be used to onboard a customer's air-gap
 environment. An admin can initialize Relay with N licenses to be distributed

@@ -11,7 +11,7 @@ func DelCmd(manager licenses.Manager) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:          "del",
-		Short:        "Delete a license from the local relay server's pool",
+		Short:        "delete a license from the local relay server's pool",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := manager.RemoveLicense(cmd.Context(), id)

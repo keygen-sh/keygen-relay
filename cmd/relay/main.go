@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/keygen-sh/keygen-relay/cli"
 	"os"
+
+	"github.com/keygen-sh/keygen-relay/cli"
 )
 
 func main() {

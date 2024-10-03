@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/output"
 	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/spf13/cobra"
-	"strconv"
 )
 
 func StatCmd(manager licenses.Manager) *cobra.Command {
@@ -16,7 +17,7 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:          "stat",
-		Short:        "Print stats for a license in the local relay server's pool",
+		Short:        "print stats for a license in the local relay server's pool",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			license, err := manager.GetLicenseByID(cmd.Context(), licenseID)
@@ -67,7 +68,7 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&licenseID, "id", "", "License ID to print stats for")
+	cmd.Flags().StringVar(&licenseID, "id", "", "license ID to print stats for")
 	_ = cmd.MarkFlagRequired("id")
 
 	cmd.Flags().BoolVar(&plain, "plain", false, "display the table in plain text format")

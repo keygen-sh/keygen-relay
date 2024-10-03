@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
+	"time"
+
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/output"
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/spf13/cobra"
-	"log/slog"
-	"time"
 )
 
 const minTTL = 30 * time.Second
@@ -32,7 +33,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "serve",
-		Short: "Run the relay server to manage license distribution",
+		Short: "run the relay server to manage license distribution",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			disableHeartbeat, err := cmd.Flags().GetBool("no-heartbeats")
 			if err != nil {
@@ -67,11 +68,11 @@ func ServeCmd(srv server.Server) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVarP(&cfg.ServerPort, "port", "p", cfg.ServerPort, "Port to run the relay server on")
-	cmd.Flags().DurationVarP(&cfg.TTL, "ttl", "t", cfg.TTL, "Time-to-live for license claims")
-	cmd.Flags().Bool("no-heartbeats", false, "Disable heartbeat mechanism")
-	cmd.Flags().Var(&cfg.Strategy, "strategy", `Strategy type for license distribution. Allowed: "fifo", "lifo", "rand"`)
-	cmd.Flags().DurationVar(&cfg.CleanupInterval, "cleanup-interval", cfg.CleanupInterval, "Interval at which to check for inactive nodes.")
+	cmd.Flags().IntVarP(&cfg.ServerPort, "port", "p", cfg.ServerPort, "port to run the relay server on")
+	cmd.Flags().DurationVarP(&cfg.TTL, "ttl", "t", cfg.TTL, "time-to-live for license claims")
+	cmd.Flags().Bool("no-heartbeats", false, "disable heartbeat mechanism")
+	cmd.Flags().Var(&cfg.Strategy, "strategy", `strategy type for license distribution e.g. "fifo", "lifo", or "rand"`)
+	cmd.Flags().DurationVar(&cfg.CleanupInterval, "cleanup-interval", cfg.CleanupInterval, "interval at which to cull inactive nodes.")
 
 	_ = cmd.RegisterFlagCompletionFunc("strategy", strategyTypeCompletion)
 

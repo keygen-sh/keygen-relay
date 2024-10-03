@@ -4,6 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
+	"log/slog"
+	"os"
+	"runtime"
+
 	schema "github.com/keygen-sh/keygen-relay/db"
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
 	"github.com/keygen-sh/keygen-relay/internal/config"
@@ -13,9 +18,11 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
-	"log"
-	"log/slog"
-	"os"
+)
+
+var (
+	// The current version of Relay, embedded at compile time.
+	Version = "<not set>"
 )
 
 func Run() int {
@@ -26,9 +33,14 @@ func Run() int {
 	srv := server.New(cfg.Server, manager)
 
 	rootCmd := &cobra.Command{
-		Use:          "relay",
-		Short:        "Keygen Relay CLI",
+		Use:   "relay",
+		Short: "Keygen Relay CLI",
+		Long: `relay is a small command line utility that distributes license files to nodes on a local network
+
+Version:
+  relay/` + Version + " " + runtime.GOOS + "-" + runtime.GOARCH + " " + runtime.Version(),
 		SilenceUsage: true,
+		Version:      Version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -65,9 +77,9 @@ func Run() int {
 	}
 
 	rootCmd.PersistentFlags().StringVar(&cfg.DB.DatabaseFilePath, "database", "./relay.sqlite", "specify an alternate database path")
-	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", "counted verbosity")
+	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", `log verbosity e.g. -vvv (default "error")`)
 	rootCmd.PersistentFlags().Bool("no-audit", false, "disable audit logs")
-	rootCmd.PersistentFlags().BoolVar(&cfg.Logger.DisableColor, "no-color", false, "Disable color logs")
+	rootCmd.PersistentFlags().BoolVar(&cfg.Logger.DisableColor, "no-color", false, "disable colors in command output [$NO_COLOR=1]")
 
 	rootCmd.AddCommand(cmd.AddCmd(manager))
 	rootCmd.AddCommand(cmd.DelCmd(manager))

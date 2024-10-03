@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/output"
 	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/spf13/cobra"
-	"strconv"
 )
 
 func LsCmd(manager licenses.Manager) *cobra.Command {
@@ -15,7 +16,7 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:          "ls",
-		Short:        "Print the local relay server's license pool, with stats for each license",
+		Short:        "print the local relay server's license pool, with stats for each license",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			licensesList, err := manager.ListLicenses(cmd.Context())

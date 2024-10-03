@@ -28,7 +28,7 @@ main() {
     log_info "building v${VERSION} for ${platform}"
 
     env GOOS="${os}" GOARCH="${arch}" \
-      go build -o "build/${filename}" -ldflags "-X ${PACKAGE}.Version=${VERSION}"
+      go build -o "build/${filename}" -ldflags "-X ${PACKAGE}.Version=${VERSION}" ./cmd/relay
 
     if [ $? -eq 0 ]
     then

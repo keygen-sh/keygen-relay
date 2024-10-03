@@ -76,11 +76,11 @@ relay add --file license.lic --key xxx --public-key xxx
 
 The `add` command supports the following flags:
 
-| Flag                 | Description                                      |
-|:---------------------|:-------------------------------------------------|
-| `--file`             | Path to the license file to be added.            |
-| `--key`              | License key for decryption.                      |
-| `--public-key`       | Path to the public key for license verification. |
+| Flag                 | Description                                       |
+|:---------------------|:--------------------------------------------------|
+| `--file`             | Path to the license file to be added.             |
+| `--key`              | License key for decryption.                       |
+| `--public-key`       | Your account public key for license verification. |
 
 #### Delete license
 

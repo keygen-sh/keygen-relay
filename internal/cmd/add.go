@@ -33,7 +33,7 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 
 	cmd.Flags().StringVar(&filePath, "file", "", "license file")
 	cmd.Flags().StringVar(&key, "key", "", "license key")
-	cmd.Flags().StringVar(&publicKey, "public-key", "", "public key for cryptographically verified")
+	cmd.Flags().StringVar(&publicKey, "public-key", "", "your keygen.sh public key for verification")
 
 	_ = cmd.MarkFlagRequired("file")
 	_ = cmd.MarkFlagRequired("key")

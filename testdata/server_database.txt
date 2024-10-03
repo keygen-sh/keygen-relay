@@ -11,7 +11,7 @@ exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --
 exec test -f $DATABASE_PATH
 
 # Set a port as environment variable
-env PORT=8091
+env PORT=65010
 
 # Start the server with custom database path
 exec relay serve --port $PORT --database $DATABASE_PATH &server_process_test&

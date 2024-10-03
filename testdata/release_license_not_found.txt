@@ -1,5 +1,5 @@
 # Start the server
-env PORT=8086
+env PORT=65008
 exec relay serve --port $PORT &server_process_test&
 
 # Wait for the server to start

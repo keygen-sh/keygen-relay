@@ -1,5 +1,6 @@
-
 # Keygen Relay
+
+[![CI](https://github.com/keygen-sh/keygen-relay/actions/workflows/test.yml/badge.svg)](https://github.com/keygen-sh/keygen-relay/actions)
 
 Relay is an offline-first on-premise licensing server backed by [Keygen](https://keygen.sh).
 Use Relay to securely manage distribution of cryptographically signed and

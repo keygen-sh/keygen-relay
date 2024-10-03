@@ -21,9 +21,10 @@ build-all: clean
 test:
 	go test ./...
 
-# Run integration tests
 test-integration:
 	go test -tags=integrity ./...
+
+test-all: test test-integration
 
 bench:
 	go test -bench=. -benchmem -run=^# ./...

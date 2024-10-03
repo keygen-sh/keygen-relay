@@ -116,13 +116,7 @@ get_bin_url() {
 assert_os_support() {
   case "${OS}"
   in
-    darwin)    return ;;
-    dragonfly) return ;;
-    freebsd)   return ;;
-    linux)     return ;;
-    netbsd)    return ;;
-    openbsd)   return ;;
-    windows)   return ;;
+    linux) return ;;
   esac
 
   log_err "unsupported operating system: ${OS}"
@@ -131,17 +125,10 @@ assert_os_support() {
 assert_arch_support() {
   case "${ARCH}"
   in
-    386)      return ;;
-    amd64)    return ;;
-    arm64)    return ;;
-    arm)      return ;;
-    ppc64)    return ;;
-    ppc64le)  return ;;
-    mips)     return ;;
-    mipsle)   return ;;
-    mips64)   return ;;
-    mips64le) return ;;
-    s390x)    return ;;
+    386)   return ;;
+    amd64) return ;;
+    arm64) return ;;
+    arm)   return ;;
   esac
 
   log_err "unsupported architecture: ${ARCH}"

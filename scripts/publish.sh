@@ -16,7 +16,7 @@ log_err() {
 main() {
   log_info "drafting v${VERSION}"
 
-  # Draft new version
+  # draft new version
   keygen new \
     --name "Keygen Relay v${VERSION}" \
     --channel "${CHANNEL}" \
@@ -29,41 +29,35 @@ main() {
     log_err "failed to draft v${VERSION}"
   fi
 
-  # Upload artifact for each platform
-  for platform in $PLATFORMS
+  # upload artifact for each dist platform
+  for filename in $(ls dist/relay_*)
   do
-    IFS='/' read -r os arch <<< "$platform"
+    IFS='_' read -r _ platform arch <<< "$filename"
 
-    filename="relay_${os}_${arch}"
-    if [ "${os}" = 'windows' ]
-    then
-      filename="${filename}.exe"
-    fi
-
-    log_info "uploading v${VERSION} for ${platform}: ${filename}"
+    log_info "uploading v${VERSION} for ${platform}/${arch}: ${filename}"
 
     keygen upload "build/${filename}" \
       --release "${VERSION}" \
-      --platform "${os}" \
+      --platform "${platform}" \
       --arch "${arch}"
 
     if [ $? -eq 0 ]
     then
-      log_info "successfully uploading v${VERSION} for ${platform}"
+      log_info "successfully uploading v${VERSION} for ${platform}/${arch}"
     else
-      log_err "failed to upload v${VERSION} for ${platform}"
+      log_err "failed to upload v${VERSION} for ${platform}/${arch}"
     fi
   done
 
-  # Upload installer
+  # upload installer
   keygen upload 'build/install.sh' --release "${VERSION}"
 
-  # Upload version
+  # upload version
   keygen upload 'build/version' \
     --release "${VERSION}" \
     --filetype 'txt'
 
-  # Publish version
+  # publish version
   keygen publish --release "${VERSION}"
 
   if [ $? -eq 0 ]
@@ -73,10 +67,10 @@ main() {
     log_err "failed to publish v${VERSION}"
   fi
 
-  # We only want to do the rest for stable releases
+  # we only want to do the rest for stable releases
   if [ "${CHANNEL}" = 'stable' ]
   then
-    # Untag previous latest if it exists (we'll continue even on failure)
+    # untag previous latest if it exists (we'll continue even on failure)
     keygen untag --release 'latest'
 
     if [ $? -eq 0 ]
@@ -86,7 +80,7 @@ main() {
       log_warn "failed to untag v${VERSION}"
     fi
 
-    # Tag as latest
+    # tag as latest
     keygen tag 'latest' --release "${VERSION}"
 
     if [ $? -eq 0 ]
@@ -98,8 +92,6 @@ main() {
   fi
 }
 
-PLATFORMS="$(go tool dist list | grep -vE 'ios|android|js|aix|illumos|riscv64|plan9|solaris|loong')"
-PACKAGE='github.com/keygen-sh/keygen-relay/cli'
 VERSION="$(cat VERSION)"
 CHANNEL='stable'
 

@@ -28,11 +28,11 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 			}
 
 			columns := []table.Column{
-				{Title: "ID", Width: 36},
-				{Title: "Claims", Width: 8},
-				{Title: "NodeID", Width: 8},
-				{Title: "Last Claimed At", Width: 20},
-				{Title: "Last Released At", Width: 20},
+				{Title: "id", Width: 36},
+				{Title: "claims", Width: 8},
+				{Title: "node_id", Width: 8},
+				{Title: "last_claimed_at", Width: 20},
+				{Title: "last_released_at", Width: 20},
 			}
 
 			claimsStr := fmt.Sprintf("%d", license.Claims)

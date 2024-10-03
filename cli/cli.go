@@ -86,6 +86,7 @@ Version:
 	rootCmd.AddCommand(cmd.LsCmd(manager))
 	rootCmd.AddCommand(cmd.StatCmd(manager))
 	rootCmd.AddCommand(cmd.ServeCmd(srv))
+	rootCmd.AddCommand(cmd.VersionCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		return 1

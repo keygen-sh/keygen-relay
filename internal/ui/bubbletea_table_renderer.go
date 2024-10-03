@@ -2,10 +2,11 @@ package ui
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"os"
 )
 
 type BubbleteaTableRenderer struct{}
@@ -29,8 +30,7 @@ func (r *BubbleteaTableRenderer) Render(rows []table.Row, columns []table.Column
 		BorderBottom(true).
 		Bold(true)
 	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
+		Foreground(lipgloss.Color("#00ff92")).
 		Bold(false)
 	t.SetStyles(s)
 

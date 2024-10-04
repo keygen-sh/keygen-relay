@@ -49,9 +49,6 @@ build-windows-386:
 build-windows-amd64:
 	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="zig cc -target x86_64-windows" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay_windows_amd64.exe ./cmd/relay
 
-build-windows-arm:
-	CGO_ENABLED=1 GOOS=windows GOARCH=arm GOARM=7 CC="zig cc -target arm-windows-gnueabihf" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay_windows_arm.exe ./cmd/relay
-
 build-windows-arm64:
 	CGO_ENABLED=1 GOOS=windows GOARCH=arm64 CC="zig cc -target aarch64-windows" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay_windows_arm64.exe ./cmd/relay
 
@@ -62,8 +59,8 @@ build-version:
 	cp VERSION dist/version
 
 build-all: clean build-linux-386 build-linux-amd64 build-linux-arm build-linux-arm64 build-darwin-amd64 \
-	build-darwin-arm64 build-windows-386 build-windows-amd64 build-windows-arm build-windows-arm64 \
-	build-install build-version
+	build-darwin-arm64 build-windows-386 build-windows-amd64 build-windows-arm64 build-install \
+	build-version
 
 release-new:
 	keygen new --name "Keygen Relay v$(PACKAGE_VERSION)" --channel ${PACKAGE_CHANNEL} --version ${PACKAGE_VERSION}
@@ -92,9 +89,6 @@ release-windows-386:
 release-windows-amd64:
 	keygen upload build/relay_windows_amd64.exe --release ${PACKAGE_VERSION} --platform windows --arch amd64
 
-release-windows-arm:
-	keygen upload build/relay_windows_arm.exe --release ${PACKAGE_VERSION} --platform windows --arch arm
-
 release-windows-arm64:
 	keygen upload build/relay_windows_arm64.exe --release ${PACKAGE_VERSION} --platform windows --arch arm64
 
@@ -114,8 +108,8 @@ release-tag:
 	endif
 
 release: release-new release-linux-386 release-linux-amd64 release-linux-arm release-linux-arm64 release-darwin-amd64 \
-	release-darwin-arm64 release-windows-386 release-windows-amd64 release-windows-arm release-windows-arm64 \
-	release-installer release-version release-publish release-tag
+	release-darwin-arm64 release-windows-386 release-windows-amd64 release-windows-arm64 release-installer \
+	release-version release-publish release-tag
 
 test:
 	go test -race ./...

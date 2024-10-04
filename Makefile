@@ -23,7 +23,7 @@ ifdef DEBUG
 endif
 
 build:
-	go build -ldflags $(BUILD_LDFLAGS) -o bin/relay ./cmd/relay
+	go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o bin/relay ./cmd/relay
 
 build-linux-386:
 	CGO_ENABLED=1 GOOS=linux GOARCH=386 CC="zig cc -target x86-linux" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay_linux_386 ./cmd/relay

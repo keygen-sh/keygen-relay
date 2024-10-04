@@ -16,7 +16,7 @@ else ifeq ($(findstring -dev.,$(PACKAGE_VERSION)), -dev.)
 endif
 
 BUILD_LDFLAGS := "-s -w -X $(PACKAGE_NAME)/cli.Version=$(PACKAGE_VERSION)"
-BUILD_FLAGS    =
+BUILD_FLAGS    = -v
 
 ifdef DEBUG
 	BUILD_FLAGS += -x

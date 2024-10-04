@@ -62,6 +62,8 @@ curl -sSL https://get.keygen.sh/keygen/relay/latest/install.sh | sh
 
 ## Usage
 
+For all available commands and flags, run `relay --help`.
+
 ### CLI
 
 The CLI can be used by the vendor to setup and manage customer environments.

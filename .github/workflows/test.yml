@@ -18,5 +18,9 @@ jobs:
           go-version: '1.23'
       - name: Build
         run: make build
+      - name: Vet
+        run: make vet
+      - name: Fmt
+        run: test -z "$(make fmt)"
       - name: Test
         run: make test-all

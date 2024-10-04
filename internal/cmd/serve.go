@@ -70,7 +70,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 	cmd.Flags().IntVarP(&cfg.ServerPort, "port", "p", cfg.ServerPort, "port to run the relay server on")
 	cmd.Flags().DurationVarP(&cfg.TTL, "ttl", "t", cfg.TTL, "time-to-live for license claims")
-	cmd.Flags().Bool("no-heartbeats", false, "disable heartbeat mechanism")
+	cmd.Flags().Bool("no-heartbeats", false, "disable node heartbeat mechanism")
 	cmd.Flags().Var(&cfg.Strategy, "strategy", `strategy type for license distribution e.g. "fifo", "lifo", or "rand"`)
 	cmd.Flags().DurationVar(&cfg.CleanupInterval, "cleanup-interval", cfg.CleanupInterval, "interval at which to cull inactive nodes.")
 

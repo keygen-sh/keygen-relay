@@ -130,14 +130,14 @@ relay serve --port 6349
 
 The `serve` command supports the following flags:
 
-| Flag                 | Description                                                                                                                                                | Default          |
-|:---------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------|
-| `--port`, `-p`       | Specifies the port on which the relay server will run.                                                                                                     | `6349`           |
-| `--no-heartbeats`    | Disables the heartbeat mechanism. When this flag is enabled, the server will not track node activity.                                                      | `false`          |
-| `--strategy`         | Specifies the license assignment strategy. Options: `fifo`, `lifo`, `rand`.                                                                                | `fifo`           |
-| `--ttl`, `-t`        | Sets the Time-to-Live (TTL) for license claims. After this period, licenses will be automatically released. Accepts durations like `30s`, `1m`, `1h`, etc. | `30s`            |
-| `--cleanup-interval` | Specifies how often the server should check for inactive nodes to clean up.                                                                                | `15s`            |
-| `--database`         | Specify a custom database file for storing the license and node data.                                                                                      | `./relay.sqlite` |
+| Flag                 | Description                                                                                                                                                                           | Default          |
+|:---------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------|
+| `--port`, `-p`       | Specifies the port on which the relay server will run.                                                                                                                                | `6349`           |
+| `--no-heartbeats`    | Disables the heartbeat mechanism. When this flag is enabled, the server will not automatically release inactive or dead nodes.                                                        | `false`          |
+| `--strategy`         | Specifies the license assignment strategy. Options: `fifo`, `lifo`, `rand`.                                                                                                           | `fifo`           |
+| `--ttl`, `-t`        | Sets the time-to-live for license claims. Licenses will be automatically released after the time-to-live if a node heartbeat is not maintained. Options: e.g. `30s`, `1m`, `1h`, etc. | `30s`            |
+| `--cleanup-interval` | Specifies how often the server should check for and clean up inactive or dead nodes.                                                                                                  | `15s`            |
+| `--database`         | Specify a custom database file for storing the license and node data.                                                                                                                 | `./relay.sqlite` |
 
 E.g. to start the server on port `6349`, with a 30 second node TTL and FIFO
 distribution strategy:

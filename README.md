@@ -80,7 +80,7 @@ The `add` command supports the following flags:
 
 | Flag                 | Description                                       |
 |:---------------------|:--------------------------------------------------|
-| `--file`             | Path to the license file to be added.             |
+| `--file`             | Path to the license file to add to the pool.      |
 | `--key`              | License key for decryption.                       |
 | `--public-key`       | Your account public key for license verification. |
 
@@ -94,9 +94,9 @@ relay del --license xxx
 
 The `del` command supports the following flags:
 
-| Flag        | Description                                      |
-|:------------|:-------------------------------------------------|
-| `--license` | The unique ID of the license to retrieve delete. |
+| Flag        | Description                                           |
+|:------------|:------------------------------------------------------|
+| `--license` | The unique ID of the license to delete from the pool. |
 
 #### List licenses
 

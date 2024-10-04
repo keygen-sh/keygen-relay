@@ -78,39 +78,39 @@ release-new:
 
 .PHONY: release-linux-386
 release-linux-386:
-	keygen upload build/relay-linux-386-$(PACKAGE_VERSION) --release ${PACKAGE_VERSION} --platform linux --arch 386
+	keygen upload build/relay-linux-386-$(PACKAGE_VERSION) --filename relay_linux_386 --release ${PACKAGE_VERSION} --platform linux --arch 386
 
 .PHONY: release-linux-amd64
 release-linux-amd64:
-	keygen upload build/relay-linux-amd64-$(PACKAGE_VERSION) --release ${PACKAGE_VERSION} --platform linux --arch amd64
+	keygen upload build/relay-linux-amd64-$(PACKAGE_VERSION) --filename relay_linux_amd64 --release ${PACKAGE_VERSION} --platform linux --arch amd64
 
 .PHONY: release-linux-arm
 release-linux-arm:
-	keygen upload build/relay-linux-arm-$(PACKAGE_VERSION) --release ${PACKAGE_VERSION} --platform linux --arch arm
+	keygen upload build/relay-linux-arm-$(PACKAGE_VERSION) --filename relay_linux_arm --release ${PACKAGE_VERSION} --platform linux --arch arm
 
 .PHONY: release-linux-arm64
 release-linux-arm64:
-	keygen upload build/relay-linux-arm64-$(PACKAGE_VERSION) --release ${PACKAGE_VERSION} --platform linux --arch arm64
+	keygen upload build/relay-linux-arm64-$(PACKAGE_VERSION) --filename relay_linux_arm64 --release ${PACKAGE_VERSION} --platform linux --arch arm64
 
 .PHONY: release-darwin-amd64
 release-darwin-amd64:
-	keygen upload build/relay-darwin-amd64-$(PACKAGE_VERSION) --release ${PACKAGE_VERSION} --platform darwin --arch amd64
+	keygen upload build/relay-darwin-amd64-$(PACKAGE_VERSION) --filename relay_darwin_amd64 --release ${PACKAGE_VERSION} --platform darwin --arch amd64
 
 .PHONY: release-darwin-arm64
 release-darwin-arm64:
-	keygen upload build/relay-darwin-arm64-$(PACKAGE_VERSION) --release ${PACKAGE_VERSION} --platform darwin --arch arm64
+	keygen upload build/relay-darwin-arm64-$(PACKAGE_VERSION) --filename relay_darwin_arm64 --release ${PACKAGE_VERSION} --platform darwin --arch arm64
 
 .PHONY: release-windows-386
 release-windows-386:
-	keygen upload build/relay-windows-386-$(PACKAGE_VERSION).exe --release ${PACKAGE_VERSION} --platform windows --arch 386
+	keygen upload build/relay-windows-386-$(PACKAGE_VERSION).exe --filename relay_windows_386.exe --release ${PACKAGE_VERSION} --platform windows --arch 386
 
 .PHONY: release-windows-amd64
 release-windows-amd64:
-	keygen upload build/relay-windows-amd64-$(PACKAGE_VERSION).exe --release ${PACKAGE_VERSION} --platform windows --arch amd64
+	keygen upload build/relay-windows-amd64-$(PACKAGE_VERSION).exe --filename relay_windows_amd64.exe --release ${PACKAGE_VERSION} --platform windows --arch amd64
 
 .PHONY: release-windows-arm64
 release-windows-arm64:
-	keygen upload build/relay-windows-arm64-$(PACKAGE_VERSION).exe --release ${PACKAGE_VERSION} --platform windows --arch arm64
+	keygen upload build/relay-windows-arm64-$(PACKAGE_VERSION).exe --filename relay_windows_arm64.exe --release ${PACKAGE_VERSION} --platform windows --arch arm64
 
 .PHONY: release-installer
 release-installer:

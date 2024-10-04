@@ -89,14 +89,14 @@ The `add` command supports the following flags:
 To delete a license, use the `del` command:
 
 ```bash
-relay del --id xxx
+relay del --license xxx
 ```
 
 The `del` command supports the following flags:
 
-| Flag   | Description                                      |
-|:-------|:-------------------------------------------------|
-| `--id` | The unique ID of the license to retrieve delete. |
+| Flag        | Description                                      |
+|:------------|:-------------------------------------------------|
+| `--license` | The unique ID of the license to retrieve delete. |
 
 #### List licenses
 
@@ -111,14 +111,14 @@ relay ls
 To retrieve the status of a specific license, use the `stat` command:
 
 ```bash
-relay stat --id xxx
+relay stat --license xxx
 ```
 
 The `stat` command supports the following flags:
 
-| Flag   | Description                                          |
-|:-------|:-----------------------------------------------------|
-| `--id` | The unique ID of the license to retrieve info about. |
+| Flag        | Description                                          |
+|:------------|:-----------------------------------------------------|
+| `--license` | The unique ID of the license to retrieve info about. |
 
 ### Server
 

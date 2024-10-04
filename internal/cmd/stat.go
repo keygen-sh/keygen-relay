@@ -68,8 +68,8 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&licenseID, "id", "", "license ID to print stats for")
-	_ = cmd.MarkFlagRequired("id")
+	cmd.Flags().StringVar(&licenseID, "license", "", "license ID to print stats for")
+	_ = cmd.MarkFlagRequired("license")
 
 	cmd.Flags().BoolVar(&plain, "plain", false, "display the table in plain text format")
 

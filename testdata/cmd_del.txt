@@ -6,7 +6,7 @@ exec relay ls --plain
 stdout 'dcea31a4-1664-4633-9f52-4a1b0b5ea2ef'
 
 # Delete the license
-exec relay del --id dcea31a4-1664-4633-9f52-4a1b0b5ea2ef
+exec relay del --license dcea31a4-1664-4633-9f52-4a1b0b5ea2ef
 
 # Expect output indicating success
 stdout 'License deleted successfully.'

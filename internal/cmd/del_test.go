@@ -25,7 +25,7 @@ func TestDelCmd_Success(t *testing.T) {
 	delCmd.SetOut(outBuf)
 	delCmd.SetErr(errBuf)
 
-	delCmd.SetArgs([]string{"--id=test-id"})
+	delCmd.SetArgs([]string{"--license=test-id"})
 
 	err := delCmd.Execute()
 	assert.NoError(t, err)
@@ -46,7 +46,7 @@ func TestDelCmd_Error(t *testing.T) {
 	delCmd.SetOut(outBuf)
 	delCmd.SetErr(errBuf)
 
-	delCmd.SetArgs([]string{"--id=test-id"})
+	delCmd.SetArgs([]string{"--license=test-id"})
 
 	_ = delCmd.Execute()
 
@@ -67,5 +67,5 @@ func TestDelCmd_MissingID(t *testing.T) {
 
 	err := delCmd.Execute()
 	assert.Error(t, err)
-	assert.Contains(t, errBuf.String(), `required flag(s) "id" not set`)
+	assert.Contains(t, errBuf.String(), `required flag(s) "license" not set`)
 }

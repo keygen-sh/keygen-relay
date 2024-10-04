@@ -34,7 +34,7 @@ func TestStatCmd_Success(t *testing.T) {
 
 	statCmd := cmd.StatCmd(manager)
 	statCmd.SetOut(outBuf)
-	statCmd.SetArgs([]string{"--id=License_1", "--plain"})
+	statCmd.SetArgs([]string{"--license=License_1", "--plain"})
 
 	err := statCmd.Execute()
 	assert.NoError(t, err)
@@ -58,7 +58,7 @@ func TestStatCmd_MissingFlag(t *testing.T) {
 	err := statCmd.Execute()
 	assert.Error(t, err)
 
-	assert.Contains(t, errBuf.String(), `required flag(s) "id" not set`)
+	assert.Contains(t, errBuf.String(), `required flag(s) "license" not set`)
 }
 
 func TestStatCmd_Error(t *testing.T) {
@@ -74,7 +74,7 @@ func TestStatCmd_Error(t *testing.T) {
 	statCmd := cmd.StatCmd(manager)
 	statCmd.SetOut(outBuf)
 	statCmd.SetErr(errBuf)
-	statCmd.SetArgs([]string{"--id=invalid", "--plain"})
+	statCmd.SetArgs([]string{"--license=invalid", "--plain"})
 
 	_ = statCmd.Execute()
 

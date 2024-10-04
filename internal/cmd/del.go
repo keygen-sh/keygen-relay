@@ -7,14 +7,14 @@ import (
 )
 
 func DelCmd(manager licenses.Manager) *cobra.Command {
-	var id string
+	var licenseID string
 
 	cmd := &cobra.Command{
 		Use:          "del",
 		Short:        "delete a license from the local relay server's pool",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := manager.RemoveLicense(cmd.Context(), id)
+			err := manager.RemoveLicense(cmd.Context(), licenseID)
 			if err != nil {
 				output.PrintError(cmd.ErrOrStderr(), err.Error())
 				return nil
@@ -26,8 +26,8 @@ func DelCmd(manager licenses.Manager) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&id, "id", "", "license ID to remove")
-	_ = cmd.MarkFlagRequired("id")
+	cmd.Flags().StringVar(&licenseID, "license", "", "license ID to remove")
+	_ = cmd.MarkFlagRequired("license")
 
 	return cmd
 }

@@ -106,6 +106,12 @@ To list all the licenses in the database, use the `ls` command:
 relay ls
 ```
 
+The `ls` command supports the following flags:
+
+| Flag      | Description                                   |
+|:----------|:----------------------------------------------|
+| `--plain` | Print results non-interactively in plaintext. |
+
 #### Stat license
 
 To retrieve the status of a specific license, use the `stat` command:
@@ -119,6 +125,7 @@ The `stat` command supports the following flags:
 | Flag        | Description                                          |
 |:------------|:-----------------------------------------------------|
 | `--license` | The unique ID of the license to retrieve info about. |
+| `--plain`   | Print results non-interactively in plaintext.        |
 
 ### Server
 

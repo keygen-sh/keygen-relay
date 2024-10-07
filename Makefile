@@ -88,8 +88,8 @@ build-version:
 	cp VERSION dist/version
 
 .PHONY: build-all
-build-all: clean build-linux-386 build-linux-amd64 build-linux-arm build-linux-arm64 build-windows-386 \
-	build-windows-amd64 build-windows-arm64 build-install build-version
+build-all: clean build-linux-386 build-linux-amd64 build-linux-arm build-linux-arm64 build-linux-s390x \
+	build-windows-386 build-windows-amd64 build-windows-arm64 build-install build-version
 
 .PHONY: release-new
 release-new:
@@ -172,8 +172,8 @@ release-tag:
 
 .PHONY: release
 release: release-new release-linux-386 release-linux-amd64 release-linux-arm release-linux-arm64 \
-	release-windows-386 release-windows-amd64 release-windows-arm64 release-installer \
-	release-version release-publish release-tag
+	release-linux-s390x release-windows-386 release-windows-amd64 release-windows-arm64 \
+	release-installer release-version release-publish release-tag
 
 .PHONY: test
 test:

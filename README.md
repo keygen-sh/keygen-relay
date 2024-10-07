@@ -211,13 +211,27 @@ go build -o relay ./cmd/relay
 ```
 
 Alternatively, you can build binaries for specific platforms and architectures
-using the provided `Makefile`:
+using the provided `make` commands:
 
 ```bash
 make build
 make build-linux-amd64
 make build-all
 ```
+
+### Releasing
+
+To cut and publish a new release of Relay, update the `VERSION` file and run
+the following `make` command:
+
+```
+make release
+```
+
+Releases are uploaded and published using the [Keygen CLI](https://keygen.sh/docs/cli/).
+Releases are hosted and distributed by [Keygen Cloud](https://keygen.sh). You
+will need credentials and permission to upload to our production Keygen Cloud
+account.
 
 ### Testing
 

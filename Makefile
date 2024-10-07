@@ -79,8 +79,8 @@ build-windows-amd64:
 build-windows-arm64:
 	CGO_ENABLED=1 GOOS=windows GOARCH=arm64 CC="zig cc -target aarch64-windows" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay-windows-arm64-$(PACKAGE_VERSION).exe ./cmd/relay
 
-.PHONY: build-install
-build-install:
+.PHONY: build-installer
+build-installer:
 	cp scripts/install.sh dist/install.sh
 
 .PHONY: build-version
@@ -89,7 +89,7 @@ build-version:
 
 .PHONY: build-all
 build-all: clean build-linux-386 build-linux-amd64 build-linux-arm build-linux-arm64 build-linux-s390x \
-	build-windows-386 build-windows-amd64 build-windows-arm64 build-install build-version
+	build-windows-386 build-windows-amd64 build-windows-arm64 build-installer build-version
 
 .PHONY: release-new
 release-new:

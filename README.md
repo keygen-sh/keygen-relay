@@ -210,11 +210,13 @@ To build the Keygen Relay from the source, clone this repository and run:
 go build -o relay ./cmd/relay
 ```
 
-Alternatively, you can build binaries for different platforms and architectures
+Alternatively, you can build binaries for specific platforms and architectures
 using the provided `Makefile`:
 
 ```bash
-make build # or make build-all
+make build
+make build-linux-amd64
+make build-all
 ```
 
 ### Testing

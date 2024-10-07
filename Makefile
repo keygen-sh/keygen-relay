@@ -59,13 +59,13 @@ build-linux-arm64:
 build-linux-s390x:
 	CGO_ENABLED=1 GOOS=linux GOARCH=s390x CC="zig cc -target s390x-linux" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay-linux-s390x-$(PACKAGE_VERSION) ./cmd/relay
 
-.PHONY: build-darwin-amd64
-build-darwin-amd64:
-	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 CC="zig cc -target x86_64-macos" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay-darwin-amd64-$(PACKAGE_VERSION) ./cmd/relay
+# .PHONY: build-darwin-amd64
+# build-darwin-amd64:
+# 	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 CC="zig cc -target x86_64-macos" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay-darwin-amd64-$(PACKAGE_VERSION) ./cmd/relay
 
-.PHONY: build-darwin-arm64
-build-darwin-arm64:
-	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 CC="zig cc -target aarch64-macos" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay-darwin-arm64-$(PACKAGE_VERSION) ./cmd/relay
+# .PHONY: build-darwin-arm64
+# build-darwin-arm64:
+# 	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 CC="zig cc -target aarch64-macos" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay-darwin-arm64-$(PACKAGE_VERSION) ./cmd/relay
 
 .PHONY: build-windows-386
 build-windows-386:
@@ -88,9 +88,8 @@ build-version:
 	cp VERSION dist/version
 
 .PHONY: build-all
-build-all: clean build-linux-386 build-linux-amd64 build-linux-arm build-linux-arm64 build-darwin-amd64 \
-	build-darwin-arm64 build-windows-386 build-windows-amd64 build-windows-arm64 build-install \
-	build-version
+build-all: clean build-linux-386 build-linux-amd64 build-linux-arm build-linux-arm64 build-windows-386 \
+	build-windows-amd64 build-windows-arm64 build-install build-version
 
 .PHONY: release-new
 release-new:
@@ -132,13 +131,13 @@ release-linux-arm64:
 release-linux-s390x:
 	keygen upload build/relay-linux-s390x-$(PACKAGE_VERSION) --filename relay_linux_s390x --release ${PACKAGE_VERSION} --platform linux --arch s390x
 
-.PHONY: release-darwin-amd64
-release-darwin-amd64:
-	keygen upload build/relay-darwin-amd64-$(PACKAGE_VERSION) --filename relay_darwin_amd64 --release ${PACKAGE_VERSION} --platform darwin --arch amd64
+# .PHONY: release-darwin-amd64
+# release-darwin-amd64:
+# 	keygen upload build/relay-darwin-amd64-$(PACKAGE_VERSION) --filename relay_darwin_amd64 --release ${PACKAGE_VERSION} --platform darwin --arch amd64
 
-.PHONY: release-darwin-arm64
-release-darwin-arm64:
-	keygen upload build/relay-darwin-arm64-$(PACKAGE_VERSION) --filename relay_darwin_arm64 --release ${PACKAGE_VERSION} --platform darwin --arch arm64
+# .PHONY: release-darwin-arm64
+# release-darwin-arm64:
+# 	keygen upload build/relay-darwin-arm64-$(PACKAGE_VERSION) --filename relay_darwin_arm64 --release ${PACKAGE_VERSION} --platform darwin --arch arm64
 
 .PHONY: release-windows-386
 release-windows-386:
@@ -172,8 +171,8 @@ release-tag:
 	endif
 
 .PHONY: release
-release: release-new release-linux-386 release-linux-amd64 release-linux-arm release-linux-arm64 release-darwin-amd64 \
-	release-darwin-arm64 release-windows-386 release-windows-amd64 release-windows-arm64 release-installer \
+release: release-new release-linux-386 release-linux-amd64 release-linux-arm release-linux-arm64 \
+	release-windows-386 release-windows-amd64 release-windows-arm64 release-installer \
 	release-version release-publish release-tag
 
 .PHONY: test

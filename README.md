@@ -55,12 +55,35 @@ universe, secured via cryptography.
 ## Installation
 
 To install Relay, you can run the following command. Alternatively, you can
-install manually by downloading a binary and following [the install
-instructions here](https://keygen.sh/docs/relay/).
+install manually by downloading a binary and following the install
+instructions below.
+
+## Automatic install
+
+Automatically detect and install `relay` on the current platform.
 
 ```bash
 curl -sSL https://raw.pkg.keygen.sh/keygen/relay/latest/install.sh | sh
 ```
+
+This will install `relay` in `/usr/local/bin`.
+
+## Manual install
+
+Download `relay` for a particular platform.
+
+| Platform        |                                                                       |
+|:----------------|:----------------------------------------------------------------------|
+| `linux/386`     | https://raw.pkg.keygen.sh/keygen/relay/latest/relay_linux_386         |
+| `linux/amd64`   | https://raw.pkg.keygen.sh/keygen/relay/latest/relay_linux_amd64       |
+| `linux/arm`     | https://raw.pkg.keygen.sh/keygen/relay/latest/relay_linux_arm         |
+| `linux/arm64`   | https://raw.pkg.keygen.sh/keygen/relay/latest/relay_linux_arm64       |
+| `linux/s390x`   | https://raw.pkg.keygen.sh/keygen/relay/latest/relay_linux_s390x       |
+| `windows/386`   | https://raw.pkg.keygen.sh/keygen/relay/latest/relay_windows_386.exe   |
+| `windows/amd64` | https://raw.pkg.keygen.sh/keygen/relay/latest/relay_windows_amd64.exe |
+| `windows/arm64` | https://raw.pkg.keygen.sh/keygen/relay/latest/relay_windows_arm64.exe |
+
+Missing a platform? Open an [issue](https://github.com/keygen-sh/keygen-relay/issues).
 
 ## Usage
 

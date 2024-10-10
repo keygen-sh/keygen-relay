@@ -59,7 +59,7 @@ install manually by downloading a binary and following [the install
 instructions here](https://keygen.sh/docs/relay/).
 
 ```bash
-curl -sSL https://get.keygen.sh/keygen/relay/latest/install.sh | sh
+curl -sSL https://raw.pkg.keygen.sh/keygen/relay/latest/install.sh | sh
 ```
 
 ## Usage

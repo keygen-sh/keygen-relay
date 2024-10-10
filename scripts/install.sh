@@ -94,7 +94,7 @@ get_bin_path() {
 }
 
 get_bin_version() {
-  version=$(curl -sSL 'https://get.keygen.sh/keygen/relay/latest/version')
+  version=$(curl -sSL 'https://raw.pkg.keygen.sh/keygen/relay/latest/version')
   if [ -z "${version}" ]
   then
     log_err 'unable to get latest version'
@@ -110,7 +110,7 @@ get_bin_url() {
     filename="${filename}.exe"
   fi
 
-  echo "https://get.keygen.sh/keygen/relay/${BIN_VERSION}/${filename}"
+  echo "https://raw.pkg.keygen.sh/keygen/relay/${BIN_VERSION}/${filename}"
 }
 
 assert_os_support() {

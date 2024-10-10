@@ -55,7 +55,7 @@ universe, secured via cryptography.
 ## Installation
 
 To install Relay, you can run the following command. Alternatively, you can
-install manually by downloading a binary and following the install
+install manually by downloading a prebuilt binary and following the install
 instructions below.
 
 ## Automatic install

@@ -60,7 +60,7 @@ instructions below.
 
 ## Automatic install
 
-Automatically detect and install `relay` on the current platform.
+Automatically detect and install `relay` on the current platform:
 
 ```bash
 curl -sSL https://raw.pkg.keygen.sh/keygen/relay/latest/install.sh | sh
@@ -70,9 +70,9 @@ This will install `relay` in `/usr/local/bin`.
 
 ## Manual install
 
-Download `relay` for a particular platform.
+Download `relay` for a particular platform:
 
-| Platform        |                                                                       |
+| Platform        | Download                                                              |
 |:----------------|:----------------------------------------------------------------------|
 | `linux/386`     | https://raw.pkg.keygen.sh/keygen/relay/latest/relay_linux_386         |
 | `linux/amd64`   | https://raw.pkg.keygen.sh/keygen/relay/latest/relay_linux_amd64       |

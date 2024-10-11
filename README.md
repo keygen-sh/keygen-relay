@@ -78,7 +78,7 @@ The CLI can be used by the vendor to setup and manage customer environments.
 
 #### Add license
 
-You can add a new license to the system using the `add` command:
+You can add a new license to the pool using the `add` command:
 
 ```bash
 relay add --file license.lic --key xxx --public-key xxx
@@ -94,7 +94,7 @@ The `add` command supports the following flags:
 
 #### Delete license
 
-To delete a license, use the `del` command:
+To delete a license from the pool, use the `del` command:
 
 ```bash
 relay del --license xxx
@@ -108,7 +108,7 @@ The `del` command supports the following flags:
 
 #### List licenses
 
-To list all the licenses in the database, use the `ls` command:
+To list all the licenses in the pool, use the `ls` command:
 
 ```bash
 relay ls

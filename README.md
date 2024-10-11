@@ -54,9 +54,9 @@ universe, secured via cryptography.
 
 ## Installation
 
-To install Relay, you can run the following command. Alternatively, you can
-install manually by downloading a prebuilt binary and following [the install
-instructions here](https://keygen.sh/docs/relay/).
+To install Relay, you can follow the instructions and run the command below.
+Alternatively, you can install manually by downloading a prebuilt binary and
+following [the install instructions here](https://keygen.sh/docs/relay/).
 
 Automatically detect and install `relay` on the current platform:
 

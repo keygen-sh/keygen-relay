@@ -206,6 +206,19 @@ Accepts a `fingerprint`, the node fingerprint used for the claim.
 Returns `204 No Content` with no content. If a claim does not exist for the
 node, the server will return a `404 Not Found`.
 
+## Logs
+
+Relay comes equipped with audit logs out-of-the-box, allowing the full history
+of the Relay server to be audited. They can be viewed using a `sqlite3` client,
+providing the path to the Relay database file:
+
+```bash
+sqlite3 ./relay.sqlite
+> select * from audit_logs order by created_at desc limit 25;
+```
+
+If you have concerns about storage, use Relay's `--no-audit` flag.
+
 ## Developing
 
 ### Building

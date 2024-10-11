@@ -223,10 +223,13 @@ If you have concerns about storage, use Relay's `--no-audit` flag.
 
 ### Building
 
-To build the Keygen Relay from the source, clone this repository and run:
+To build Keygen Relay from the source, clone this repository and run:
 
 ```bash
 go build -o relay ./cmd/relay
+
+# or...
+make build
 ```
 
 Alternatively, you can build binaries for specific platforms and architectures
@@ -234,7 +237,11 @@ using the provided `make` commands:
 
 ```bash
 make build
+
+# or specific platform...
 make build-linux-amd64
+
+# or all platforms...
 make build-all
 ```
 
@@ -263,7 +270,7 @@ To run regular tests:
 make test
 ```
 
-To run integration tests (which are tagged with `// +build integrity`):
+To run integration tests, tagged with `// +build integrity`:
 
 ```bash
 make test-integration

@@ -171,11 +171,11 @@ The `serve` command supports the following flags:
 | `--cleanup-interval` | Specifies how often the server should check for and clean up inactive or dead nodes.                                                                                                  | `15s`            |
 | `--database`         | Specify a custom database file for storing the license and node data.                                                                                                                 | `./relay.sqlite` |
 
-E.g. to start the server on port `6349`, with a 30 second node TTL and FIFO
+E.g. to start the server on port `8080`, with a 30 second node TTL and FIFO
 distribution strategy:
 
 ```bash
-./bin/relay serve --port 6349 --ttl 30s --strategy fifo
+relay serve --port 8080 --ttl 30s --strategy fifo
 ```
 
 ### API

@@ -5,12 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/keygen-sh/keygen-go/v3"
-	"github.com/mattn/go-sqlite3"
 	"log/slog"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/keygen-sh/keygen-go/v3"
+	"github.com/mattn/go-sqlite3"
 )
 
 type OperationStatus int
@@ -85,7 +86,7 @@ type License struct {
 	LastClaimedAt  *string
 	LastReleasedAt *string
 	NodeID         *int64
-	CreatedAt      *string
+	CreatedAt      *time.Time
 }
 
 type Node struct {
@@ -93,7 +94,7 @@ type Node struct {
 	Fingerprint     string
 	ClaimedAt       *string
 	LastHeartbeatAt *string
-	CreatedAt       *string
+	CreatedAt       *time.Time
 }
 
 type AuditLog struct {
@@ -101,8 +102,7 @@ type AuditLog struct {
 	Action     string
 	EntityType string
 	EntityID   string
-	Timestamp  *string
-	CreatedAt  *string
+	CreatedAt  *time.Time
 }
 
 func NewManager(config *Config, dataReader FileReaderFunc, verifier func(cert []byte) LicenseVerifier) Manager {

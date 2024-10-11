@@ -3,7 +3,7 @@ CREATE TABLE nodes (
     fingerprint TEXT UNIQUE NOT NULL,
     claimed_at TEXT,
     last_heartbeat_at TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE licenses (
@@ -14,7 +14,7 @@ CREATE TABLE licenses (
     last_claimed_at TEXT,
     last_released_at TEXT,
     node_id INTEGER UNIQUE,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE SET NULL
 );
 
@@ -23,5 +23,5 @@ CREATE TABLE audit_logs (
     action TEXT NOT NULL,
     entity_type TEXT NOT NULL,
     entity_id TEXT NOT NULL,
-    timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

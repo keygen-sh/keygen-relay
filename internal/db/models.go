@@ -4,12 +4,16 @@
 
 package db
 
+import (
+	"time"
+)
+
 type AuditLog struct {
 	ID         int64
 	Action     string
 	EntityType string
 	EntityID   string
-	Timestamp  *string
+	CreatedAt  *time.Time
 }
 
 type License struct {
@@ -20,7 +24,7 @@ type License struct {
 	LastClaimedAt  *string
 	LastReleasedAt *string
 	NodeID         *int64
-	CreatedAt      *string
+	CreatedAt      *time.Time
 }
 
 type Node struct {
@@ -28,5 +32,5 @@ type Node struct {
 	Fingerprint     string
 	ClaimedAt       *string
 	LastHeartbeatAt *string
-	CreatedAt       *string
+	CreatedAt       *time.Time
 }

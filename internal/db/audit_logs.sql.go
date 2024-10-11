@@ -10,9 +10,9 @@ import (
 )
 
 const getAuditLogs = `-- name: GetAuditLogs :many
-SELECT id, action, entity_type, entity_id, timestamp
+SELECT id, action, entity_type, entity_id, created_at
 FROM audit_logs
-ORDER BY timestamp DESC
+ORDER BY created_at DESC
 LIMIT ?
 `
 
@@ -30,7 +30,7 @@ func (q *Queries) GetAuditLogs(ctx context.Context, limit int64) ([]AuditLog, er
 			&i.Action,
 			&i.EntityType,
 			&i.EntityID,
-			&i.Timestamp,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -46,10 +46,10 @@ func (q *Queries) GetAuditLogs(ctx context.Context, limit int64) ([]AuditLog, er
 }
 
 const getAuditLogsByEntity = `-- name: GetAuditLogsByEntity :many
-SELECT id, action, entity_type, entity_id, timestamp
+SELECT id, action, entity_type, entity_id, created_at
 FROM audit_logs
 WHERE entity_id = ? AND entity_type = ?
-ORDER BY timestamp DESC
+ORDER BY created_at DESC
 `
 
 type GetAuditLogsByEntityParams struct {
@@ -71,7 +71,7 @@ func (q *Queries) GetAuditLogsByEntity(ctx context.Context, arg GetAuditLogsByEn
 			&i.Action,
 			&i.EntityType,
 			&i.EntityID,
-			&i.Timestamp,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

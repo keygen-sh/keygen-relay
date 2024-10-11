@@ -11,7 +11,7 @@ import (
 
 const deleteInactiveNodes = `-- name: DeleteInactiveNodes :exec
 DELETE FROM nodes
-WHERE datetime(last_heartbeat_at) <= datetime('now', ?)
+WHERE last_heartbeat_at <= datetime('now', ?)
 `
 
 func (q *Queries) DeleteInactiveNodes(ctx context.Context, datetime interface{}) error {

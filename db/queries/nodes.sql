@@ -23,4 +23,4 @@ DELETE FROM nodes WHERE fingerprint = ?;
 
 -- name: DeleteInactiveNodes :exec
 DELETE FROM nodes
-WHERE datetime(last_heartbeat_at) <= datetime('now', ?);
+WHERE last_heartbeat_at <= datetime('now', ?);

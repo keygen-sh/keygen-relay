@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
@@ -79,10 +80,10 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 	return cmd
 }
 
-func formatTime(t *string) string {
+func formatTime(t *time.Time) string {
 	if t == nil {
 		return "-"
 	}
 
-	return *t
+	return t.Format(time.RFC3339)
 }

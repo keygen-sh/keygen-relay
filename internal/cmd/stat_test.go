@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
@@ -14,8 +15,8 @@ import (
 
 func TestStatCmd_Success(t *testing.T) {
 	nodeID := int64(123)
-	lastClaimedAt := "2024-01-01T00:00:00Z"
-	lastReleasedAt := "2024-01-05T10:00:00Z"
+	lastClaimedAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	lastReleasedAt, _ := time.Parse(time.RFC3339, "2024-01-05T10:00:00Z")
 
 	manager := &testutils.FakeManager{
 		GetLicenseByIDFn: func(ctx context.Context, id string) (licenses.License, error) {

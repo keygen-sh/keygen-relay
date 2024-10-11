@@ -21,8 +21,8 @@ type License struct {
 	File           []byte
 	Key            string
 	Claims         int64
-	LastClaimedAt  *string
-	LastReleasedAt *string
+	LastClaimedAt  *time.Time
+	LastReleasedAt *time.Time
 	NodeID         *int64
 	CreatedAt      *time.Time
 }
@@ -30,7 +30,7 @@ type License struct {
 type Node struct {
 	ID              int64
 	Fingerprint     string
-	ClaimedAt       *string
-	LastHeartbeatAt *string
+	ClaimedAt       *time.Time
+	LastHeartbeatAt *time.Time
 	CreatedAt       *time.Time
 }

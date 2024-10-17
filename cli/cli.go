@@ -109,14 +109,55 @@ func initStore(ctx context.Context, cfg *config.Config) (licenses.Store, *sql.DB
 		return nil, nil, err
 	}
 
-	//enable foreign key for sqlite
-	_, err = dbConn.Exec("PRAGMA foreign_keys = ON")
-	if err != nil {
-		log.Fatal("Failed to enable foreign keys:", err)
+	slog.Info("applying database pragmas", "path", cfg.DB.DatabaseFilePath)
+
+	// set the journal mode to Write-Ahead Logging for concurrency
+	if _, err := dbConn.Exec("PRAGMA journal_mode = WAL"); err != nil {
+		log.Fatalf("failed to set journal_mode pragma: %v", err)
+	}
+
+	// set synchronous mode to NORMAL to better balance performance and safety
+	if _, err := dbConn.Exec("PRAGMA synchronous = NORMAL"); err != nil {
+		log.Fatalf("failed to set synchronous pragma: %v", err)
+	}
+
+	// set busy timeout to 5 seconds to avoid lock-related errors
+	if _, err := dbConn.Exec("PRAGMA busy_timeout = 5000"); err != nil {
+		log.Fatalf("failed to set busy_timeout pragma: %v", err)
+	}
+
+	// set cache size to 20MB for faster data access
+	if _, err := dbConn.Exec("PRAGMA cache_size = -20000"); err != nil {
+		log.Fatalf("failed to set cache_size pragma: %v", err)
+	}
+
+	// enable foreign key constraints
+	if _, err := dbConn.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		log.Fatalf("failed to set foreign_keys pragma: %v", err)
+	}
+
+	// enable auto vacuuming and set it to incremental mode for gradual space reclaiming
+	if _, err := dbConn.Exec("PRAGMA auto_vacuum = INCREMENTAL"); err != nil {
+		log.Fatalf("failed to set auto_vacuum pragma: %v", err)
+	}
+
+	// store temporary tables and data in memory for better performance
+	if _, err := dbConn.Exec("PRAGMA temp_store = MEMORY"); err != nil {
+		log.Fatalf("failed to set temp_store pragma: %v", err)
+	}
+
+	// set the mmap_size to 2GB for faster read/write access using memory-mapped I/O
+	if _, err := dbConn.Exec("PRAGMA mmap_size = 2147483648"); err != nil {
+		log.Fatalf("failed to set mmap_size pragma: %v", err)
+	}
+
+	// set the page size to 8KB for balanced memory usage and performance
+	if _, err := dbConn.Exec("PRAGMA page_size = 8192"); err != nil {
+		log.Fatalf("failed to set page_size pragma: %v", err)
 	}
 
 	if !dbExists {
-		slog.Info("Applying database schema", "path", cfg.DB.DatabaseFilePath)
+		slog.Info("applying database schema", "path", cfg.DB.DatabaseFilePath)
 
 		if _, err := dbConn.ExecContext(ctx, schema.SchemaSQL); err != nil {
 			slog.Error("failed to execute schema", "error", err)

@@ -26,7 +26,7 @@ var (
 )
 
 func Run() int {
-	var dbConnection *sql.DB
+	var conn *sql.DB
 
 	cfg := config.New()
 	manager := licenses.NewManager(cfg.License, os.ReadFile, licenses.NewKeygenLicenseVerifier)
@@ -52,22 +52,22 @@ Version:
 			}
 			cfg.License.EnabledAudit = !disableAudit
 
-			// Initialization database connection in PersistentPreRun hook for getting persistent flags
-			store, dbConn, err := initStore(ctx, cfg)
+			// init database connection in PersistentPreRun hook for getting persistent flags
+			var store licenses.Store
+
+			store, conn, err = initStore(ctx, cfg)
 			if err != nil {
 				slog.Error("failed to initialize store", "error", err)
 				return err
 			}
-
-			dbConnection = dbConn
 
 			manager.AttachStore(store)
 
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			if dbConnection != nil {
-				if err := dbConnection.Close(); err != nil {
+			if conn != nil {
+				if err := conn.Close(); err != nil {
 					slog.Error("failed to close database connection", "error", err)
 					return err
 				}
@@ -76,8 +76,13 @@ Version:
 		},
 	}
 
-	rootCmd.PersistentFlags().StringVar(&cfg.DB.DatabaseFilePath, "database", "./relay.sqlite", "specify an alternate database path")
-	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", `log verbosity e.g. -vvv (default "error")`)
+	defaultDatabasePath := os.Getenv("RELAY_DATABASE")
+	if defaultDatabasePath == "" {
+		defaultDatabasePath = "./relay.sqlite"
+	}
+
+	rootCmd.PersistentFlags().StringVar(&cfg.DB.DatabaseFilePath, "database", defaultDatabasePath, "the path to a .sqlite database file [$RELAY_DATABASE=<path>]")
+	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", `log level e.g. -vvv for "info" (default -v=1 i.e. "error")`)
 	rootCmd.PersistentFlags().Bool("no-audit", false, "disable audit logs")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Logger.DisableColor, "no-color", false, "disable colors in command output [$NO_COLOR=1]")
 

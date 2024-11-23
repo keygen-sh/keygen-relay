@@ -124,7 +124,7 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			slog.Warn("license file not found", "filePath", licenseFilePath)
-			return fmt.Errorf("not found the license file at '%s'", licenseFilePath)
+			return fmt.Errorf("license file not found at '%s'", licenseFilePath)
 		}
 
 		slog.Error("failed to read license file", "filePath", licenseFilePath, "error", err)

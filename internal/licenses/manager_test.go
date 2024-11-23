@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/keygen-sh/keygen-relay/internal/licenses"
-	"github.com/keygen-sh/keygen-relay/internal/testutils"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/testutils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAddLicense_Success(t *testing.T) {
@@ -85,7 +86,7 @@ func TestAddLicense_FileNotFound(t *testing.T) {
 	err := manager.AddLicense(context.Background(), "non_existent.lic", "test_key", "test_public_key")
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not found the license file at 'non_existent.lic'")
+	assert.Contains(t, err.Error(), "license file not found at 'non_existent.lic'")
 }
 
 func TestRemoveLicense_Success(t *testing.T) {

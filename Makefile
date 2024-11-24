@@ -1,5 +1,10 @@
 PACKAGE_NAME    := github.com/keygen-sh/keygen-relay
 PACKAGE_VERSION := $(shell cat VERSION)
+PACKAGE_MAJOR   := $(shell cat VERSION | cut -d. -f1)
+PACKAGE_MINOR   := $(shell cat VERSION | cut -d. -f2)
+PACKAGE_PATCH   := $(shell cat VERSION | cut -d. -f3 | cut -d- -f1)
+PACKAGE_PRE     := $(shell cat VERSION | grep -oP '(?<=-)[^+]*')
+PACKAGE_BUILD   := $(shell cat VERSION | grep -oP '(?<=\+).*')
 PACKAGE_CHANNEL  = stable
 
 ifeq ($(findstring -rc.,$(PACKAGE_VERSION)), -rc.)
@@ -87,93 +92,117 @@ build-installer:
 build-version:
 	cp VERSION dist/version
 
+.PHONY: build-image
+build-image:
+	docker buildx build --platform "linux/amd64,linux/arm64" --output type=oci,dest=dist/relay-$(PACKAGE_VERSION).tar .
+
 .PHONY: build-all
 build-all: clean build-linux-386 build-linux-amd64 build-linux-arm build-linux-arm64 build-linux-s390x \
-	build-windows-386 build-windows-amd64 build-windows-arm64 build-installer build-version
+	build-windows-386 build-windows-amd64 build-windows-arm64 build-installer build-version build-image
 
 .PHONY: release-new
 release-new:
-	keygen new --name "Keygen Relay v$(PACKAGE_VERSION)" --channel ${PACKAGE_CHANNEL} --version ${PACKAGE_VERSION}
+	keygen new --name "Keygen Relay v$(PACKAGE_VERSION)" --channel $(PACKAGE_CHANNEL) --version $(PACKAGE_VERSION)
 
 .PHONY: release-linux-386
 release-linux-386:
-	keygen upload dist/relay-linux-386-$(PACKAGE_VERSION) --filename relay_linux_386 --release ${PACKAGE_VERSION} --platform linux --arch 386
+	keygen upload dist/relay-linux-386-$(PACKAGE_VERSION) --filename relay_linux_386 --release $(PACKAGE_VERSION) --platform linux --arch 386
 
 .PHONY: release-linux-amd64
 release-linux-amd64:
-	keygen upload dist/relay-linux-amd64-$(PACKAGE_VERSION) --filename relay_linux_amd64 --release ${PACKAGE_VERSION} --platform linux --arch amd64
+	keygen upload dist/relay-linux-amd64-$(PACKAGE_VERSION) --filename relay_linux_amd64 --release $(PACKAGE_VERSION) --platform linux --arch amd64
 
 .PHONY: release-linux-arm
 release-linux-arm:
-	keygen upload dist/relay-linux-arm-$(PACKAGE_VERSION) --filename relay_linux_arm --release ${PACKAGE_VERSION} --platform linux --arch arm
+	keygen upload dist/relay-linux-arm-$(PACKAGE_VERSION) --filename relay_linux_arm --release $(PACKAGE_VERSION) --platform linux --arch arm
 
 .PHONY: release-linux-arm64
 release-linux-arm64:
-	keygen upload dist/relay-linux-arm64-$(PACKAGE_VERSION) --filename relay_linux_arm64 --release ${PACKAGE_VERSION} --platform linux --arch arm64
+	keygen upload dist/relay-linux-arm64-$(PACKAGE_VERSION) --filename relay_linux_arm64 --release $(PACKAGE_VERSION) --platform linux --arch arm64
 
 # .PHONY: release-linux-mips
 # release-linux-mips:
-# 	keygen upload dist/relay-linux-mips-$(PACKAGE_VERSION) --filename relay_linux_mips --release ${PACKAGE_VERSION} --platform linux --arch mips
+# 	keygen upload dist/relay-linux-mips-$(PACKAGE_VERSION) --filename relay_linux_mips --release $(PACKAGE_VERSION) --platform linux --arch mips
 
 # .PHONY: release-linux-mipsle
 # release-linux-mipsle:
-# 	keygen upload dist/relay-linux-mipsle-$(PACKAGE_VERSION) --filename relay_linux_mipsle --release ${PACKAGE_VERSION} --platform linux --arch mipsle
+# 	keygen upload dist/relay-linux-mipsle-$(PACKAGE_VERSION) --filename relay_linux_mipsle --release $(PACKAGE_VERSION) --platform linux --arch mipsle
 
 # .PHONY: release-linux-mips64
 # release-linux-mips64:
-# 	keygen upload dist/relay-linux-mips64-$(PACKAGE_VERSION) --filename relay_linux_mips64 --release ${PACKAGE_VERSION} --platform linux --arch mips64
+# 	keygen upload dist/relay-linux-mips64-$(PACKAGE_VERSION) --filename relay_linux_mips64 --release $(PACKAGE_VERSION) --platform linux --arch mips64
 
 # .PHONY: release-linux-mips64le
 # release-linux-mips64le:
-# 	keygen upload dist/relay-linux-mips64le-$(PACKAGE_VERSION) --filename relay_linux_mips64le --release ${PACKAGE_VERSION} --platform linux --arch mips64le
+# 	keygen upload dist/relay-linux-mips64le-$(PACKAGE_VERSION) --filename relay_linux_mips64le --release $(PACKAGE_VERSION) --platform linux --arch mips64le
 
 .PHONY: release-linux-s390x
 release-linux-s390x:
-	keygen upload dist/relay-linux-s390x-$(PACKAGE_VERSION) --filename relay_linux_s390x --release ${PACKAGE_VERSION} --platform linux --arch s390x
+	keygen upload dist/relay-linux-s390x-$(PACKAGE_VERSION) --filename relay_linux_s390x --release $(PACKAGE_VERSION) --platform linux --arch s390x
 
 # .PHONY: release-darwin-amd64
 # release-darwin-amd64:
-# 	keygen upload dist/relay-darwin-amd64-$(PACKAGE_VERSION) --filename relay_darwin_amd64 --release ${PACKAGE_VERSION} --platform darwin --arch amd64
+# 	keygen upload dist/relay-darwin-amd64-$(PACKAGE_VERSION) --filename relay_darwin_amd64 --release $(PACKAGE_VERSION) --platform darwin --arch amd64
 
 # .PHONY: release-darwin-arm64
 # release-darwin-arm64:
-# 	keygen upload dist/relay-darwin-arm64-$(PACKAGE_VERSION) --filename relay_darwin_arm64 --release ${PACKAGE_VERSION} --platform darwin --arch arm64
+# 	keygen upload dist/relay-darwin-arm64-$(PACKAGE_VERSION) --filename relay_darwin_arm64 --release $(PACKAGE_VERSION) --platform darwin --arch arm64
 
 .PHONY: release-windows-386
 release-windows-386:
-	keygen upload dist/relay-windows-386-$(PACKAGE_VERSION).exe --filename relay_windows_386.exe --release ${PACKAGE_VERSION} --platform windows --arch 386
+	keygen upload dist/relay-windows-386-$(PACKAGE_VERSION).exe --filename relay_windows_386.exe --release $(PACKAGE_VERSION) --platform windows --arch 386
 
 .PHONY: release-windows-amd64
 release-windows-amd64:
-	keygen upload dist/relay-windows-amd64-$(PACKAGE_VERSION).exe --filename relay_windows_amd64.exe --release ${PACKAGE_VERSION} --platform windows --arch amd64
+	keygen upload dist/relay-windows-amd64-$(PACKAGE_VERSION).exe --filename relay_windows_amd64.exe --release $(PACKAGE_VERSION) --platform windows --arch amd64
 
 .PHONY: release-windows-arm64
 release-windows-arm64:
-	keygen upload dist/relay-windows-arm64-$(PACKAGE_VERSION).exe --filename relay_windows_arm64.exe --release ${PACKAGE_VERSION} --platform windows --arch arm64
+	keygen upload dist/relay-windows-arm64-$(PACKAGE_VERSION).exe --filename relay_windows_arm64.exe --release $(PACKAGE_VERSION) --platform windows --arch arm64
 
 .PHONY: release-installer
 release-installer:
-	keygen upload dist/install.sh --release ${PACKAGE_VERSION}
+	keygen upload dist/install.sh --release $(PACKAGE_VERSION)
 
 .PHONY: release-version
 release-version:
-	keygen upload dist/version --release ${PACKAGE_VERSION} --filetype txt
+	keygen upload dist/version --release $(PACKAGE_VERSION) --filetype txt
 
 .PHONY: release-publish
 release-publish:
-	keygen publish --release ${PACKAGE_VERSION}
+	keygen publish --release $(PACKAGE_VERSION)
 
 .PHONY: release-tag
 release-tag:
 ifeq ($(PACKAGE_CHANNEL),stable)
 	keygen untag --release latest
-	keygen tag latest --release ${PACKAGE_VERSION}
+	keygen tag latest --release $(PACKAGE_VERSION)
 endif
 
+.PHONY: release-image-new
+release-image-new:
+	keygen new --name "Keygen Relay v$(PACKAGE_VERSION)" --channel $(PACKAGE_CHANNEL) --version $(PACKAGE_VERSION) --package relay
+
+.PHONY: release-image-tarball
+release-image-tarball:
+	keygen upload dist/relay-$(PACKAGE_VERSION).tar --release $(PACKAGE_VERSION) --package relay
+
+.PHONY: release-image-tag
+release-image-tag:
+ifeq ($(PACKAGE_CHANNEL),stable)
+	keygen untag latest v$(PACKAGE_MAJOR) v$(PACKAGE_MAJOR).$(PACKAGE_MINOR) --release latest --package relay
+	keygen tag latest v$(PACKAGE_MAJOR) v$(PACKAGE_MAJOR).$(PACKAGE_MINOR) --release $(PACKAGE_VERSION) --package relay
+endif
+
+.PHONY: release-image
+release-image:
+	release-image-new release-image-tarball release-image-tag
+
+# FIXME(ezekg) refactor into release-cli
 .PHONY: release
 release: release-new release-linux-386 release-linux-amd64 release-linux-arm release-linux-arm64 \
 	release-linux-s390x release-windows-386 release-windows-amd64 release-windows-arm64 \
-	release-installer release-version release-publish release-tag
+	release-installer release-version release-publish release-tag release-image
 
 .PHONY: test
 test:

@@ -179,7 +179,7 @@ license on behalf of a node.
 
 #### Health check
 
-The Relay server's health can be tested with the following endpoint:
+The Relay server's health can be checked with the following endpoint:
 
 ```bash
 curl -v -X GET "http://localhost:6349/v1/health"

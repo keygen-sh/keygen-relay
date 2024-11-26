@@ -9,7 +9,7 @@
 
 > [!NOTE]
 > **During the beta, your feedback is greatly appreciated!** We'd love to hear
-> about your use case and how you're running Relay inside of your customer
+> about your use-cases and how you're running Relay inside of your customer
 > environments — from networking to deployment. Feel free to open an [issue](https://github.com/keygen-sh/keygen-relay/issues),
 > or reach out to us on [Discord](https://keygen.sh/discord/).
 

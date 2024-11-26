@@ -82,6 +82,7 @@ Version:
 	rootCmd.PersistentFlags().Bool("no-audit", try.Try(try.EnvBool("RELAY_NO_AUDIT"), try.Static(false)), "disable audit logs [$RELAY_NO_AUDIT=1]")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Logger.DisableColor, "no-color", false, "disable colors in command output [$NO_COLOR=1]")
 
+	rootCmd.SetHelpCommand(cmd.HelpCmd())
 	rootCmd.AddCommand(cmd.AddCmd(manager))
 	rootCmd.AddCommand(cmd.DelCmd(manager))
 	rootCmd.AddCommand(cmd.LsCmd(manager))

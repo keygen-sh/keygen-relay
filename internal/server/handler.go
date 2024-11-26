@@ -2,10 +2,11 @@ package server
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"log/slog"
 	"net/http"
+
+	"github.com/gorilla/mux"
+	"github.com/keygen-sh/keygen-relay/internal/licenses"
 )
 
 type RequestBodyPayload struct {
@@ -33,8 +34,13 @@ func NewHandler(m licenses.Manager) Handler {
 }
 
 func (h *handler) RegisterRoutes(r *mux.Router) {
+	r.HandleFunc("/v1/health", h.HealthCheck).Methods("GET")
 	r.HandleFunc("/v1/nodes/{fingerprint}", h.ClaimLicense).Methods("PUT")
 	r.HandleFunc("/v1/nodes/{fingerprint}", h.ReleaseLicense).Methods("DELETE")
+}
+
+func (h *handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {

@@ -166,6 +166,16 @@ relay serve --port 8080 --ttl 30s --strategy fifo
 The API can be consumed by the vendor's application to claim and release a
 license on behalf of a node.
 
+#### Health check
+
+The Relay server's health can be tested with the following endpoint:
+
+```bash
+curl -v -X GET "http://localhost:6349/v1/health"
+```
+
+Returns a `200 OK` status code.
+
 #### Claim license
 
 Nodes can claim a license by sending a `PUT` request to the

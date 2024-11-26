@@ -185,7 +185,7 @@ endif
 
 # .PHONY: release-image-tarball
 # release-image-tarball:
-# 	keygen upload dist/relay-$(PACKAGE_VERSION).tar --release $(PACKAGE_VERSION) --package relay
+# 	keygen upload dist/relay-$(PACKAGE_VERSION).tar --filename relay.tar --release $(PACKAGE_VERSION) --package relay
 
 # .PHONY: release-image-tag
 # release-image-tag:

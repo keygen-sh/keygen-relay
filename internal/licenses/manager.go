@@ -68,7 +68,7 @@ type Manager interface {
 	ClaimLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error)
 	ReleaseLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error)
 	Config() *Config
-	CleanupInactiveNodes(ctx context.Context, ttl time.Duration) error
+	CullInactiveNodes(ctx context.Context, ttl time.Duration) error
 }
 
 type manager struct {
@@ -397,7 +397,7 @@ func (m *manager) selectLicenseClaimStrategy(ctx context.Context, store Store, n
 	}
 }
 
-func (m *manager) CleanupInactiveNodes(ctx context.Context, ttl time.Duration) error {
+func (m *manager) CullInactiveNodes(ctx context.Context, ttl time.Duration) error {
 	tx, err := m.store.BeginTx(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)

@@ -7,8 +7,15 @@ RUN make build
 FROM alpine:latest
 RUN apk add --no-cache bash openssh-client sqlite-libs
 COPY --from=build /go/src/github.com/keygen-sh/keygen-relay/bin/* /usr/bin/
-VOLUME /app/data
-ENV RELAY_DATABASE=/app/data/relay.sqlite
-WORKDIR /app
+
+VOLUME /data
+WORKDIR /data
+
+ENV RELAY_DATABASE=/data/relay.sqlite
+ENV RELAY_ADDR=0.0.0.0
+ENV RELAY_PORT=6349
 
 ENTRYPOINT ["relay"]
+
+EXPOSE 6349
+CMD ["relay serve"]

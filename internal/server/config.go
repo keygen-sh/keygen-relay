@@ -39,19 +39,21 @@ func isValidStrategy(v string) bool {
 }
 
 type Config struct {
+	ServerAddr       string
 	ServerPort       int
 	EnabledHeartbeat bool
 	TTL              time.Duration
 	Strategy         StrategyType
-	CleanupInterval  time.Duration
+	CullInterval     time.Duration
 }
 
 func NewConfig() *Config {
 	return &Config{
+		ServerAddr:       "0.0.0.0",
 		ServerPort:       6349,
 		TTL:              30 * time.Second,
 		EnabledHeartbeat: true,
 		Strategy:         FIFO,
-		CleanupInterval:  15 * time.Second,
+		CullInterval:     15 * time.Second,
 	}
 }

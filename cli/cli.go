@@ -16,6 +16,7 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/logger"
 	"github.com/keygen-sh/keygen-relay/internal/server"
+	"github.com/keygen-sh/keygen-relay/internal/try"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 )
@@ -76,14 +77,9 @@ Version:
 		},
 	}
 
-	defaultDatabasePath := os.Getenv("RELAY_DATABASE")
-	if defaultDatabasePath == "" {
-		defaultDatabasePath = "./relay.sqlite"
-	}
-
-	rootCmd.PersistentFlags().StringVar(&cfg.DB.DatabaseFilePath, "database", defaultDatabasePath, "the path to a .sqlite database file [$RELAY_DATABASE=<path>]")
-	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", `log level e.g. -vvv for "info" (default -v=1 i.e. "error")`)
-	rootCmd.PersistentFlags().Bool("no-audit", false, "disable audit logs")
+	rootCmd.PersistentFlags().StringVar(&cfg.DB.DatabaseFilePath, "database", try.Try(try.Env("RELAY_DATABASE"), try.Static("./relay.sqlite")), "the path to a .sqlite database file [$RELAY_DATABASE=./relay.sqlite]")
+	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", `log level e.g. -vvv for "info" (default -v=1 i.e. "error") [$DEBUG=1]`)
+	rootCmd.PersistentFlags().Bool("no-audit", try.Try(try.EnvBool("RELAY_NO_AUDIT"), try.Static(false)), "disable audit logs [$RELAY_NO_AUDIT=1]")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Logger.DisableColor, "no-color", false, "disable colors in command output [$NO_COLOR=1]")
 
 	rootCmd.AddCommand(cmd.AddCmd(manager))

@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/output"
+	"github.com/keygen-sh/keygen-relay/internal/try"
 	"github.com/spf13/cobra"
 )
 
@@ -31,9 +32,9 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&filePath, "file", "", "license file")
-	cmd.Flags().StringVar(&key, "key", "", "license key")
-	cmd.Flags().StringVar(&publicKey, "public-key", "", "your keygen.sh public key for verification")
+	cmd.Flags().StringVar(&filePath, "file", "", "path to a signed and encrypted license file")
+	cmd.Flags().StringVar(&key, "key", "", "license key for decryption")
+	cmd.Flags().StringVar(&publicKey, "public-key", try.Try(try.Env("RELAY_PUBLIC_KEY"), try.Static("")), "your keygen.sh public key for verification [$KEYGEN_PUBLIC_KEY=e8601...e48b6]")
 
 	_ = cmd.MarkFlagRequired("file")
 	_ = cmd.MarkFlagRequired("key")

@@ -49,7 +49,7 @@ func TestServeCmd_Flags(t *testing.T) {
 			TTL:              30 * time.Second,
 			EnabledHeartbeat: true,
 			Strategy:         server.FIFO,
-			CleanupInterval:  5 * time.Second,
+			CullInterval:     5 * time.Second,
 		},
 		License: &licenses.Config{},
 	}
@@ -85,7 +85,7 @@ func TestServeCmd_Flags(t *testing.T) {
 	assert.Equal(t, server.LIFO, cfg.Server.Strategy)
 	assert.Equal(t, string(cfg.Server.Strategy), cfg.License.Strategy)
 	assert.Equal(t, cfg.Server.EnabledHeartbeat, cfg.License.ExtendOnHeartbeat)
-	assert.Equal(t, cfg.Server.CleanupInterval, 5*time.Second)
+	assert.Equal(t, cfg.Server.CullInterval, 5*time.Second)
 }
 
 func TestServeCmd_InvalidStrategy(t *testing.T) {

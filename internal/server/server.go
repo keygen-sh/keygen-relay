@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/keygen-sh/keygen-relay/internal/licenses"
 )
 
 type Server interface {
@@ -40,7 +41,7 @@ func (s *server) Run() error {
 	slog.Info("Starting server", "port", s.config.ServerPort)
 
 	if s.Config().EnabledHeartbeat {
-		go s.startCleanupRoutine(ctx)
+		go s.startCullRoutine(ctx)
 	}
 
 	err := http.ListenAndServe(address, s.router)
@@ -70,29 +71,29 @@ func (s *server) Manager() licenses.Manager {
 	return s.manager
 }
 
-func (s *server) startCleanupRoutine(ctx context.Context) {
-	ticker := time.NewTicker(s.config.CleanupInterval)
+func (s *server) startCullRoutine(ctx context.Context) {
+	ticker := time.NewTicker(s.config.CullInterval)
 	defer ticker.Stop()
 
-	slog.Debug("Starting Cleanup zombie nodes process", "ttl", s.config.TTL, "cleanupInterval", s.config.CleanupInterval)
+	slog.Debug("Starting cull routine for inactive nodes", "ttl", s.config.TTL, "cullInterval", s.config.CullInterval)
 
 	for {
 		select {
 		case <-ticker.C:
-			s.cleanupInactiveNodes()
+			s.cull()
 		case <-ctx.Done():
-			slog.Debug("Stopping cleanup routine")
+			slog.Debug("Stopping cull routine")
 			return
 		}
 	}
 }
 
-func (s *server) cleanupInactiveNodes() {
+func (s *server) cull() {
 	ctx := context.Background()
-	err := s.manager.CleanupInactiveNodes(ctx, s.Config().TTL)
+	err := s.manager.CullInactiveNodes(ctx, s.Config().TTL)
 	if err != nil {
-		slog.Error("Failed to cleanup inactive nodes", "error", err)
+		slog.Error("Failed to cull inactive nodes", "error", err)
 	} else {
-		slog.Debug("Cleanup of inactive nodes completed")
+		slog.Debug("Successfully culled inactive nodes")
 	}
 }

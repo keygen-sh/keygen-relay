@@ -1,12 +1,13 @@
 package logger
 
 import (
-	"github.com/lmittmann/tint"
-	"github.com/mattn/go-isatty"
 	"io"
 	"log/slog"
 	"os"
 	"time"
+
+	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 )
 
 func Init(config *Config, output io.Writer) {
@@ -14,7 +15,11 @@ func Init(config *Config, output io.Writer) {
 
 	switch config.Verbosity {
 	case 0:
-		programLevel.Set(slog.LevelError)
+		if v := os.Getenv("DEBUG"); v == "true" || v == "t" || v == "1" {
+			programLevel.Set(slog.LevelDebug)
+		} else {
+			programLevel.Set(slog.LevelError)
+		}
 	case 1:
 		programLevel.Set(slog.LevelError)
 	case 2:

@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/output"
+	"github.com/keygen-sh/keygen-relay/internal/try"
 	"github.com/keygen-sh/keygen-relay/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -71,7 +72,7 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 	cmd.Flags().StringVar(&licenseID, "license", "", "license ID to print stats for")
 	_ = cmd.MarkFlagRequired("license")
 
-	cmd.Flags().BoolVar(&plain, "plain", false, "display the table in plain text format")
+	cmd.Flags().BoolVar(&plain, "plain", try.Try(try.EnvBool("RELAY_PLAIN"), try.EnvBool("NO_COLOR"), try.EnvBool("CI"), try.Static(false)), "display the table in plain text format [$RELAY_PLAIN=1]")
 
 	return cmd
 }

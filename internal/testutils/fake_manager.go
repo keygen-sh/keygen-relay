@@ -2,20 +2,21 @@ package testutils
 
 import (
 	"context"
-	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"time"
+
+	"github.com/keygen-sh/keygen-relay/internal/licenses"
 )
 
 type FakeManager struct {
-	store                  licenses.Store
-	AddLicenseFn           func(ctx context.Context, filePath, key, publicKey string) error
-	RemoveLicenseFn        func(ctx context.Context, id string) error
-	ListLicensesFn         func(ctx context.Context) ([]licenses.License, error)
-	GetLicenseByIDFn       func(ctx context.Context, id string) (licenses.License, error)
-	ClaimLicenseFn         func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
-	ReleaseLicenseFn       func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
-	CleanupInactiveNodesFn func(ctx context.Context, ttl time.Duration) error
-	ConfigFn               func() *licenses.Config
+	store               licenses.Store
+	AddLicenseFn        func(ctx context.Context, filePath, key, publicKey string) error
+	RemoveLicenseFn     func(ctx context.Context, id string) error
+	ListLicensesFn      func(ctx context.Context) ([]licenses.License, error)
+	GetLicenseByIDFn    func(ctx context.Context, id string) (licenses.License, error)
+	ClaimLicenseFn      func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
+	ReleaseLicenseFn    func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
+	CullInactiveNodesFn func(ctx context.Context, ttl time.Duration) error
+	ConfigFn            func() *licenses.Config
 }
 
 func (f *FakeManager) AddLicense(ctx context.Context, filePath, key, publicKey string) error {
@@ -66,9 +67,9 @@ func (f *FakeManager) ReleaseLicense(ctx context.Context, fingerprint string) (*
 	return nil, nil
 }
 
-func (f *FakeManager) CleanupInactiveNodes(ctx context.Context, ttl time.Duration) error {
-	if f.CleanupInactiveNodesFn != nil {
-		return f.CleanupInactiveNodesFn(ctx, ttl)
+func (f *FakeManager) CullInactiveNodes(ctx context.Context, ttl time.Duration) error {
+	if f.CullInactiveNodesFn != nil {
+		return f.CullInactiveNodesFn(ctx, ttl)
 	}
 
 	return nil

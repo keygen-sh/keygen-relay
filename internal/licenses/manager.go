@@ -259,7 +259,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 		}
 
 		if m.config.EnabledAudit {
-			if err := m.store.InsertAuditLog(ctx, "claimed", "license", claimedLicense.ID); err != nil {
+			if err := m.store.InsertAuditLog(ctx, "extended", "license", claimedLicense.ID); err != nil {
 				slog.Warn("failed to insert audit log", "licenseID", claimedLicense.ID, "error", err)
 			}
 		}
@@ -368,9 +368,7 @@ func (m *manager) fetchOrCreateNode(ctx context.Context, store Store, fingerprin
 			}
 
 			if m.config.EnabledAudit {
-				err = store.InsertAuditLog(ctx, "inserted", "node", strconv.FormatInt(node.ID, 10))
-
-				if err != nil {
+				if err := store.InsertAuditLog(ctx, "activated", "node", strconv.FormatInt(node.ID, 10)); err != nil {
 					slog.Warn("failed to insert audit log", "nodeID", node.ID, "Fingerprint", node.Fingerprint, "error", err)
 				}
 			}
@@ -423,8 +421,7 @@ func (m *manager) CullInactiveNodes(ctx context.Context, ttl time.Duration) erro
 
 	if m.config.EnabledAudit {
 		for _, lic := range releasedLicenses {
-			err = m.store.InsertAuditLog(ctx, "automatically_released", "License", lic.ID)
-			if err != nil {
+			if err := m.store.InsertAuditLog(ctx, "culled", "License", lic.ID); err != nil {
 				slog.Error("failed to insert audit log", "licenseID", lic.ID, "error", err)
 			}
 		}

@@ -421,7 +421,7 @@ func (m *manager) CullInactiveNodes(ctx context.Context, ttl time.Duration) erro
 
 	if m.config.EnabledAudit {
 		for _, lic := range releasedLicenses {
-			if err := m.store.InsertAuditLog(ctx, "culled", "License", lic.ID); err != nil {
+			if err := m.store.InsertAuditLog(ctx, "culled", "license", lic.ID); err != nil {
 				slog.Error("failed to insert audit log", "licenseID", lic.ID, "error", err)
 			}
 		}

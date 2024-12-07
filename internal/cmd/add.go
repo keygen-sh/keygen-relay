@@ -26,7 +26,7 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 				return nil
 			}
 
-			output.PrintSuccess(cmd.OutOrStdout(), "License added successfully.")
+			output.PrintSuccess(cmd.OutOrStdout(), "license added successfully")
 
 			return nil
 		},

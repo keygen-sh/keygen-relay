@@ -38,7 +38,7 @@ func (s *server) Run() error {
 	defer cancel()
 
 	address := fmt.Sprintf(":%d", s.config.ServerPort)
-	slog.Info("Starting server", "port", s.config.ServerPort)
+	slog.Info("starting server", "port", s.config.ServerPort)
 
 	if s.Config().EnabledHeartbeat {
 		go s.startCullRoutine(ctx)
@@ -46,12 +46,12 @@ func (s *server) Run() error {
 
 	err := http.ListenAndServe(address, s.router)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		slog.Error("Server failed to start", "error", err)
+		slog.Error("server failed to start", "error", err)
 		cancel()
 		return err
 	}
 
-	slog.Info("Server stopped")
+	slog.Info("server stopped")
 	return nil
 }
 
@@ -75,14 +75,14 @@ func (s *server) startCullRoutine(ctx context.Context) {
 	ticker := time.NewTicker(s.config.CullInterval)
 	defer ticker.Stop()
 
-	slog.Debug("Starting cull routine for inactive nodes", "ttl", s.config.TTL, "cullInterval", s.config.CullInterval)
+	slog.Debug("starting cull routine for inactive nodes", "ttl", s.config.TTL, "cullInterval", s.config.CullInterval)
 
 	for {
 		select {
 		case <-ticker.C:
 			s.cull()
 		case <-ctx.Done():
-			slog.Debug("Stopping cull routine")
+			slog.Debug("stopping cull routine")
 			return
 		}
 	}
@@ -92,8 +92,8 @@ func (s *server) cull() {
 	ctx := context.Background()
 	err := s.manager.CullInactiveNodes(ctx, s.Config().TTL)
 	if err != nil {
-		slog.Error("Failed to cull inactive nodes", "error", err)
+		slog.Error("failed to cull inactive nodes", "error", err)
 	} else {
-		slog.Debug("Successfully culled inactive nodes")
+		slog.Debug("successfully culled inactive nodes")
 	}
 }

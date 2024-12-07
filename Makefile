@@ -206,11 +206,11 @@ release: release-new release-linux-386 release-linux-amd64 release-linux-arm rel
 
 .PHONY: test
 test:
-	go test -race ./...
+	go test -v -race ./...
 
 .PHONY: test-integration
 test-integration:
-	go test -tags=integrity ./...
+	go test -v -tags=integration ./...
 
 .PHONY: test-all
 test-all: test test-integration

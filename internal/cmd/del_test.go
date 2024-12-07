@@ -50,7 +50,7 @@ func TestDelCmd_Error(t *testing.T) {
 
 	_ = delCmd.Execute()
 
-	assert.Contains(t, errBuf.String(), "Error: failed to remove license")
+	assert.Contains(t, errBuf.String(), "error: failed to remove license")
 }
 
 func TestDelCmd_MissingID(t *testing.T) {

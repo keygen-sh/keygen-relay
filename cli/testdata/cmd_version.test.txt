@@ -1,0 +1,4 @@
+exec relay version
+
+# should use the dev version
+stdout '<not set>'

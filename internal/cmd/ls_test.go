@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
-	"testing"
 
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func TestLsCmd_NoLicenses(t *testing.T) {
 	err := lsCmd.Execute()
 	assert.NoError(t, err)
 
-	assert.Contains(t, outBuf.String(), "No licenses found.")
+	assert.Contains(t, outBuf.String(), "no licenses found")
 }
 
 func TestLsCmd_Error(t *testing.T) {

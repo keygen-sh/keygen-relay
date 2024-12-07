@@ -23,7 +23,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 	router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 		path, _ := route.GetPathTemplate()
-		slog.Debug("Route registered", "path", path)
+		slog.Debug("route registered", "path", path)
 		return nil
 	})
 
@@ -38,7 +38,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			noHeartbeats, err := cmd.Flags().GetBool("no-heartbeats")
 			if err != nil {
-				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("Failed to parse 'no-heartbeats' flag: %v", err))
+				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("failed to parse 'no-heartbeats' flag: %v", err))
 				return err
 			}
 
@@ -46,7 +46,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 			ttl, err := cmd.Flags().GetDuration("ttl")
 			if err != nil {
-				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("Failed to parse 'ttl' flag: %v", err))
+				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("failed to parse 'ttl' flag: %v", err))
 				return err
 			}
 
@@ -58,7 +58,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 			srv.Manager().Config().Strategy = string(cfg.Strategy)
 			srv.Manager().Config().ExtendOnHeartbeat = cfg.EnabledHeartbeat
 
-			output.PrintSuccess(cmd.OutOrStdout(), "The server is starting")
+			output.PrintSuccess(cmd.OutOrStdout(), "the server is starting")
 
 			if err := srv.Run(); err != nil {
 				output.PrintError(cmd.ErrOrStderr(), err.Error())
@@ -91,7 +91,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 func validateTTL(ttl time.Duration) error {
 	if ttl < minTTL {
-		return fmt.Errorf("TTL value must be at least %s", minTTL)
+		return fmt.Errorf("time-to-live value must be at least %s", minTTL)
 	}
 	return nil
 }

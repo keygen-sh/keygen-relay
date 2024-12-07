@@ -34,7 +34,7 @@ func TestServeCmd_Defaults(t *testing.T) {
 	err := serveCmd.Execute()
 
 	assert.NoError(t, err)
-	assert.Contains(t, output.String(), "The server is starting")
+	assert.Contains(t, output.String(), "the server is starting")
 	assert.True(t, mockServer.RunCalled)
 	assert.Equal(t, 6349, cfg.ServerPort)
 	assert.Equal(t, 30*time.Second, cfg.TTL)
@@ -77,7 +77,7 @@ func TestServeCmd_Flags(t *testing.T) {
 	err := serveCmd.Execute()
 
 	assert.NoError(t, err)
-	assert.Contains(t, output.String(), "The server is starting")
+	assert.Contains(t, output.String(), "the server is starting")
 	assert.True(t, mockServer.RunCalled)
 	assert.Equal(t, 9090, cfg.Server.ServerPort)
 	assert.Equal(t, 1*time.Minute, cfg.Server.TTL)
@@ -137,7 +137,7 @@ func TestServeCmd_RunError(t *testing.T) {
 
 	_ = serveCmd.Execute()
 
-	assert.Contains(t, output.String(), "Error: failed to start server")
+	assert.Contains(t, output.String(), "error: failed to start server")
 
 	assert.True(t, mockServer.RunCalled)
 }
@@ -165,6 +165,6 @@ func TestServeCmd_InvalidTTL(t *testing.T) {
 
 	_ = serveCmd.Execute()
 
-	assert.Contains(t, output.String(), "TTL value must be at least 30s")
+	assert.Contains(t, output.String(), "time-to-live value must be at least 30s")
 	assert.False(t, mockServer.RunCalled)
 }

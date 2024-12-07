@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -91,7 +92,7 @@ func TestClaimLicense_HeartbeatDisabled_Conflict(t *testing.T) {
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusConflict, rr.Code)
-	assert.Contains(t, rr.Body.String(), "License claim conflict, heartbeat disabled")
+	assert.Contains(t, rr.Body.String(), "failed to claim license due to conflict")
 }
 
 func TestClaimLicense_NoLicensesAvailable(t *testing.T) {
@@ -113,7 +114,7 @@ func TestClaimLicense_NoLicensesAvailable(t *testing.T) {
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusGone, rr.Code)
-	assert.Contains(t, rr.Body.String(), "No licenses available")
+	assert.Contains(t, rr.Body.String(), "no licenses available")
 }
 
 func TestClaimLicense_InternalServerError(t *testing.T) {
@@ -133,7 +134,7 @@ func TestClaimLicense_InternalServerError(t *testing.T) {
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	assert.Contains(t, rr.Body.String(), "Failed to claim license")
+	assert.Contains(t, rr.Body.String(), "failed to claim license")
 }
 
 func TestReleaseLicense_Success(t *testing.T) {
@@ -177,7 +178,7 @@ func TestReleaseLicense_NotFound(t *testing.T) {
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusNotFound, rr.Code)
-	assert.Contains(t, rr.Body.String(), "Claim not found")
+	assert.Contains(t, rr.Body.String(), "claim not found")
 }
 
 func TestReleaseLicense_InternalServerError(t *testing.T) {
@@ -197,5 +198,5 @@ func TestReleaseLicense_InternalServerError(t *testing.T) {
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	assert.Contains(t, rr.Body.String(), "Failed to release license")
+	assert.Contains(t, rr.Body.String(), "failed to release license")
 }

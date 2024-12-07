@@ -30,7 +30,7 @@ func TestAddCmd_Success(t *testing.T) {
 	err := addCmd.Execute()
 	assert.NoError(t, err)
 
-	assert.Contains(t, outBuf.String(), "License added successfully.")
+	assert.Contains(t, outBuf.String(), "license added successfully")
 }
 
 func TestAddCmd_Error(t *testing.T) {
@@ -51,7 +51,7 @@ func TestAddCmd_Error(t *testing.T) {
 
 	_ = addCmd.Execute()
 
-	assert.Contains(t, errBuf.String(), "Error: failed to add license")
+	assert.Contains(t, errBuf.String(), "error: failed to add license")
 }
 
 func TestAddCmd_MissingRequiredFlags(t *testing.T) {

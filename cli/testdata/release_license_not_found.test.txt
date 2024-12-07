@@ -1,0 +1,16 @@
+# start the server
+env PORT=65008
+exec relay serve --port $PORT &server_process_test&
+
+# wait for the server to start
+exec sleep 1
+
+# attempt to release a license that was never claimed
+exec curl -s -o response.txt -w "%{http_code}" -X DELETE http://localhost:$PORT/v1/nodes/test_fingerprint
+
+# expect a not found response with status code 404 and error message
+stdout '404'
+exec grep '{"error":"claim not found"}' response.txt
+
+# kill the process (stop the server)
+kill server_process_test

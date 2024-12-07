@@ -48,10 +48,10 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.licenseManager.ClaimLicense(r.Context(), fingerprint)
 	if err != nil {
-		slog.Error("Failed to claim license", "error", err)
+		slog.Error("failed to claim license", "error", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Failed to claim license"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "failed to claim license"})
 		return
 	}
 
@@ -71,15 +71,15 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	case licenses.OperationStatusConflict:
 		w.WriteHeader(http.StatusConflict)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": "License claim conflict, heartbeat disabled"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "failed to claim license due to conflict"})
 		return
 	case licenses.OperationStatusNoLicensesAvailable:
 		w.WriteHeader(http.StatusGone)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": "No licenses available"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "no licenses available"})
 		return
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Unknown claim status"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "unknown claim status"})
 		return
 	}
 }
@@ -89,10 +89,10 @@ func (h *handler) ReleaseLicense(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.licenseManager.ReleaseLicense(r.Context(), fingerprint)
 	if err != nil {
-		slog.Error("Failed to release license", "error", err)
+		slog.Error("failed to release license", "error", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Failed to release license"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "failed to release license"})
 		return
 	}
 
@@ -103,9 +103,9 @@ func (h *handler) ReleaseLicense(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	case licenses.OperationStatusNotFound:
 		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Claim not found"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "claim not found"})
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Unknown release status"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "unknown release status"})
 	}
 }

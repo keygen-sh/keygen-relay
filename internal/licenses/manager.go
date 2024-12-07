@@ -118,7 +118,7 @@ func (m *manager) AttachStore(store Store) {
 }
 
 func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licenseKey string, publicKey string) error {
-	slog.Debug("Starting to add a new license", "filePath", licenseFilePath)
+	slog.Debug("starting to add a new license", "filePath", licenseFilePath)
 
 	cert, err := m.dataReader(licenseFilePath)
 	if err != nil {
@@ -131,7 +131,7 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 		return fmt.Errorf("failed to read license file: %w", err)
 	}
 
-	slog.Debug("Successfully read the license file", "filePath", licenseFilePath)
+	slog.Debug("successfully read the license file", "filePath", licenseFilePath)
 
 	lic := m.verifier(cert)
 	keygen.PublicKey = publicKey
@@ -149,7 +149,7 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 	key := dec.License.Key
 
 	if err := m.store.InsertLicense(ctx, id, cert, key); err != nil {
-		slog.Debug("Failed to insert license", "licenseID", id, "error", err)
+		slog.Debug("failed to insert license", "licenseID", id, "error", err)
 
 		if isUniqueConstraintError(err) {
 			return fmt.Errorf("license with the provided key already exists")
@@ -171,12 +171,12 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 }
 
 func (m *manager) RemoveLicense(ctx context.Context, id string) error {
-	slog.Debug("Starting to remove license", "id", id)
+	slog.Debug("starting to remove license", "id", id)
 
 	err := m.store.DeleteLicenseByIDTx(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("license with ID %s not found", id)
+			return fmt.Errorf("license %s not found", id)
 		}
 		slog.Debug("failed to delete license", "licenseID", id, "error", err)
 		return fmt.Errorf("failed to delete license: %w", err)
@@ -194,7 +194,7 @@ func (m *manager) RemoveLicense(ctx context.Context, id string) error {
 }
 
 func (m *manager) ListLicenses(ctx context.Context) ([]License, error) {
-	slog.Debug("Fetching licenses")
+	slog.Debug("fetching licenses")
 
 	licenses, err := m.store.GetAllLicenses(ctx)
 	if err != nil {
@@ -212,13 +212,13 @@ func (m *manager) ListLicenses(ctx context.Context) ([]License, error) {
 }
 
 func (m *manager) GetLicenseByID(ctx context.Context, id string) (License, error) {
-	slog.Debug("Fetching license", "id", id)
+	slog.Debug("fetching license", "id", id)
 
 	license, err := m.store.GetLicenseByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			slog.Debug("license not found", "licenseID", id)
-			return License{}, fmt.Errorf("license with ID %s: %w", id, ErrLicenseNotFound)
+			return License{}, fmt.Errorf("license %s: %w", id, ErrLicenseNotFound)
 		}
 
 		slog.Debug("failed to fetch license by ID", "licenseID", id, "error", err)
@@ -246,7 +246,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 
 	if err == nil {
 		if !m.config.ExtendOnHeartbeat { // if heartbeat is disabled, we can't extend the claimed license
-			slog.Warn("license claim conflict due to heartbeat disabled", "nodeID", node.ID, "Fingerprint", node.Fingerprint)
+			slog.Warn("failed to claim license due to conflict due to heartbeat disabled", "nodeID", node.ID, "Fingerprint", node.Fingerprint)
 			return &LicenseOperationResult{Status: OperationStatusConflict}, nil
 		}
 

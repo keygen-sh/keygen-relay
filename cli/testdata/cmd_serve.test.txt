@@ -1,26 +1,26 @@
-# Add the license
+# add the license
 exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
 
-# Set a port as environment variable
+# set a port as environment variable
 env PORT=65007
 
-# Start the server in the background with the environment variable
+# start the server in the background with the environment variable
 exec relay serve --port $PORT &server_process&
 
-# Wait for the server to start
+# wait for the server to start
 exec sleep 1
 
-# Claim a license using the port from the environment variable
+# claim a license using the port from the environment variable
 exec curl -s -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
 
-# Expect license data in the response
+# expect license data in the response
 stdout '"license_file":'
 
-# Release the license
+# release the license
 exec curl -s -X DELETE http://localhost:$PORT/v1/nodes/test_fingerprint
 
-# Expect no content in the response
+# expect no content in the response
 stdout ''
 
-# Kill the process (stop the server)
+# kill the process (stop the server)
 kill server_process

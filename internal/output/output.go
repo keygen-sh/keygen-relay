@@ -9,7 +9,7 @@ import (
 
 func PrintError(w io.Writer, message string) {
 	errorMessage := color.New(color.FgRed, color.Bold).SprintFunc()
-	fmt.Fprintf(w, "%s: %s\n", errorMessage("Error"), message)
+	fmt.Fprintf(w, "%s: %s\n", errorMessage("error"), message)
 }
 
 func PrintSuccess(w io.Writer, message string) {

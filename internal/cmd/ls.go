@@ -29,7 +29,7 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 			}
 
 			if len(licensesList) == 0 {
-				output.PrintSuccess(cmd.OutOrStdout(), "No licenses found.")
+				output.PrintSuccess(cmd.OutOrStdout(), "no licenses found")
 
 				return nil
 			}
@@ -67,7 +67,7 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 			}
 
 			if err := renderer.Render(tableRows, columns); err != nil {
-				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("Error rendering table: %v", err))
+				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("error rendering table: %v", err))
 
 				return err
 			}

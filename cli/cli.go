@@ -3,12 +3,16 @@ package cli
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"runtime"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	schema "github.com/keygen-sh/keygen-relay/db"
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
 	"github.com/keygen-sh/keygen-relay/internal/config"
@@ -51,6 +55,7 @@ Version:
 			if err != nil {
 				return fmt.Errorf("failed to parse 'no-audit' flag: %v", err)
 			}
+
 			cfg.License.EnabledAudit = !disableAudit
 
 			// init database connection in PersistentPreRun hook for getting persistent flags
@@ -59,6 +64,7 @@ Version:
 			store, conn, err = initStore(ctx, cfg)
 			if err != nil {
 				slog.Error("failed to initialize store", "error", err)
+
 				return err
 			}
 
@@ -70,9 +76,11 @@ Version:
 			if conn != nil {
 				if err := conn.Close(); err != nil {
 					slog.Error("failed to close database connection", "error", err)
+
 					return err
 				}
 			}
+
 			return nil
 		},
 	}
@@ -98,84 +106,129 @@ Version:
 }
 
 func initStore(ctx context.Context, cfg *config.Config) (licenses.Store, *sql.DB, error) {
-	dbExists := fileExists(cfg.DB.DatabaseFilePath)
-	dbConn, err := sql.Open("sqlite3", cfg.DB.DatabaseFilePath)
-
+	conn, err := sql.Open("sqlite3", cfg.DB.DatabaseFilePath)
 	if err != nil {
 		slog.Error("failed to open database", "error", err)
+
 		return nil, nil, err
 	}
 
-	if err := dbConn.Ping(); err != nil {
+	if err := conn.Ping(); err != nil {
 		slog.Error("failed to connect to database", "error", err)
+
 		return nil, nil, err
 	}
 
 	slog.Info("applying database pragmas", "path", cfg.DB.DatabaseFilePath)
 
 	// set the journal mode to Write-Ahead Logging for concurrency
-	if _, err := dbConn.Exec("PRAGMA journal_mode = WAL"); err != nil {
-		log.Fatalf("failed to set journal_mode pragma: %v", err)
+	if _, err := conn.Exec("PRAGMA journal_mode = WAL"); err != nil {
+		slog.Error("failed to set journal_mode pragma", "error", err)
+
+		return nil, nil, err
 	}
 
 	// set synchronous mode to NORMAL to better balance performance and safety
-	if _, err := dbConn.Exec("PRAGMA synchronous = NORMAL"); err != nil {
-		log.Fatalf("failed to set synchronous pragma: %v", err)
+	if _, err := conn.Exec("PRAGMA synchronous = NORMAL"); err != nil {
+		slog.Error("failed to set synchronous pragma", "error", err)
+
+		return nil, nil, err
 	}
 
 	// set busy timeout to 5 seconds to avoid lock-related errors
-	if _, err := dbConn.Exec("PRAGMA busy_timeout = 5000"); err != nil {
-		log.Fatalf("failed to set busy_timeout pragma: %v", err)
+	if _, err := conn.Exec("PRAGMA busy_timeout = 5000"); err != nil {
+		slog.Error("failed to set busy_timeout pragma", "error", err)
+
+		return nil, nil, err
 	}
 
 	// set cache size to 20MB for faster data access
-	if _, err := dbConn.Exec("PRAGMA cache_size = -20000"); err != nil {
-		log.Fatalf("failed to set cache_size pragma: %v", err)
+	if _, err := conn.Exec("PRAGMA cache_size = -20000"); err != nil {
+		slog.Error("failed to set cache_size pragma", "error", err)
+
+		return nil, nil, err
 	}
 
 	// enable foreign key constraints
-	if _, err := dbConn.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		log.Fatalf("failed to set foreign_keys pragma: %v", err)
+	if _, err := conn.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		slog.Error("failed to set foreign_keys pragma", "error", err)
+
+		return nil, nil, err
 	}
 
 	// enable auto vacuuming and set it to incremental mode for gradual space reclaiming
-	if _, err := dbConn.Exec("PRAGMA auto_vacuum = INCREMENTAL"); err != nil {
-		log.Fatalf("failed to set auto_vacuum pragma: %v", err)
+	if _, err := conn.Exec("PRAGMA auto_vacuum = INCREMENTAL"); err != nil {
+		slog.Error("failed to set auto_vacuum pragma", "error", err)
+
+		return nil, nil, err
 	}
 
 	// store temporary tables and data in memory for better performance
-	if _, err := dbConn.Exec("PRAGMA temp_store = MEMORY"); err != nil {
-		log.Fatalf("failed to set temp_store pragma: %v", err)
+	if _, err := conn.Exec("PRAGMA temp_store = MEMORY"); err != nil {
+		slog.Error("failed to set temp_store pragma", "error", err)
+
+		return nil, nil, err
 	}
 
 	// set the mmap_size to 2GB for faster read/write access using memory-mapped I/O
-	if _, err := dbConn.Exec("PRAGMA mmap_size = 2147483648"); err != nil {
-		log.Fatalf("failed to set mmap_size pragma: %v", err)
+	if _, err := conn.Exec("PRAGMA mmap_size = 2147483648"); err != nil {
+		slog.Error("failed to set mmap_size pragma", "error", err)
+
+		return nil, nil, err
 	}
 
 	// set the page size to 8KB for balanced memory usage and performance
-	if _, err := dbConn.Exec("PRAGMA page_size = 8192"); err != nil {
-		log.Fatalf("failed to set page_size pragma: %v", err)
+	if _, err := conn.Exec("PRAGMA page_size = 8192"); err != nil {
+		slog.Error("failed to set page_size pragma", "error", err)
+
+		return nil, nil, err
 	}
 
-	if !dbExists {
+	// apply migrations if database exists otherwise init and apply schema
+	if ok := schemaExists(conn); ok {
+		slog.Info("applying database migrations", "path", cfg.DB.DatabaseFilePath)
+
+		migrations, err := iofs.New(schema.Migrations, "migrations")
+		if err != nil {
+			slog.Error("failed to initialize migrations fs", "error", err)
+
+			return nil, nil, err
+		}
+
+		migrator, err := db.NewMigrator(conn, migrations)
+		if err != nil {
+			slog.Error("failed to initialize migrations", "error", err)
+
+			return nil, nil, err
+		}
+
+		if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+			slog.Error("failed to apply migrations", "error", err)
+
+			return nil, nil, err
+		}
+	} else {
 		slog.Info("applying database schema", "path", cfg.DB.DatabaseFilePath)
 
-		if _, err := dbConn.ExecContext(ctx, schema.SchemaSQL); err != nil {
-			slog.Error("failed to execute schema", "error", err)
+		if _, err := conn.ExecContext(ctx, schema.Schema); err != nil {
+			slog.Error("failed to apply schema", "error", err)
+
 			return nil, nil, err
 		}
 	}
 
-	queries := db.New(dbConn)
-	return db.NewStore(queries, dbConn), dbConn, nil
+	queries := db.New(conn)
+	store := db.NewStore(queries, conn)
+
+	return store, conn, nil
 }
 
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if err != nil {
-		slog.Debug("file does not exist", "filename", filename)
-		return false
-	}
-	return !info.IsDir()
+func schemaExists(db *sql.DB) bool {
+	var t string
+
+	// check if any tables exist
+	query := `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' LIMIT 1`
+	err := db.QueryRow(query).Scan(&t)
+
+	return err == nil
 }

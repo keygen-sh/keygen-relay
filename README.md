@@ -291,7 +291,7 @@ To run regular tests:
 make test
 ```
 
-To run integration tests, tagged with `// +build integrity`:
+To run integration tests, tagged with `// +build integration`:
 
 ```bash
 make test-integration

@@ -60,7 +60,7 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 			}
 
 			if err := renderer.Render(tableRows, columns); err != nil {
-				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("Error rendering table: %v", err))
+				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("error rendering table: %v", err))
 
 				return nil
 			}

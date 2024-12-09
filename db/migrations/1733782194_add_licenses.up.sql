@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS licenses (
+    id TEXT PRIMARY KEY,
+    file BLOB UNIQUE NOT NULL,
+    key TEXT UNIQUE NOT NULL,
+    claims INTEGER DEFAULT 0 NOT NULL,
+    last_claimed_at DATETIME,
+    last_released_at DATETIME,
+    node_id INTEGER UNIQUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE SET NULL
+);

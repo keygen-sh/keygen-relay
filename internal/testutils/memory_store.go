@@ -2,9 +2,12 @@ package testutils
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"testing"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	schema "github.com/keygen-sh/keygen-relay/db"
 	"github.com/keygen-sh/keygen-relay/internal/db"
 	_ "github.com/mattn/go-sqlite3"
@@ -21,8 +24,18 @@ func NewMemoryStore(t *testing.T) (*db.Store, *sql.DB) {
 		t.Fatalf("failed to enable foreign keys: %v", err)
 	}
 
-	if _, err := conn.Exec(schema.Schema); err != nil {
-		t.Fatalf("failed to apply schema: %v", err)
+	migrations, err := iofs.New(schema.Migrations, "migrations")
+	if err != nil {
+		t.Fatalf("failed to initialize migrations fs: %v", err)
+	}
+
+	migrator, err := db.NewMigrator(conn, migrations)
+	if err != nil {
+		t.Fatalf("failed to initialize migrations: %v", err)
+	}
+
+	if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		t.Fatalf("failed to apply migrations: %v", err)
 	}
 
 	store := db.NewStore(db.New(conn), conn)

@@ -3,7 +3,6 @@ module github.com/keygen-sh/keygen-relay
 go 1.23.1
 
 require (
-	github.com/bmatcuk/doublestar/v4 v4.7.1
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.1.1
 	github.com/charmbracelet/lipgloss v0.13.0

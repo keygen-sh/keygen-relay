@@ -184,51 +184,31 @@ func initStore(ctx context.Context, cfg *config.Config) (licenses.Store, *sql.DB
 		return nil, nil, err
 	}
 
-	// apply migrations if database exists otherwise init and apply schema
-	if ok := schemaExists(conn); ok {
-		slog.Info("applying database migrations", "path", cfg.DB.DatabaseFilePath)
+	// apply migrations e.g. initial schema, etc.
+	slog.Info("applying database migrations", "path", cfg.DB.DatabaseFilePath)
 
-		migrations, err := iofs.New(schema.Migrations, "migrations")
-		if err != nil {
-			slog.Error("failed to initialize migrations fs", "error", err)
+	migrations, err := iofs.New(schema.Migrations, "migrations")
+	if err != nil {
+		slog.Error("failed to initialize migrations fs", "error", err)
 
-			return nil, nil, err
-		}
+		return nil, nil, err
+	}
 
-		migrator, err := db.NewMigrator(conn, migrations)
-		if err != nil {
-			slog.Error("failed to initialize migrations", "error", err)
+	migrator, err := db.NewMigrator(conn, migrations)
+	if err != nil {
+		slog.Error("failed to initialize migrations", "error", err)
 
-			return nil, nil, err
-		}
+		return nil, nil, err
+	}
 
-		if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-			slog.Error("failed to apply migrations", "error", err)
+	if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		slog.Error("failed to apply migrations", "error", err)
 
-			return nil, nil, err
-		}
-	} else {
-		slog.Info("applying database schema", "path", cfg.DB.DatabaseFilePath)
-
-		if _, err := conn.ExecContext(ctx, schema.Schema); err != nil {
-			slog.Error("failed to apply schema", "error", err)
-
-			return nil, nil, err
-		}
+		return nil, nil, err
 	}
 
 	queries := db.New(conn)
 	store := db.NewStore(queries, conn)
 
 	return store, conn, nil
-}
-
-func schemaExists(db *sql.DB) bool {
-	var t string
-
-	// check if any tables exist
-	query := `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' LIMIT 1`
-	err := db.QueryRow(query).Scan(&t)
-
-	return err == nil
 }

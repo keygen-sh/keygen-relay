@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS nodes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fingerprint TEXT UNIQUE NOT NULL,
+    claimed_at DATETIME,
+    last_heartbeat_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

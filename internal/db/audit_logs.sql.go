@@ -7,37 +7,28 @@ package db
 
 import (
 	"context"
-	"time"
 )
 
 const getAuditLogs = `-- name: GetAuditLogs :many
-SELECT id, event_type_id, entity_type, entity_id, created_at
+SELECT id, event_type_id, entity_type_id, entity_id, created_at
 FROM audit_logs
 ORDER BY created_at DESC
 LIMIT ?
 `
 
-type GetAuditLogsRow struct {
-	ID          int64
-	EventTypeID int64
-	EntityType  string
-	EntityID    string
-	CreatedAt   *time.Time
-}
-
-func (q *Queries) GetAuditLogs(ctx context.Context, limit int64) ([]GetAuditLogsRow, error) {
+func (q *Queries) GetAuditLogs(ctx context.Context, limit int64) ([]AuditLog, error) {
 	rows, err := q.db.QueryContext(ctx, getAuditLogs, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetAuditLogsRow
+	var items []AuditLog
 	for rows.Next() {
-		var i GetAuditLogsRow
+		var i AuditLog
 		if err := rows.Scan(
 			&i.ID,
 			&i.EventTypeID,
-			&i.EntityType,
+			&i.EntityTypeID,
 			&i.EntityID,
 			&i.CreatedAt,
 		); err != nil {
@@ -55,38 +46,30 @@ func (q *Queries) GetAuditLogs(ctx context.Context, limit int64) ([]GetAuditLogs
 }
 
 const getAuditLogsByEntity = `-- name: GetAuditLogsByEntity :many
-SELECT id, event_type_id, entity_type, entity_id, created_at
+SELECT id, event_type_id, entity_type_id, entity_id, created_at
 FROM audit_logs
-WHERE entity_id = ? AND entity_type = ?
+WHERE entity_type_id = ? AND entity_id = ?
 ORDER BY created_at DESC
 `
 
 type GetAuditLogsByEntityParams struct {
-	EntityID   string
-	EntityType string
+	EntityTypeID int64
+	EntityID     string
 }
 
-type GetAuditLogsByEntityRow struct {
-	ID          int64
-	EventTypeID int64
-	EntityType  string
-	EntityID    string
-	CreatedAt   *time.Time
-}
-
-func (q *Queries) GetAuditLogsByEntity(ctx context.Context, arg GetAuditLogsByEntityParams) ([]GetAuditLogsByEntityRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAuditLogsByEntity, arg.EntityID, arg.EntityType)
+func (q *Queries) GetAuditLogsByEntity(ctx context.Context, arg GetAuditLogsByEntityParams) ([]AuditLog, error) {
+	rows, err := q.db.QueryContext(ctx, getAuditLogsByEntity, arg.EntityTypeID, arg.EntityID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetAuditLogsByEntityRow
+	var items []AuditLog
 	for rows.Next() {
-		var i GetAuditLogsByEntityRow
+		var i AuditLog
 		if err := rows.Scan(
 			&i.ID,
 			&i.EventTypeID,
-			&i.EntityType,
+			&i.EntityTypeID,
 			&i.EntityID,
 			&i.CreatedAt,
 		); err != nil {
@@ -104,17 +87,17 @@ func (q *Queries) GetAuditLogsByEntity(ctx context.Context, arg GetAuditLogsByEn
 }
 
 const insertAuditLog = `-- name: InsertAuditLog :exec
-INSERT INTO audit_logs (event_type_id, entity_type, entity_id)
+INSERT INTO audit_logs (event_type_id, entity_type_id, entity_id)
 VALUES (?, ?, ?)
 `
 
 type InsertAuditLogParams struct {
-	EventTypeID int64
-	EntityType  string
-	EntityID    string
+	EventTypeID  int64
+	EntityTypeID int64
+	EntityID     string
 }
 
 func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error {
-	_, err := q.db.ExecContext(ctx, insertAuditLog, arg.EventTypeID, arg.EntityType, arg.EntityID)
+	_, err := q.db.ExecContext(ctx, insertAuditLog, arg.EventTypeID, arg.EntityTypeID, arg.EntityID)
 	return err
 }

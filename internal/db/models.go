@@ -9,11 +9,16 @@ import (
 )
 
 type AuditLog struct {
-	ID          int64
-	EntityType  string
-	EntityID    string
-	CreatedAt   *time.Time
-	EventTypeID int64
+	ID           int64
+	EventTypeID  int64
+	EntityTypeID int64
+	EntityID     string
+	CreatedAt    *time.Time
+}
+
+type EntityType struct {
+	ID   int64
+	Name string
 }
 
 type EventType struct {

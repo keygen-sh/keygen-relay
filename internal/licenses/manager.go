@@ -26,21 +26,6 @@ const (
 	OperationStatusNoLicensesAvailable
 )
 
-// FIXME(ezkeg) does sqlc support static tables?
-type EventType int
-
-const (
-	EventTypeUnknown EventType = iota
-	EventTypeLicenseAdded
-	EventTypeLicenseRemoved
-	EventTypeLicenseClaimed
-	EventTypeLicenseReleased
-	EventTypeNodeActivated
-	EventTypeNodePing
-	EventTypeNodeCulled
-	EventTypeNodeDeactivated
-)
-
 var (
 	ErrNoLicenses      = errors.New("license pool is empty")
 	ErrLicenseNotFound = errors.New("license not found")
@@ -127,7 +112,7 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseAdded, "license", id); err != nil {
+		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseAdded, db.EntityTypeLicense, id); err != nil {
 			slog.Debug("failed to insert audit log", "licenseID", id, "error", err)
 		}
 	}
@@ -153,7 +138,7 @@ func (m *manager) RemoveLicense(ctx context.Context, id string) error {
 
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseRemoved, "license", id); err != nil {
+		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseRemoved, db.EntityTypeLicense, id); err != nil {
 			slog.Debug("failed to insert audit log", "licenseID", id, "error", err)
 		}
 	}
@@ -232,7 +217,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 		}
 
 		if m.config.EnabledAudit {
-			if err := m.store.InsertAuditLog(ctx, db.EventTypeNodePing, "license", claimedLicense.ID); err != nil {
+			if err := m.store.InsertAuditLog(ctx, db.EventTypeNodePing, db.EntityTypeLicense, claimedLicense.ID); err != nil {
 				slog.Warn("failed to insert audit log", "licenseID", claimedLicense.ID, "error", err)
 			}
 		}
@@ -264,7 +249,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 	}
 
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseClaimed, "license", newLicense.ID); err != nil {
+		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseClaimed, db.EntityTypeLicense, newLicense.ID); err != nil {
 			slog.Warn("failed to insert audit log", "licenseID", newLicense.ID, "error", err)
 		}
 	}
@@ -315,7 +300,7 @@ func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*Lice
 	}
 
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseReleased, "license", claimedLicense.ID); err != nil {
+		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseReleased, db.EntityTypeLicense, claimedLicense.ID); err != nil {
 			slog.Warn("failed to insert audit log", "licenseID", claimedLicense.ID, "error", err)
 		}
 	}
@@ -340,7 +325,7 @@ func (m *manager) fetchOrCreateNode(ctx context.Context, store db.Store, fingerp
 			}
 
 			if m.config.EnabledAudit {
-				if err := store.InsertAuditLog(ctx, db.EventTypeNodeActivated, "node", strconv.FormatInt(node.ID, 10)); err != nil {
+				if err := store.InsertAuditLog(ctx, db.EventTypeNodeActivated, db.EntityTypeNode, strconv.FormatInt(node.ID, 10)); err != nil {
 					slog.Warn("failed to insert audit log", "nodeID", node.ID, "Fingerprint", node.Fingerprint, "error", err)
 				}
 			}
@@ -393,7 +378,7 @@ func (m *manager) CullInactiveNodes(ctx context.Context, ttl time.Duration) erro
 
 	if m.config.EnabledAudit {
 		for _, lic := range releasedLicenses {
-			if err := m.store.InsertAuditLog(ctx, db.EventTypeNodeCulled, "license", lic.ID); err != nil {
+			if err := m.store.InsertAuditLog(ctx, db.EventTypeNodeCulled, db.EntityTypeLicense, lic.ID); err != nil {
 				slog.Error("failed to insert audit log", "licenseID", lic.ID, "error", err)
 			}
 		}

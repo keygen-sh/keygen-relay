@@ -19,7 +19,14 @@ const (
 	EventTypeNodeActivated
 	EventTypeNodePing
 	EventTypeNodeCulled
-	EventTypeNodeDeactivated
+)
+
+type EntityTypeId int
+
+const (
+	EntityTypeUnknown EntityTypeId = iota
+	EntityTypeLicense
+	EntityTypeNode
 )
 
 type Store struct {
@@ -133,11 +140,11 @@ func (s *Store) GetNodeByFingerprint(ctx context.Context, fingerprint string) (*
 	return &node, nil
 }
 
-func (s *Store) InsertAuditLog(ctx context.Context, eventTypeId EventTypeId, entityType string, entityID string) error {
+func (s *Store) InsertAuditLog(ctx context.Context, eventTypeId EventTypeId, entityTypeId EntityTypeId, entityID string) error {
 	params := InsertAuditLogParams{
-		EventTypeID: int64(eventTypeId),
-		EntityType:  entityType,
-		EntityID:    entityID,
+		EventTypeID:  int64(eventTypeId),
+		EntityTypeID: int64(entityTypeId),
+		EntityID:     entityID,
 	}
 	return s.queries.InsertAuditLog(ctx, params)
 }

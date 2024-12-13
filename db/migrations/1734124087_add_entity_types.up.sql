@@ -32,8 +32,8 @@ SELECT
   event_type_id,
   CASE
     entity_type
-    WHEN 'License' THEN 1
-    WHEN 'Node' THEN 2
+    WHEN 'license' THEN 1
+    WHEN 'node' THEN 2
     ELSE 0
   END AS entity_type_id,
   entity_id,

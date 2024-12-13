@@ -14,19 +14,22 @@ import (
 )
 
 func TestStatCmd_Success(t *testing.T) {
-	nodeID := int64(123)
-	lastClaimedAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
 	lastReleasedAt, _ := time.Parse(time.RFC3339, "2024-01-05T10:00:00Z")
+	lastClaimedAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	nodeID := int64(123)
 
 	manager := &testutils.FakeManager{
 		GetLicenseByIDFn: func(ctx context.Context, id string) (*db.License, error) {
+			lastClaimedAt := lastClaimedAt.UTC().Unix()
+			lastReleasedAt := lastReleasedAt.UTC().Unix()
+
 			return &db.License{
 				ID:             "License_1",
 				Key:            "License_Key1",
 				Claims:         5,
-				NodeID:         &nodeID,
-				LastClaimedAt:  &lastClaimedAt,
 				LastReleasedAt: &lastReleasedAt,
+				LastClaimedAt:  &lastClaimedAt,
+				NodeID:         &nodeID,
 			}, nil
 		},
 	}

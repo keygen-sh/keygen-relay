@@ -11,7 +11,7 @@ import (
 
 const claimLicense = `-- name: ClaimLicense :exec
 UPDATE licenses
-SET node_id = ?, last_claimed_at = CURRENT_TIMESTAMP, claims = claims + 1
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = ? AND node_id IS NULL
 `
 
@@ -27,7 +27,7 @@ func (q *Queries) ClaimLicense(ctx context.Context, arg ClaimLicenseParams) erro
 
 const claimUnclaimedLicenseFIFO = `-- name: ClaimUnclaimedLicenseFIFO :one
 UPDATE licenses
-SET node_id = ?, last_claimed_at = CURRENT_TIMESTAMP, claims = claims + 1
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
     SELECT id
     FROM licenses
@@ -56,7 +56,7 @@ func (q *Queries) ClaimUnclaimedLicenseFIFO(ctx context.Context, nodeID *int64) 
 
 const claimUnclaimedLicenseLIFO = `-- name: ClaimUnclaimedLicenseLIFO :one
 UPDATE licenses
-SET node_id = ?, last_claimed_at = CURRENT_TIMESTAMP, claims = claims + 1
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
     SELECT id
     FROM licenses
@@ -85,7 +85,7 @@ func (q *Queries) ClaimUnclaimedLicenseLIFO(ctx context.Context, nodeID *int64) 
 
 const claimUnclaimedLicenseRandom = `-- name: ClaimUnclaimedLicenseRandom :one
 UPDATE licenses
-SET node_id = ?, last_claimed_at = CURRENT_TIMESTAMP, claims = claims + 1
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
     SELECT id
     FROM licenses
@@ -228,7 +228,7 @@ func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) er
 
 const releaseLicenseByNodeID = `-- name: ReleaseLicenseByNodeID :exec
 UPDATE licenses
-SET node_id = NULL, last_released_at = CURRENT_TIMESTAMP
+SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id = ?
 `
 
@@ -239,16 +239,16 @@ func (q *Queries) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64) err
 
 const releaseLicensesFromInactiveNodes = `-- name: ReleaseLicensesFromInactiveNodes :many
 UPDATE licenses
-SET node_id = NULL, last_released_at = CURRENT_TIMESTAMP
+SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id IN (
     SELECT id FROM nodes
-    WHERE datetime(last_heartbeat_at) <= datetime('now', ?)
+    WHERE last_heartbeat_at <= strftime('%s', 'now', ?)
 )
 RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
-func (q *Queries) ReleaseLicensesFromInactiveNodes(ctx context.Context, datetime interface{}) ([]License, error) {
-	rows, err := q.db.QueryContext(ctx, releaseLicensesFromInactiveNodes, datetime)
+func (q *Queries) ReleaseLicensesFromInactiveNodes(ctx context.Context, strftime interface{}) ([]License, error) {
+	rows, err := q.db.QueryContext(ctx, releaseLicensesFromInactiveNodes, strftime)
 	if err != nil {
 		return nil, err
 	}

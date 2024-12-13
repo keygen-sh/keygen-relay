@@ -23,17 +23,17 @@ WHERE id = ?;
 
 -- name: ClaimLicense :exec
 UPDATE licenses
-SET node_id = ?, last_claimed_at = CURRENT_TIMESTAMP, claims = claims + 1
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = ? AND node_id IS NULL;
 
 -- name: ReleaseLicenseByNodeID :exec
 UPDATE licenses
-SET node_id = NULL, last_released_at = CURRENT_TIMESTAMP
+SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id = ?;
 
 -- name: ClaimUnclaimedLicenseFIFO :one
 UPDATE licenses
-SET node_id = ?, last_claimed_at = CURRENT_TIMESTAMP, claims = claims + 1
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
     SELECT id
     FROM licenses
@@ -45,7 +45,7 @@ RETURNING *;
 
 -- name: ClaimUnclaimedLicenseLIFO :one
 UPDATE licenses
-SET node_id = ?, last_claimed_at = CURRENT_TIMESTAMP, claims = claims + 1
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
     SELECT id
     FROM licenses
@@ -57,7 +57,7 @@ RETURNING *;
 
 -- name: ClaimUnclaimedLicenseRandom :one
 UPDATE licenses
-SET node_id = ?, last_claimed_at = CURRENT_TIMESTAMP, claims = claims + 1
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
     SELECT id
     FROM licenses
@@ -69,10 +69,10 @@ RETURNING *;
 
 -- name: ReleaseLicensesFromInactiveNodes :many
 UPDATE licenses
-SET node_id = NULL, last_released_at = CURRENT_TIMESTAMP
+SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id IN (
     SELECT id FROM nodes
-    WHERE datetime(last_heartbeat_at) <= datetime('now', ?)
+    WHERE last_heartbeat_at <= strftime('%s', 'now', ?)
 )
 RETURNING *;
 

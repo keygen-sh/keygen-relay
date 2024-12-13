@@ -11,11 +11,11 @@ import (
 
 const deleteInactiveNodes = `-- name: DeleteInactiveNodes :exec
 DELETE FROM nodes
-WHERE last_heartbeat_at <= datetime('now', ?)
+WHERE last_heartbeat_at <= strftime('%s', 'now', ?)
 `
 
-func (q *Queries) DeleteInactiveNodes(ctx context.Context, datetime interface{}) error {
-	_, err := q.db.ExecContext(ctx, deleteInactiveNodes, datetime)
+func (q *Queries) DeleteInactiveNodes(ctx context.Context, strftime interface{}) error {
+	_, err := q.db.ExecContext(ctx, deleteInactiveNodes, strftime)
 	return err
 }
 
@@ -49,7 +49,7 @@ func (q *Queries) GetNodeByFingerprint(ctx context.Context, fingerprint string) 
 
 const insertNode = `-- name: InsertNode :one
 INSERT INTO nodes (fingerprint, claimed_at, last_heartbeat_at, created_at)
-VALUES (?, NULL, NULL, CURRENT_TIMESTAMP)
+VALUES (?, NULL, NULL, unixepoch())
 RETURNING id, fingerprint, claimed_at, last_heartbeat_at, created_at
 `
 
@@ -68,7 +68,7 @@ func (q *Queries) InsertNode(ctx context.Context, fingerprint string) (Node, err
 
 const updateNodeHeartbeatAndClaimedAtByFingerprint = `-- name: UpdateNodeHeartbeatAndClaimedAtByFingerprint :exec
 UPDATE nodes
-SET last_heartbeat_at = CURRENT_TIMESTAMP, claimed_at = CURRENT_TIMESTAMP
+SET last_heartbeat_at = unixepoch(), claimed_at = unixepoch()
 WHERE fingerprint = ?
 `
 
@@ -79,7 +79,7 @@ func (q *Queries) UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx context.Conte
 
 const updateNodeHeartbeatByFingerprint = `-- name: UpdateNodeHeartbeatByFingerprint :exec
 UPDATE nodes
-SET last_heartbeat_at = CURRENT_TIMESTAMP
+SET last_heartbeat_at = unixepoch()
 WHERE fingerprint = ?
 `
 

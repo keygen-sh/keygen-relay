@@ -1,21 +1,10 @@
--- create entities table
-CREATE TABLE entity_types (id TINYINT PRIMARY KEY, name TEXT NOT NULL);
-
--- insert entities
-INSERT INTO
-  entity_types (id, name)
-VALUES
-  (0, 'unknown'),
-  (1, 'license'),
-  (2, 'node');
-
 -- rebuild the table with the new schema (this is a workaround for sqlite not supporting ALTER TABLE x ALTER COLUMN y NOT NULL)
 CREATE TABLE _audit_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   event_type_id TINYINT NOT NULL REFERENCES event_types (id),
   entity_type_id TINYINT NOT NULL REFERENCES entity_types (id),
   entity_id TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
 -- copy data from the old table to the new
@@ -30,14 +19,9 @@ INSERT INTO
 SELECT
   id,
   event_type_id,
-  CASE
-    entity_type
-    WHEN 'license' THEN 1
-    WHEN 'node' THEN 2
-    ELSE 0
-  END AS entity_type_id,
+  entity_type_id,
   entity_id,
-  created_at
+  strftime('%s', created_at) AS created_at
 FROM
   audit_logs;
 

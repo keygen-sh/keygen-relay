@@ -444,15 +444,15 @@ func TestClaimLicense_LIFO_Strategy(t *testing.T) {
 
 	// we need to update created_at manually, because in tests the records are created very quickly in the same time
 	// update created_at for license_key1
-	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = datetime('now', '-3 seconds') WHERE id = 'license_key1'`)
+	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-3 seconds') WHERE id = 'license_key1'`)
 	assert.NoError(t, err)
 
 	// update created_at for license_key2
-	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = datetime('now', '-2 seconds') WHERE id = 'license_key2'`)
+	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-2 seconds') WHERE id = 'license_key2'`)
 	assert.NoError(t, err)
 
 	// update created_at for license_key3
-	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = datetime('now', '-1 seconds') WHERE id = 'license_key3'`)
+	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-1 seconds') WHERE id = 'license_key3'`)
 	assert.NoError(t, err)
 
 	// claim license with LIFO strategy
@@ -596,7 +596,7 @@ func TestCullInactiveNodes(t *testing.T) {
 
 	// simulate inactive node by updating last_heartbeat_at
 	_, err = dbConn.ExecContext(ctx, `
-        UPDATE nodes SET last_heartbeat_at = datetime('now', '-120 seconds') WHERE fingerprint = ?;
+        UPDATE nodes SET last_heartbeat_at = strftime('%s', 'now', '-120 seconds') WHERE fingerprint = ?;
     `, "test_fingerprint")
 	assert.NoError(t, err)
 

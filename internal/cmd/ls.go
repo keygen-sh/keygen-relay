@@ -81,10 +81,10 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 	return cmd
 }
 
-func formatTime(t *time.Time) string {
+func formatTime(t *int64) string {
 	if t == nil {
 		return "-"
 	}
 
-	return t.Format(time.RFC3339)
+	return time.Unix(*t, 0).UTC().Format(time.RFC3339)
 }

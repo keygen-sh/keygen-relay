@@ -4,15 +4,16 @@ import (
 	"context"
 	"time"
 
+	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 )
 
 type FakeManager struct {
-	store               licenses.Store
+	store               db.Store
 	AddLicenseFn        func(ctx context.Context, filePath, key, publicKey string) error
 	RemoveLicenseFn     func(ctx context.Context, id string) error
-	ListLicensesFn      func(ctx context.Context) ([]licenses.License, error)
-	GetLicenseByIDFn    func(ctx context.Context, id string) (licenses.License, error)
+	ListLicensesFn      func(ctx context.Context) ([]db.License, error)
+	GetLicenseByIDFn    func(ctx context.Context, id string) (*db.License, error)
 	ClaimLicenseFn      func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
 	ReleaseLicenseFn    func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
 	CullInactiveNodesFn func(ctx context.Context, ttl time.Duration) error
@@ -33,21 +34,21 @@ func (f *FakeManager) RemoveLicense(ctx context.Context, id string) error {
 	return nil
 }
 
-func (f *FakeManager) ListLicenses(ctx context.Context) ([]licenses.License, error) {
+func (f *FakeManager) ListLicenses(ctx context.Context) ([]db.License, error) {
 	if f.ListLicensesFn != nil {
 		return f.ListLicensesFn(ctx)
 	}
-	return []licenses.License{}, nil
+	return []db.License{}, nil
 }
 
-func (f *FakeManager) GetLicenseByID(ctx context.Context, id string) (licenses.License, error) {
+func (f *FakeManager) GetLicenseByID(ctx context.Context, id string) (*db.License, error) {
 	if f.GetLicenseByIDFn != nil {
 		return f.GetLicenseByIDFn(ctx, id)
 	}
-	return licenses.License{}, nil
+	return &db.License{}, nil
 }
 
-func (f *FakeManager) AttachStore(store licenses.Store) {
+func (f *FakeManager) AttachStore(store db.Store) {
 	f.store = store
 }
 

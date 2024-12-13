@@ -7,27 +7,36 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
 const getAuditLogs = `-- name: GetAuditLogs :many
-SELECT id, action, entity_type, entity_id, created_at
+SELECT id, event_type_id, entity_type, entity_id, created_at
 FROM audit_logs
 ORDER BY created_at DESC
 LIMIT ?
 `
 
-func (q *Queries) GetAuditLogs(ctx context.Context, limit int64) ([]AuditLog, error) {
+type GetAuditLogsRow struct {
+	ID          int64
+	EventTypeID int64
+	EntityType  string
+	EntityID    string
+	CreatedAt   *time.Time
+}
+
+func (q *Queries) GetAuditLogs(ctx context.Context, limit int64) ([]GetAuditLogsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAuditLogs, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AuditLog
+	var items []GetAuditLogsRow
 	for rows.Next() {
-		var i AuditLog
+		var i GetAuditLogsRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.Action,
+			&i.EventTypeID,
 			&i.EntityType,
 			&i.EntityID,
 			&i.CreatedAt,
@@ -46,7 +55,7 @@ func (q *Queries) GetAuditLogs(ctx context.Context, limit int64) ([]AuditLog, er
 }
 
 const getAuditLogsByEntity = `-- name: GetAuditLogsByEntity :many
-SELECT id, action, entity_type, entity_id, created_at
+SELECT id, event_type_id, entity_type, entity_id, created_at
 FROM audit_logs
 WHERE entity_id = ? AND entity_type = ?
 ORDER BY created_at DESC
@@ -57,18 +66,26 @@ type GetAuditLogsByEntityParams struct {
 	EntityType string
 }
 
-func (q *Queries) GetAuditLogsByEntity(ctx context.Context, arg GetAuditLogsByEntityParams) ([]AuditLog, error) {
+type GetAuditLogsByEntityRow struct {
+	ID          int64
+	EventTypeID int64
+	EntityType  string
+	EntityID    string
+	CreatedAt   *time.Time
+}
+
+func (q *Queries) GetAuditLogsByEntity(ctx context.Context, arg GetAuditLogsByEntityParams) ([]GetAuditLogsByEntityRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAuditLogsByEntity, arg.EntityID, arg.EntityType)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AuditLog
+	var items []GetAuditLogsByEntityRow
 	for rows.Next() {
-		var i AuditLog
+		var i GetAuditLogsByEntityRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.Action,
+			&i.EventTypeID,
 			&i.EntityType,
 			&i.EntityID,
 			&i.CreatedAt,
@@ -87,17 +104,17 @@ func (q *Queries) GetAuditLogsByEntity(ctx context.Context, arg GetAuditLogsByEn
 }
 
 const insertAuditLog = `-- name: InsertAuditLog :exec
-INSERT INTO audit_logs (action, entity_type, entity_id)
+INSERT INTO audit_logs (event_type_id, entity_type, entity_id)
 VALUES (?, ?, ?)
 `
 
 type InsertAuditLogParams struct {
-	Action     string
-	EntityType string
-	EntityID   string
+	EventTypeID int64
+	EntityType  string
+	EntityID    string
 }
 
 func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error {
-	_, err := q.db.ExecContext(ctx, insertAuditLog, arg.Action, arg.EntityType, arg.EntityID)
+	_, err := q.db.ExecContext(ctx, insertAuditLog, arg.EventTypeID, arg.EntityType, arg.EntityID)
 	return err
 }

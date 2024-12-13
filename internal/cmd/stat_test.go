@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
-	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,8 +19,8 @@ func TestStatCmd_Success(t *testing.T) {
 	lastReleasedAt, _ := time.Parse(time.RFC3339, "2024-01-05T10:00:00Z")
 
 	manager := &testutils.FakeManager{
-		GetLicenseByIDFn: func(ctx context.Context, id string) (licenses.License, error) {
-			return licenses.License{
+		GetLicenseByIDFn: func(ctx context.Context, id string) (*db.License, error) {
+			return &db.License{
 				ID:             "License_1",
 				Key:            "License_Key1",
 				Claims:         5,
@@ -64,8 +64,8 @@ func TestStatCmd_MissingFlag(t *testing.T) {
 
 func TestStatCmd_Error(t *testing.T) {
 	manager := &testutils.FakeManager{
-		GetLicenseByIDFn: func(ctx context.Context, id string) (licenses.License, error) {
-			return licenses.License{}, errors.New("license not found")
+		GetLicenseByIDFn: func(ctx context.Context, id string) (*db.License, error) {
+			return nil, errors.New("license not found")
 		},
 	}
 

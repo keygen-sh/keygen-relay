@@ -59,7 +59,7 @@ Version:
 			cfg.License.EnabledAudit = !disableAudit
 
 			// init database connection in PersistentPreRun hook for getting persistent flags
-			var store licenses.Store
+			var store *db.Store
 
 			store, conn, err = initStore(ctx, cfg)
 			if err != nil {
@@ -68,7 +68,7 @@ Version:
 				return err
 			}
 
-			manager.AttachStore(store)
+			manager.AttachStore(*store)
 
 			return nil
 		},
@@ -105,7 +105,7 @@ Version:
 	return 0
 }
 
-func initStore(ctx context.Context, cfg *config.Config) (licenses.Store, *sql.DB, error) {
+func initStore(ctx context.Context, cfg *config.Config) (*db.Store, *sql.DB, error) {
 	conn, err := sql.Open("sqlite3", cfg.DB.DatabaseFilePath)
 	if err != nil {
 		slog.Error("failed to open database", "error", err)

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
+	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
@@ -20,7 +21,7 @@ func TestClaimLicense_NewNode_Success(t *testing.T) {
 	manager := &testutils.FakeManager{
 		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
 			return &licenses.LicenseOperationResult{
-				License: &licenses.License{
+				License: &db.License{
 					File: []byte("test_license_file"),
 					Key:  "test_license_key",
 				},
@@ -51,7 +52,7 @@ func TestClaimLicense_ExistingNode_Extended(t *testing.T) {
 	manager := &testutils.FakeManager{
 		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
 			return &licenses.LicenseOperationResult{
-				License: &licenses.License{
+				License: &db.License{
 					File: []byte("test_license_file"),
 					Key:  "test_license_key",
 				},

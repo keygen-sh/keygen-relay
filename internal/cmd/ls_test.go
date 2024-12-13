@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
 
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
@@ -15,8 +15,8 @@ import (
 
 func TestLsCmd_Success(t *testing.T) {
 	manager := &testutils.FakeManager{
-		ListLicensesFn: func(ctx context.Context) ([]licenses.License, error) {
-			return []licenses.License{
+		ListLicensesFn: func(ctx context.Context) ([]db.License, error) {
+			return []db.License{
 				{ID: "License_1", Key: "License_Key_1", Claims: 5},
 				{ID: "License_2", Key: "License_Key_2", Claims: 10},
 			}, nil
@@ -38,8 +38,8 @@ func TestLsCmd_Success(t *testing.T) {
 
 func TestLsCmd_NoLicenses(t *testing.T) {
 	manager := &testutils.FakeManager{
-		ListLicensesFn: func(ctx context.Context) ([]licenses.License, error) {
-			return []licenses.License{}, nil
+		ListLicensesFn: func(ctx context.Context) ([]db.License, error) {
+			return []db.License{}, nil
 		},
 	}
 
@@ -57,7 +57,7 @@ func TestLsCmd_NoLicenses(t *testing.T) {
 
 func TestLsCmd_Error(t *testing.T) {
 	manager := &testutils.FakeManager{
-		ListLicensesFn: func(ctx context.Context) ([]licenses.License, error) {
+		ListLicensesFn: func(ctx context.Context) ([]db.License, error) {
 			return nil, errors.New("failed to list licenses")
 		},
 	}

@@ -29,7 +29,7 @@ func TestAddLicense_Success(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
@@ -55,7 +55,7 @@ func TestAddLicense_Failure(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
@@ -81,7 +81,7 @@ func TestAddLicense_FileNotFound(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.AddLicense(context.Background(), "non_existent.lic", "test_key", "test_public_key")
 
@@ -106,7 +106,7 @@ func TestRemoveLicense_Success(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	// add a license that to be deleted
 	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
@@ -142,7 +142,7 @@ func TestRemoveLicense_Failure(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.RemoveLicense(context.Background(), "invalid_id")
 	assert.Error(t, err)
@@ -168,7 +168,7 @@ func TestListLicenses_Success(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.AddLicense(context.Background(), "test_license_1.lic", "test_key_1", "test_public_key_1")
 	assert.NoError(t, err)
@@ -198,7 +198,7 @@ func TestGetLicenseByID_Success(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
@@ -224,7 +224,7 @@ func TestGetLicenseByID_Failure(t *testing.T) {
 		},
 	)
 
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	_, err := manager.GetLicenseByID(context.Background(), "invalid_id")
 	assert.Error(t, err)
@@ -249,7 +249,7 @@ func TestClaimLicense_Success(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
@@ -281,7 +281,7 @@ func TestClaimLicense_NoLicensesAvailable(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	result, err := manager.ClaimLicense(ctx, "test_fingerprint")
 	assert.NoError(t, err)
@@ -307,7 +307,7 @@ func TestClaimLicense_AlreadyClaimed_WithHeartbeatEnabled(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
@@ -343,7 +343,7 @@ func TestClaimLicense_AlreadyClaimed_WithHeartbeatDisabled(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	// add the license
 	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
@@ -388,7 +388,7 @@ func TestClaimLicense_FIFO_Strategy(t *testing.T) {
 		},
 		fakeLicenseVerifier,
 	)
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.AddLicense(ctx, "license1.lic", "key1", "public_key")
 	assert.NoError(t, err)
@@ -431,7 +431,7 @@ func TestClaimLicense_LIFO_Strategy(t *testing.T) {
 		},
 		fakeLicenseVerifier,
 	)
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.AddLicense(ctx, "license1.lic", "key1", "public_key")
 	assert.NoError(t, err)
@@ -481,7 +481,7 @@ func TestReleaseLicense_Success(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	// adding the license and then getting it
 	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
@@ -526,7 +526,7 @@ func TestReleaseLicense_NodeNotFound(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	// release the license for non existent node
 	result, err := manager.ReleaseLicense(ctx, "non_existent_fingerprint")
@@ -548,7 +548,7 @@ func TestReleaseLicense_LicenseNotFound(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	_, err := store.InsertNode(ctx, "test_fingerprint")
 	assert.NoError(t, err)
@@ -575,7 +575,7 @@ func TestCullInactiveNodes(t *testing.T) {
 			return &testutils.FakeLicenseVerifier{}
 		},
 	)
-	manager.AttachStore(store)
+	manager.AttachStore(*store)
 
 	err := manager.AddLicense(ctx, "license1.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
@@ -614,7 +614,7 @@ func TestCullInactiveNodes(t *testing.T) {
 
 	node, err := store.GetNodeByFingerprint(ctx, "test_fingerprint")
 	assert.Error(t, err)
-	assert.Equal(t, node.Fingerprint, "")
+	assert.Nil(t, node)
 
 	node2, err := store.GetNodeByFingerprint(ctx, "test_fingerprint_2")
 	assert.NoError(t, err)

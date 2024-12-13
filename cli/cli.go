@@ -105,7 +105,7 @@ Version:
 	return 0
 }
 
-func initStore(ctx context.Context, cfg *config.Config) (*db.Store, *sql.DB, error) {
+func initStore(_ context.Context, cfg *config.Config) (*db.Store, *sql.DB, error) {
 	conn, err := sql.Open("sqlite3", cfg.DB.DatabaseFilePath)
 	if err != nil {
 		slog.Error("failed to open database", "error", err)

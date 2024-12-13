@@ -13,4 +13,4 @@ stdout 'license deleted successfully'
 
 # verify the license is deleted
 exec relay ls --plain
-stdout 'no licenses found'
+stdout 'license pool is empty'

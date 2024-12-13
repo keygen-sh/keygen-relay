@@ -29,7 +29,7 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 			}
 
 			if len(licensesList) == 0 {
-				output.PrintSuccess(cmd.OutOrStdout(), "no licenses found")
+				output.PrintSuccess(cmd.OutOrStdout(), "license pool is empty")
 
 				return nil
 			}

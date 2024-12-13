@@ -52,7 +52,7 @@ func TestLsCmd_NoLicenses(t *testing.T) {
 	err := lsCmd.Execute()
 	assert.NoError(t, err)
 
-	assert.Contains(t, outBuf.String(), "no licenses found")
+	assert.Contains(t, outBuf.String(), "license pool is empty")
 }
 
 func TestLsCmd_Error(t *testing.T) {

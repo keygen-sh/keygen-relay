@@ -42,7 +42,7 @@ const (
 )
 
 var (
-	ErrNoLicenses      = errors.New("no licenses found")
+	ErrNoLicenses      = errors.New("license pool is empty")
 	ErrLicenseNotFound = errors.New("license not found")
 )
 
@@ -168,7 +168,7 @@ func (m *manager) ListLicenses(ctx context.Context) ([]db.License, error) {
 	licenses, err := m.store.GetAllLicenses(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Debug("no licenses found")
+			slog.Debug("license pool is empty")
 
 			return nil, ErrNoLicenses
 		}

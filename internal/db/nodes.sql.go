@@ -29,7 +29,7 @@ func (q *Queries) DeleteNodeByFingerprint(ctx context.Context, fingerprint strin
 }
 
 const getNodeByFingerprint = `-- name: GetNodeByFingerprint :one
-SELECT id, fingerprint, claimed_at, last_heartbeat_at, created_at
+SELECT id, fingerprint, last_heartbeat_at, created_at
 FROM nodes
 WHERE fingerprint = ?
 `
@@ -40,7 +40,6 @@ func (q *Queries) GetNodeByFingerprint(ctx context.Context, fingerprint string) 
 	err := row.Scan(
 		&i.ID,
 		&i.Fingerprint,
-		&i.ClaimedAt,
 		&i.LastHeartbeatAt,
 		&i.CreatedAt,
 	)
@@ -48,9 +47,9 @@ func (q *Queries) GetNodeByFingerprint(ctx context.Context, fingerprint string) 
 }
 
 const insertNode = `-- name: InsertNode :one
-INSERT INTO nodes (fingerprint, claimed_at, last_heartbeat_at, created_at)
-VALUES (?, NULL, NULL, unixepoch())
-RETURNING id, fingerprint, claimed_at, last_heartbeat_at, created_at
+INSERT INTO nodes (fingerprint, last_heartbeat_at, created_at)
+VALUES (?, NULL, unixepoch())
+RETURNING id, fingerprint, last_heartbeat_at, created_at
 `
 
 func (q *Queries) InsertNode(ctx context.Context, fingerprint string) (Node, error) {
@@ -59,7 +58,6 @@ func (q *Queries) InsertNode(ctx context.Context, fingerprint string) (Node, err
 	err := row.Scan(
 		&i.ID,
 		&i.Fingerprint,
-		&i.ClaimedAt,
 		&i.LastHeartbeatAt,
 		&i.CreatedAt,
 	)
@@ -68,7 +66,7 @@ func (q *Queries) InsertNode(ctx context.Context, fingerprint string) (Node, err
 
 const updateNodeHeartbeatAndClaimedAtByFingerprint = `-- name: UpdateNodeHeartbeatAndClaimedAtByFingerprint :exec
 UPDATE nodes
-SET last_heartbeat_at = unixepoch(), claimed_at = unixepoch()
+SET last_heartbeat_at = unixepoch()
 WHERE fingerprint = ?
 `
 

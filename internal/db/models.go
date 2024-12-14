@@ -36,7 +36,6 @@ type License struct {
 type Node struct {
 	ID              int64
 	Fingerprint     string
-	ClaimedAt       *int64
 	LastHeartbeatAt *int64
 	CreatedAt       int64
 }

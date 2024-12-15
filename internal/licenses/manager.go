@@ -192,22 +192,22 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	txs := m.store.WithTx(tx)
+	qtx := m.store.WithTx(tx)
 	defer tx.Rollback()
 
-	node, err := m.fetchOrCreateNode(ctx, *txs, fingerprint)
+	node, err := m.fetchOrCreateNode(ctx, *qtx, fingerprint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch or create node: %w", err)
 	}
 
-	claimedLicense, err := txs.GetLicenseByNodeID(ctx, &node.ID)
+	claimedLicense, err := qtx.GetLicenseByNodeID(ctx, &node.ID)
 	if err == nil {
 		if !m.config.ExtendOnHeartbeat { // if heartbeat is disabled, we can't extend the claimed license
 			slog.Warn("failed to claim license due to conflict due to heartbeat disabled", "nodeID", node.ID, "Fingerprint", node.Fingerprint)
 			return &LicenseOperationResult{Status: OperationStatusConflict}, nil
 		}
 
-		if err := txs.PingNodeByFingerprint(ctx, fingerprint); err != nil {
+		if err := qtx.PingNodeHeartbeatByFingerprint(ctx, fingerprint); err != nil {
 			return nil, fmt.Errorf("failed to update node heartbeat: %w", err)
 		}
 
@@ -216,12 +216,16 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 		}
 
 		if m.config.EnabledAudit {
-			if err := m.store.InsertAuditLog(ctx, db.EventTypeNodePing, db.EntityTypeLicense, claimedLicense.ID); err != nil {
-				slog.Warn("failed to insert audit log", "licenseID", claimedLicense.ID, "error", err)
+			if err := m.store.InsertAuditLogs(ctx, db.InsertAuditLogsParams{
+				{EventTypeID: db.EventTypeLicenseLeaseExtended, EntityTypeID: db.EntityTypeLicense, EntityID: claimedLicense.ID},
+				{EventTypeID: db.EventTypeNodeHeartbeatPing, EntityTypeID: db.EntityTypeNode, EntityID: node.Fingerprint},
+			}); err != nil {
+				slog.Warn("failed to insert audit logs", "error", err)
 			}
 		}
 
 		slog.Info("license extended successfully", "licenseID", claimedLicense.ID)
+
 		return &LicenseOperationResult{
 			License: claimedLicense,
 			Status:  OperationStatusExtended,
@@ -229,7 +233,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 	}
 
 	// claim a new license based on the strategy
-	newLicense, err := m.selectLicenseClaimStrategy(ctx, *txs, &node.ID)
+	newLicense, err := m.selectLicenseClaimStrategy(ctx, *qtx, &node.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			slog.Warn("no licenses available for claim", "Fingerprint", node.Fingerprint)
@@ -241,7 +245,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 	}
 
 	// ping node heartbeat
-	if err := txs.PingNodeByFingerprint(ctx, fingerprint); err != nil {
+	if err := qtx.PingNodeHeartbeatByFingerprint(ctx, fingerprint); err != nil {
 		return nil, fmt.Errorf("failed to update node claim: %w", err)
 	}
 
@@ -250,12 +254,16 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 	}
 
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseClaimed, db.EntityTypeLicense, newLicense.ID); err != nil {
-			slog.Warn("failed to insert audit log", "licenseID", newLicense.ID, "error", err)
+		if err := m.store.InsertAuditLogs(ctx, db.InsertAuditLogsParams{
+			{EventTypeID: db.EventTypeLicenseLeased, EntityTypeID: db.EntityTypeLicense, EntityID: newLicense.ID},
+			{EventTypeID: db.EventTypeNodeHeartbeatPing, EntityTypeID: db.EntityTypeNode, EntityID: node.Fingerprint},
+		}); err != nil {
+			slog.Warn("failed to insert audit logs", "error", err)
 		}
 	}
 
 	slog.Info("new license claimed successfully", "licenseID", newLicense.ID)
+
 	return &LicenseOperationResult{
 		License: newLicense,
 		Status:  OperationStatusCreated,
@@ -267,32 +275,36 @@ func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*Lice
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	storeWithTx := m.store.WithTx(tx)
+	qtx := m.store.WithTx(tx)
 	defer tx.Rollback()
 
-	node, err := storeWithTx.GetNodeByFingerprint(ctx, fingerprint)
+	node, err := qtx.GetNodeByFingerprint(ctx, fingerprint)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			slog.Warn("license release failed - node not found", "fingerprint", fingerprint)
+
 			return &LicenseOperationResult{Status: OperationStatusNotFound}, nil
 		}
+
 		return nil, fmt.Errorf("failed to fetch node: %w", err)
 	}
 
-	claimedLicense, err := storeWithTx.GetLicenseByNodeID(ctx, &node.ID)
+	claimedLicense, err := qtx.GetLicenseByNodeID(ctx, &node.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			slog.Warn("license release failed - claimed license not found", "Fingerprint", node.Fingerprint)
+
 			return &LicenseOperationResult{Status: OperationStatusNotFound}, nil
 		}
+
 		return nil, fmt.Errorf("failed to fetch claimed license: %w", err)
 	}
 
-	if err := storeWithTx.ReleaseLicenseByNodeID(ctx, &node.ID); err != nil {
+	if err := qtx.ReleaseLicenseByNodeID(ctx, &node.ID); err != nil {
 		return nil, fmt.Errorf("failed to release license: %w", err)
 	}
 
-	if err := storeWithTx.DeleteNodeByFingerprint(ctx, fingerprint); err != nil {
+	if err := qtx.DeleteNodeByFingerprint(ctx, fingerprint); err != nil {
 		return nil, fmt.Errorf("failed to delete node: %w", err)
 	}
 

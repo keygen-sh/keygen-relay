@@ -64,13 +64,13 @@ func (q *Queries) InsertNode(ctx context.Context, fingerprint string) (Node, err
 	return i, err
 }
 
-const pingNodeByFingerprint = `-- name: PingNodeByFingerprint :exec
+const pingNodeHeartbeatByFingerprint = `-- name: PingNodeHeartbeatByFingerprint :exec
 UPDATE nodes
 SET last_heartbeat_at = unixepoch()
 WHERE fingerprint = ?
 `
 
-func (q *Queries) PingNodeByFingerprint(ctx context.Context, fingerprint string) error {
-	_, err := q.db.ExecContext(ctx, pingNodeByFingerprint, fingerprint)
+func (q *Queries) PingNodeHeartbeatByFingerprint(ctx context.Context, fingerprint string) error {
+	_, err := q.db.ExecContext(ctx, pingNodeHeartbeatByFingerprint, fingerprint)
 	return err
 }

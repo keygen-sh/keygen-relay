@@ -14,10 +14,13 @@ const (
 	EventTypeUnknown EventTypeId = iota
 	EventTypeLicenseAdded
 	EventTypeLicenseRemoved
-	EventTypeLicenseClaimed
+	EventTypeLicenseLeased
+	EventTypeLicenseLeaseExtended
 	EventTypeLicenseReleased
+	EventTypeLicenseLeaseExpired
 	EventTypeNodeActivated
-	EventTypeNodePing
+	EventTypeNodeHeartbeatPing
+	EventTypeNodeDeactivated
 	EventTypeNodeCulled
 )
 
@@ -71,9 +74,8 @@ func (s *Store) DeleteLicenseByIDTx(ctx context.Context, id string) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
-
 	qtx := s.queries.WithTx(tx)
+	defer tx.Rollback()
 
 	_, err = qtx.GetLicenseByID(ctx, id)
 	if err != nil {
@@ -136,17 +138,53 @@ func (s *Store) GetNodeByFingerprint(ctx context.Context, fingerprint string) (*
 	return &node, nil
 }
 
-func (s *Store) PingNodeByFingerprint(ctx context.Context, fingerprint string) error {
-	return s.queries.PingNodeByFingerprint(ctx, fingerprint)
+func (s *Store) PingNodeHeartbeatByFingerprint(ctx context.Context, fingerprint string) error {
+	return s.queries.PingNodeHeartbeatByFingerprint(ctx, fingerprint)
 }
 
+// TODO(ezekg) allow event data? e.g. license.lease_extended {from:x,to:y}
 func (s *Store) InsertAuditLog(ctx context.Context, eventTypeId EventTypeId, entityTypeId EntityTypeId, entityID string) error {
 	params := InsertAuditLogParams{
 		EventTypeID:  int64(eventTypeId),
 		EntityTypeID: int64(entityTypeId),
 		EntityID:     entityID,
 	}
+
 	return s.queries.InsertAuditLog(ctx, params)
+}
+
+type InsertAuditLogsParams = []struct {
+	EventTypeID  EventTypeId
+	EntityTypeID EntityTypeId
+	EntityID     string
+}
+
+func (s *Store) InsertAuditLogs(ctx context.Context, logs InsertAuditLogsParams) error {
+	tx, err := s.BeginTx(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	qtx := s.WithTx(tx)
+	defer tx.Rollback()
+
+	for _, log := range logs {
+		params := InsertAuditLogParams{
+			EventTypeID:  int64(log.EventTypeID),
+			EntityTypeID: int64(log.EntityTypeID),
+			EntityID:     log.EntityID,
+		}
+
+		err := qtx.queries.InsertAuditLog(ctx, params)
+		if err != nil {
+			return fmt.Errorf("failed to insert audit log: %w", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Store) ClaimUnclaimedLicenseFIFO(ctx context.Context, nodeID *int64) (*License, error) {
@@ -203,6 +241,7 @@ func (s *Store) DeleteInactiveNodes(ctx context.Context, ttl time.Duration) erro
 
 	if err := s.queries.DeleteInactiveNodes(ctx, t); err != nil {
 		slog.Error("failed to delete inactive nodes", "error", err)
+
 		return err
 	}
 

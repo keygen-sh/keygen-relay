@@ -8,11 +8,14 @@ VALUES
   (0, 'unknown'),
   (1, 'license.added'),
   (2, 'license.removed'),
-  (3, 'license.claimed'),
-  (4, 'license.released'),
-  (5, 'node.activated'),
-  (6, 'node.ping'),
-  (7, 'node.culled');
+  (3, 'license.leased'),
+  (4, 'license.lease_extended'),
+  (5, 'license.released'),
+  (6, 'license.lease_expired'),
+  (7, 'node.activated'),
+  (8, 'node.heartbeat_ping'),
+  (9, 'node.deactivated'),
+  (10, 'node.culled');
 
 -- rebuild the table with the new schema (this is a workaround for sqlite not supporting ALTER TABLE x ALTER COLUMN y NOT NULL)
 CREATE TABLE _audit_logs (
@@ -39,10 +42,10 @@ SELECT
     WHEN 'added' THEN 1
     WHEN 'removed' THEN 2
     WHEN 'claimed' THEN 3
-    WHEN 'released' THEN 4
-    WHEN 'activated' THEN 5
-    WHEN 'ping' THEN 6
-    WHEN 'culled' THEN 7
+    WHEN 'released' THEN 5
+    WHEN 'activated' THEN 7
+    WHEN 'ping' THEN 8
+    WHEN 'culled' THEN 10
     ELSE 0
   END AS event_type_id,
   entity_type,

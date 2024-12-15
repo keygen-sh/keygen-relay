@@ -79,8 +79,8 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 	cmd.Flags().StringVarP(&cfg.ServerAddr, "bind", "b", try.Try(try.Env("RELAY_ADDR"), try.Env("BIND_ADDR"), try.Static(cfg.ServerAddr)), "ip address to bind the relay server to [$RELAY_ADDR=0.0.0.0]")
 	cmd.Flags().IntVarP(&cfg.ServerPort, "port", "p", try.Try(try.EnvInt("RELAY_PORT"), try.EnvInt("PORT"), try.Static(cfg.ServerPort)), "port to run the relay server on [$RELAY_PORT=6349]")
-	cmd.Flags().DurationVar(&cfg.TTL, "ttl", try.Try(try.EnvDuration("RELAY_CLAIM_TTL"), try.Static(cfg.TTL)), "time-to-live for node license claims [$RELAY_CLAIM_TTL=30s]")
-	cmd.Flags().Bool("no-heartbeats", try.Try(try.EnvBool("RELAY_NO_HEARTBEATS"), try.Static(false)), "disable node heartbeat monitoring and culling [$RELAY_NO_HEARTBEAT=1]")
+	cmd.Flags().DurationVar(&cfg.TTL, "ttl", try.Try(try.EnvDuration("RELAY_LEASE_TTL"), try.Static(cfg.TTL)), "time-to-live for leases [$RELAY_LEASE_TTL=30s]")
+	cmd.Flags().Bool("no-heartbeats", try.Try(try.EnvBool("RELAY_NO_HEARTBEATS"), try.Static(false)), "disable node heartbeat monitoring and culling as well as lease extensions [$RELAY_NO_HEARTBEAT=1]")
 	cmd.Flags().Var(&cfg.Strategy, "strategy", `strategy for license distribution e.g. "fifo", "lifo", or "rand" [$RELAY_STRATEGY=rand]`)
 	cmd.Flags().DurationVar(&cfg.CullInterval, "cull-interval", try.Try(try.EnvDuration("RELAY_CULL_INTERVAL"), try.Static(cfg.CullInterval)), "interval at which to cull inactive nodes [$RELAY_CULL_INTERVAL=15s]")
 

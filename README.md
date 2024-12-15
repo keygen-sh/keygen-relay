@@ -23,8 +23,8 @@ Relay has a vendor-facing CLI that can be used to onboard a customer's air-gap
 environment. An admin can initialize Relay with N licenses to be distributed
 across M nodes, ensuring that only N nodes are licensed at one time.
 
-Relay has an app-facing REST API which nodes can communicate with to claim and
-release licenses.
+Relay provides an app-facing REST API that allows nodes to claim a lease on a
+license and release it when no longer needed.
 
 ## Background
 
@@ -159,9 +159,9 @@ The `serve` command supports the following flags:
 | Flag                 | Description                                                                                                                                                                           | Default          |
 |:---------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------|
 | `--port`, `-p`       | Specifies the port on which the relay server will run.                                                                                                                                | `6349`           |
-| `--no-heartbeats`    | Disables the heartbeat mechanism. When this flag is enabled, the server will not automatically release inactive or dead nodes.                                                        | `false`          |
-| `--strategy`         | Specifies the license assignment strategy. Options: `fifo`, `lifo`, `rand`.                                                                                                           | `fifo`           |
-| `--ttl`, `-t`        | Sets the time-to-live for license claims. Licenses will be automatically released after the time-to-live if a node heartbeat is not maintained. Options: e.g. `30s`, `1m`, `1h`, etc. | `30s`            |
+| `--no-heartbeats`    | Disables the heartbeat system. When this flag is enabled, the server will not automatically release inactive or dead nodes, and leases cannot be extended.                         | `false`          |
+| `--strategy`         | Specifies the license distribution strategy. Options: `fifo`, `lifo`, `rand`.                                                                                                           | `fifo`           |
+| `--ttl`, `-t`        | Sets the time-to-live for leases. Licenses will be automatically released after the time-to-live if a node heartbeat is not maintained. Options: e.g. `30s`, `1m`, `1h`, etc.         | `30s`            |
 | `--cull-interval`    | Specifies how often the server should check for and deactivate inactive or dead nodes.                                                                                                | `15s`            |
 | `--database`         | Specify a custom database file for storing the license and node data.                                                                                                                 | `./relay.sqlite` |
 
@@ -174,8 +174,8 @@ relay serve --port 8080 --ttl 30s --strategy fifo
 
 ### API
 
-The API can be consumed by the vendor's application to claim and release a
-license on behalf of a node.
+The API can be consumed by the vendor's application to claim a lease on a
+license, and also release the lease, on behalf of a node.
 
 #### Health check
 
@@ -189,7 +189,7 @@ Returns a `200 OK` status code.
 
 #### Claim license
 
-Nodes can claim a license by sending a `PUT` request to the
+Nodes can claim a lease on a license by sending a `PUT` request to the
 `/v1/nodes/{fingerprint}` endpoint:
 
 ```bash
@@ -199,11 +199,11 @@ curl -v -X PUT "http://localhost:6349/v1/nodes/$(cat /etc/machine-id)"
 Accepts a `fingerprint`, an arbitrary string identifying the node.
 
 Returns `201 Created` with a `license_file` and `license_key` for new nodes. If
-a claim already exists for the node, the claim is extended by `--ttl` and the
+a lease already exists for the node, the lease is extended by `--ttl` and the
 server will return `202 Accepted`, unless heartbeats are disabled and in that
 case a `409 Conflict` will be returned. If no licenses are available to be
-claimed, i.e. no licenses exist or all have been claimed, the server will
-return `410 Gone`.
+leased, i.e. no licenses exist or all are being actively leased, the server
+will return `410 Gone`.
 
 ```json
 {
@@ -216,15 +216,16 @@ The `license_file` will be base64 encoded.
 
 #### Release license
 
-Nodes can release a license by sending a `DELETE` request to the same endpoint:
+Nodes can release a license when no longer needed by sending a `DELETE` request
+to the same endpoint:
 
 ```bash
 curl -v -X DELETE "http://localhost:6349/v1/nodes/$(cat /etc/machine-id)"
 ```
 
-Accepts a `fingerprint`, the node fingerprint used for the claim.
+Accepts a `fingerprint`, the node fingerprint used for the lease.
 
-Returns `204 No Content` with no content. If a claim does not exist for the
+Returns `204 No Content` with no content. If a lease does not exist for the
 node, the server will return a `404 Not Found`.
 
 ## Logs
@@ -235,10 +236,15 @@ providing the path to the Relay database file:
 
 ```bash
 sqlite3 ./relay.sqlite
-> select * from audit_logs order by created_at desc limit 25;
 ```
 
-If you have concerns about storage, use Relay's `--no-audit` flag.
+```sql
+select * from audit_logs order by created_at desc limit 25;
+select * from audit_logs joins event_types on event_types.id = event_type_id where event_types.name = 'license.leased' order by created_at desc limit 5;
+```
+
+If you have concerns about storage, or do not wish to keep audit logs, use
+Relay's `--no-audit` flag to disable them.
 
 ## Developing
 

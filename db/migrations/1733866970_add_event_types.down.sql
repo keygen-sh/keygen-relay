@@ -13,10 +13,11 @@ SET
     WHEN 1 THEN 'added'
     WHEN 2 THEN 'removed'
     WHEN 3 THEN 'claimed'
-    WHEN 4 THEN 'released'
-    WHEN 5 THEN 'activated'
-    WHEN 6 THEN 'ping'
-    WHEN 7 THEN 'culled'
+    WHEN 5 THEN 'released'
+    WHEN 7 THEN 'activated'
+    WHEN 8 THEN 'ping'
+    WHEN 10 THEN 'culled'
+    ELSE 'unknown'
   END;
 
 -- drop the new column

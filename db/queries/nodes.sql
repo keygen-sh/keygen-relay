@@ -8,12 +8,7 @@ SELECT id, fingerprint, last_heartbeat_at, created_at
 FROM nodes
 WHERE fingerprint = ?;
 
--- name: UpdateNodeHeartbeatByFingerprint :exec
-UPDATE nodes
-SET last_heartbeat_at = unixepoch()
-WHERE fingerprint = ?;
-
--- name: UpdateNodeHeartbeatAndClaimedAtByFingerprint :exec
+-- name: PingNodeByFingerprint :exec
 UPDATE nodes
 SET last_heartbeat_at = unixepoch()
 WHERE fingerprint = ?;

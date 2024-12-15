@@ -192,23 +192,22 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	storeWithTx := m.store.WithTx(tx)
+	txs := m.store.WithTx(tx)
 	defer tx.Rollback()
 
-	node, err := m.fetchOrCreateNode(ctx, *storeWithTx, fingerprint)
+	node, err := m.fetchOrCreateNode(ctx, *txs, fingerprint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch or create node: %w", err)
 	}
 
-	claimedLicense, err := storeWithTx.GetLicenseByNodeID(ctx, &node.ID)
-
+	claimedLicense, err := txs.GetLicenseByNodeID(ctx, &node.ID)
 	if err == nil {
 		if !m.config.ExtendOnHeartbeat { // if heartbeat is disabled, we can't extend the claimed license
 			slog.Warn("failed to claim license due to conflict due to heartbeat disabled", "nodeID", node.ID, "Fingerprint", node.Fingerprint)
 			return &LicenseOperationResult{Status: OperationStatusConflict}, nil
 		}
 
-		if err := storeWithTx.UpdateNodeHeartbeat(ctx, fingerprint); err != nil {
+		if err := txs.PingNodeByFingerprint(ctx, fingerprint); err != nil {
 			return nil, fmt.Errorf("failed to update node heartbeat: %w", err)
 		}
 
@@ -230,17 +229,19 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 	}
 
 	// claim a new license based on the strategy
-	newLicense, err := m.selectLicenseClaimStrategy(ctx, *storeWithTx, &node.ID)
+	newLicense, err := m.selectLicenseClaimStrategy(ctx, *txs, &node.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			slog.Warn("no licenses available for claim", "Fingerprint", node.Fingerprint)
+
 			return &LicenseOperationResult{Status: OperationStatusNoLicensesAvailable}, nil
 		}
+
 		return nil, fmt.Errorf("failed to claim license: %w", err)
 	}
 
-	// Update node claim timestamp
-	if err := storeWithTx.UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx, fingerprint); err != nil {
+	// ping node heartbeat
+	if err := txs.PingNodeByFingerprint(ctx, fingerprint); err != nil {
 		return nil, fmt.Errorf("failed to update node claim: %w", err)
 	}
 

@@ -123,10 +123,6 @@ func (s *Store) InsertNode(ctx context.Context, fingerprint string) (*Node, erro
 	return &node, nil
 }
 
-func (s *Store) UpdateNodeHeartbeat(ctx context.Context, fingerprint string) error {
-	return s.queries.UpdateNodeHeartbeatByFingerprint(ctx, fingerprint)
-}
-
 func (s *Store) DeleteNodeByFingerprint(ctx context.Context, fingerprint string) error {
 	return s.queries.DeleteNodeByFingerprint(ctx, fingerprint)
 }
@@ -138,6 +134,10 @@ func (s *Store) GetNodeByFingerprint(ctx context.Context, fingerprint string) (*
 	}
 
 	return &node, nil
+}
+
+func (s *Store) PingNodeByFingerprint(ctx context.Context, fingerprint string) error {
+	return s.queries.PingNodeByFingerprint(ctx, fingerprint)
 }
 
 func (s *Store) InsertAuditLog(ctx context.Context, eventTypeId EventTypeId, entityTypeId EntityTypeId, entityID string) error {
@@ -185,13 +185,10 @@ func (s *Store) GetLicenseByNodeID(ctx context.Context, nodeID *int64) (*License
 	return &license, nil
 }
 
-func (s *Store) UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx context.Context, fingerprint string) error {
-	return s.queries.UpdateNodeHeartbeatAndClaimedAtByFingerprint(ctx, fingerprint)
-}
-
 func (s *Store) ReleaseLicensesFromInactiveNodes(ctx context.Context, ttl time.Duration) ([]License, error) {
-	ttlDuration := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
-	licenses, err := s.queries.ReleaseLicensesFromInactiveNodes(ctx, ttlDuration)
+	t := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
+
+	licenses, err := s.queries.ReleaseLicensesFromInactiveNodes(ctx, t)
 	if err != nil {
 		slog.Error("failed to release licenses from inactive nodes", "error", err)
 
@@ -202,9 +199,9 @@ func (s *Store) ReleaseLicensesFromInactiveNodes(ctx context.Context, ttl time.D
 }
 
 func (s *Store) DeleteInactiveNodes(ctx context.Context, ttl time.Duration) error {
-	ttlDuration := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
+	t := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
 
-	if err := s.queries.DeleteInactiveNodes(ctx, ttlDuration); err != nil {
+	if err := s.queries.DeleteInactiveNodes(ctx, t); err != nil {
 		slog.Error("failed to delete inactive nodes", "error", err)
 		return err
 	}

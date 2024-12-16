@@ -239,8 +239,44 @@ sqlite3 ./relay.sqlite
 ```
 
 ```sql
-select * from audit_logs order by created_at desc limit 25;
-select * from audit_logs joins event_types on event_types.id = event_type_id where event_types.name = 'license.leased' order by created_at desc limit 5;
+-- recent events
+SELECT
+  audit_logs.*
+FROM
+  audit_logs
+ORDER BY
+  audit_logs.created_at DESC
+LIMIT
+  25;
+
+-- recently leased licenses
+SELECT
+  audit_logs.*
+FROM
+  audit_logs
+JOIN
+  event_types ON event_types.id = audit_logs.event_type_id
+WHERE
+  event_types.name = 'license.leased'
+ORDER BY
+  audit_logs.created_at DESC
+LIMIT
+  5;
+
+-- entire history in chronological order
+SELECT
+  datetime(audit_logs.created_at, 'unixepoch') AS created_at,
+  event_types.name AS event_type,
+  entity_types.name AS entity_type,
+  audit_logs.entity_id
+FROM
+  audit_logs
+JOIN
+  event_types ON event_types.id = audit_logs.event_type_id
+JOIN
+  entity_types ON entity_types.id = audit_logs.entity_type_id
+ORDER BY
+  audit_logs.created_at ASC;
 ```
 
 If you have concerns about storage, or do not wish to keep audit logs, use

@@ -31,7 +31,7 @@ UPDATE licenses
 SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id = ?;
 
--- name: ClaimUnclaimedLicenseFIFO :one
+-- name: ClaimLicenseFIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -43,7 +43,7 @@ WHERE id = (
 )
 RETURNING *;
 
--- name: ClaimUnclaimedLicenseLIFO :one
+-- name: ClaimLicenseLIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -55,7 +55,7 @@ WHERE id = (
 )
 RETURNING *;
 
--- name: ClaimUnclaimedLicenseRandom :one
+-- name: ClaimLicenseRandom :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (

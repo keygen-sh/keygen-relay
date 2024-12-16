@@ -9,14 +9,38 @@ import (
 	"context"
 )
 
-const deleteInactiveNodes = `-- name: DeleteInactiveNodes :exec
+const deleteInactiveNodes = `-- name: DeleteInactiveNodes :many
 DELETE FROM nodes
 WHERE last_heartbeat_at <= strftime('%s', 'now', ?)
+RETURNING id, fingerprint, last_heartbeat_at, created_at
 `
 
-func (q *Queries) DeleteInactiveNodes(ctx context.Context, strftime interface{}) error {
-	_, err := q.db.ExecContext(ctx, deleteInactiveNodes, strftime)
-	return err
+func (q *Queries) DeleteInactiveNodes(ctx context.Context, strftime interface{}) ([]Node, error) {
+	rows, err := q.db.QueryContext(ctx, deleteInactiveNodes, strftime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Node
+	for rows.Next() {
+		var i Node
+		if err := rows.Scan(
+			&i.ID,
+			&i.Fingerprint,
+			&i.LastHeartbeatAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const deleteNodeByFingerprint = `-- name: DeleteNodeByFingerprint :exec

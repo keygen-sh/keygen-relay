@@ -1,7 +1,7 @@
 -- name: InsertNode :one
 INSERT INTO nodes (fingerprint, last_heartbeat_at, created_at)
 VALUES (?, NULL, unixepoch())
-RETURNING id, fingerprint, last_heartbeat_at, created_at;
+RETURNING *;
 
 -- name: GetNodeByFingerprint :one
 SELECT id, fingerprint, last_heartbeat_at, created_at
@@ -16,6 +16,7 @@ WHERE fingerprint = ?;
 -- name: DeleteNodeByFingerprint :exec
 DELETE FROM nodes WHERE fingerprint = ?;
 
--- name: DeleteInactiveNodes :exec
+-- name: DeleteInactiveNodes :many
 DELETE FROM nodes
-WHERE last_heartbeat_at <= strftime('%s', 'now', ?);
+WHERE last_heartbeat_at <= strftime('%s', 'now', ?)
+RETURNING *;

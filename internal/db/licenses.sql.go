@@ -25,7 +25,7 @@ func (q *Queries) ClaimLicense(ctx context.Context, arg ClaimLicenseParams) erro
 	return err
 }
 
-const claimUnclaimedLicenseFIFO = `-- name: ClaimUnclaimedLicenseFIFO :one
+const claimLicenseFIFO = `-- name: ClaimLicenseFIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -38,8 +38,8 @@ WHERE id = (
 RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
-func (q *Queries) ClaimUnclaimedLicenseFIFO(ctx context.Context, nodeID *int64) (License, error) {
-	row := q.db.QueryRowContext(ctx, claimUnclaimedLicenseFIFO, nodeID)
+func (q *Queries) ClaimLicenseFIFO(ctx context.Context, nodeID *int64) (License, error) {
+	row := q.db.QueryRowContext(ctx, claimLicenseFIFO, nodeID)
 	var i License
 	err := row.Scan(
 		&i.ID,
@@ -54,7 +54,7 @@ func (q *Queries) ClaimUnclaimedLicenseFIFO(ctx context.Context, nodeID *int64) 
 	return i, err
 }
 
-const claimUnclaimedLicenseLIFO = `-- name: ClaimUnclaimedLicenseLIFO :one
+const claimLicenseLIFO = `-- name: ClaimLicenseLIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -67,8 +67,8 @@ WHERE id = (
 RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
-func (q *Queries) ClaimUnclaimedLicenseLIFO(ctx context.Context, nodeID *int64) (License, error) {
-	row := q.db.QueryRowContext(ctx, claimUnclaimedLicenseLIFO, nodeID)
+func (q *Queries) ClaimLicenseLIFO(ctx context.Context, nodeID *int64) (License, error) {
+	row := q.db.QueryRowContext(ctx, claimLicenseLIFO, nodeID)
 	var i License
 	err := row.Scan(
 		&i.ID,
@@ -83,7 +83,7 @@ func (q *Queries) ClaimUnclaimedLicenseLIFO(ctx context.Context, nodeID *int64) 
 	return i, err
 }
 
-const claimUnclaimedLicenseRandom = `-- name: ClaimUnclaimedLicenseRandom :one
+const claimLicenseRandom = `-- name: ClaimLicenseRandom :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -96,8 +96,8 @@ WHERE id = (
 RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
-func (q *Queries) ClaimUnclaimedLicenseRandom(ctx context.Context, nodeID *int64) (License, error) {
-	row := q.db.QueryRowContext(ctx, claimUnclaimedLicenseRandom, nodeID)
+func (q *Queries) ClaimLicenseRandom(ctx context.Context, nodeID *int64) (License, error) {
+	row := q.db.QueryRowContext(ctx, claimLicenseRandom, nodeID)
 	var i License
 	err := row.Scan(
 		&i.ID,

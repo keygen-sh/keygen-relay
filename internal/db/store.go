@@ -142,7 +142,9 @@ func (s *Store) PingNodeHeartbeatByFingerprint(ctx context.Context, fingerprint 
 	return s.queries.PingNodeHeartbeatByFingerprint(ctx, fingerprint)
 }
 
-// TODO(ezekg) allow event data? e.g. license.lease_extended {from:x,to:y}
+// TODO(ezekg) allow event data? e.g. license.lease_extended {from:x,to:y} or license.leased {node:n} or node.heartbeat_ping {count:n}
+//
+//	but doing so would pose problems for future aggregation...
 func (s *Store) InsertAuditLog(ctx context.Context, eventTypeId EventTypeId, entityTypeId EntityTypeId, entityID string) error {
 	params := InsertAuditLogParams{
 		EventTypeID:  int64(eventTypeId),
@@ -153,13 +155,13 @@ func (s *Store) InsertAuditLog(ctx context.Context, eventTypeId EventTypeId, ent
 	return s.queries.InsertAuditLog(ctx, params)
 }
 
-type InsertAuditLogsParams = []struct {
+type BulkInsertAuditLogParams struct {
 	EventTypeID  EventTypeId
 	EntityTypeID EntityTypeId
 	EntityID     string
 }
 
-func (s *Store) InsertAuditLogs(ctx context.Context, logs InsertAuditLogsParams) error {
+func (s *Store) BulkInsertAuditLogs(ctx context.Context, logs []BulkInsertAuditLogParams) error {
 	tx, err := s.BeginTx(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -174,8 +176,7 @@ func (s *Store) InsertAuditLogs(ctx context.Context, logs InsertAuditLogsParams)
 			EntityID:     log.EntityID,
 		}
 
-		err := qtx.queries.InsertAuditLog(ctx, params)
-		if err != nil {
+		if err := qtx.queries.InsertAuditLog(ctx, params); err != nil {
 			return fmt.Errorf("failed to insert audit log: %w", err)
 		}
 	}
@@ -187,8 +188,8 @@ func (s *Store) InsertAuditLogs(ctx context.Context, logs InsertAuditLogsParams)
 	return nil
 }
 
-func (s *Store) ClaimUnclaimedLicenseFIFO(ctx context.Context, nodeID *int64) (*License, error) {
-	license, err := s.queries.ClaimUnclaimedLicenseFIFO(ctx, nodeID)
+func (s *Store) ClaimLicenseFIFO(ctx context.Context, nodeID *int64) (*License, error) {
+	license, err := s.queries.ClaimLicenseFIFO(ctx, nodeID)
 	if err != nil {
 		return nil, err
 	}
@@ -196,8 +197,8 @@ func (s *Store) ClaimUnclaimedLicenseFIFO(ctx context.Context, nodeID *int64) (*
 	return &license, nil
 }
 
-func (s *Store) ClaimUnclaimedLicenseLIFO(ctx context.Context, nodeID *int64) (*License, error) {
-	license, err := s.queries.ClaimUnclaimedLicenseLIFO(ctx, nodeID)
+func (s *Store) ClaimLicenseLIFO(ctx context.Context, nodeID *int64) (*License, error) {
+	license, err := s.queries.ClaimLicenseLIFO(ctx, nodeID)
 	if err != nil {
 		return nil, err
 	}
@@ -205,13 +206,26 @@ func (s *Store) ClaimUnclaimedLicenseLIFO(ctx context.Context, nodeID *int64) (*
 	return &license, nil
 }
 
-func (s *Store) ClaimUnclaimedLicenseRandom(ctx context.Context, nodeID *int64) (*License, error) {
-	license, err := s.queries.ClaimUnclaimedLicenseRandom(ctx, nodeID)
+func (s *Store) ClaimLicenseRandom(ctx context.Context, nodeID *int64) (*License, error) {
+	license, err := s.queries.ClaimLicenseRandom(ctx, nodeID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &license, nil
+}
+
+func (s *Store) ClaimLicenseByStrategy(ctx context.Context, strategy string, nodeID *int64) (*License, error) {
+	switch strategy {
+	case "fifo":
+		return s.ClaimLicenseFIFO(ctx, nodeID)
+	case "lifo":
+		return s.ClaimLicenseLIFO(ctx, nodeID)
+	case "rand":
+		return s.ClaimLicenseRandom(ctx, nodeID)
+	default:
+		return s.ClaimLicenseFIFO(ctx, nodeID)
+	}
 }
 
 func (s *Store) GetLicenseByNodeID(ctx context.Context, nodeID *int64) (*License, error) {
@@ -236,14 +250,15 @@ func (s *Store) ReleaseLicensesFromInactiveNodes(ctx context.Context, ttl time.D
 	return licenses, nil
 }
 
-func (s *Store) DeleteInactiveNodes(ctx context.Context, ttl time.Duration) error {
+func (s *Store) DeleteInactiveNodes(ctx context.Context, ttl time.Duration) ([]Node, error) {
 	t := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
 
-	if err := s.queries.DeleteInactiveNodes(ctx, t); err != nil {
+	nodes, err := s.queries.DeleteInactiveNodes(ctx, t)
+	if err != nil {
 		slog.Error("failed to delete inactive nodes", "error", err)
 
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nodes, nil
 }

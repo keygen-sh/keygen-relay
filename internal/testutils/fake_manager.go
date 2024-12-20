@@ -9,15 +9,15 @@ import (
 )
 
 type FakeManager struct {
-	store               db.Store
-	AddLicenseFn        func(ctx context.Context, filePath, key, publicKey string) error
-	RemoveLicenseFn     func(ctx context.Context, id string) error
-	ListLicensesFn      func(ctx context.Context) ([]db.License, error)
-	GetLicenseByIDFn    func(ctx context.Context, id string) (*db.License, error)
-	ClaimLicenseFn      func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
-	ReleaseLicenseFn    func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
-	CullInactiveNodesFn func(ctx context.Context, ttl time.Duration) error
-	ConfigFn            func() *licenses.Config
+	store            db.Store
+	AddLicenseFn     func(ctx context.Context, filePath, key, publicKey string) error
+	RemoveLicenseFn  func(ctx context.Context, id string) error
+	ListLicensesFn   func(ctx context.Context) ([]db.License, error)
+	GetLicenseByIDFn func(ctx context.Context, id string) (*db.License, error)
+	ClaimLicenseFn   func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
+	ReleaseLicenseFn func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
+	CullDeadNodesFn  func(ctx context.Context, ttl time.Duration) error
+	ConfigFn         func() *licenses.Config
 }
 
 func (f *FakeManager) AddLicense(ctx context.Context, filePath, key, publicKey string) error {
@@ -68,9 +68,9 @@ func (f *FakeManager) ReleaseLicense(ctx context.Context, fingerprint string) (*
 	return nil, nil
 }
 
-func (f *FakeManager) CullInactiveNodes(ctx context.Context, ttl time.Duration) error {
-	if f.CullInactiveNodesFn != nil {
-		return f.CullInactiveNodesFn(ctx, ttl)
+func (f *FakeManager) CullDeadNodes(ctx context.Context, ttl time.Duration) error {
+	if f.CullDeadNodesFn != nil {
+		return f.CullDeadNodesFn(ctx, ttl)
 	}
 
 	return nil

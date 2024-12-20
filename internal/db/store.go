@@ -237,12 +237,12 @@ func (s *Store) GetLicenseByNodeID(ctx context.Context, nodeID *int64) (*License
 	return &license, nil
 }
 
-func (s *Store) ReleaseLicensesFromInactiveNodes(ctx context.Context, ttl time.Duration) ([]License, error) {
+func (s *Store) ReleaseLicensesFromDeadNodes(ctx context.Context, ttl time.Duration) ([]License, error) {
 	t := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
 
-	licenses, err := s.queries.ReleaseLicensesFromInactiveNodes(ctx, t)
+	licenses, err := s.queries.ReleaseLicensesFromDeadNodes(ctx, t)
 	if err != nil {
-		slog.Error("failed to release licenses from inactive nodes", "error", err)
+		slog.Error("failed to release licenses from dead nodes", "error", err)
 
 		return nil, err
 	}
@@ -250,12 +250,12 @@ func (s *Store) ReleaseLicensesFromInactiveNodes(ctx context.Context, ttl time.D
 	return licenses, nil
 }
 
-func (s *Store) DeactivateInactiveNodes(ctx context.Context, ttl time.Duration) ([]Node, error) {
+func (s *Store) DeactivateDeadNodes(ctx context.Context, ttl time.Duration) ([]Node, error) {
 	t := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
 
-	nodes, err := s.queries.DeactivateInactiveNodes(ctx, t)
+	nodes, err := s.queries.DeactivateDeadNodes(ctx, t)
 	if err != nil {
-		slog.Error("failed to delete inactive nodes", "error", err)
+		slog.Error("failed to delete dead nodes", "error", err)
 
 		return nil, err
 	}

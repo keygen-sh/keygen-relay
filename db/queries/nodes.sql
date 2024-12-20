@@ -18,7 +18,7 @@ UPDATE nodes
 SET deactivated_at = unixepoch()
 WHERE fingerprint = ? AND deactivated_at IS NULL;
 
--- name: DeactivateInactiveNodes :many
+-- name: DeactivateDeadNodes :many
 UPDATE nodes
 SET deactivated_at = unixepoch()
 WHERE last_heartbeat_at <= strftime('%s', 'now', ?) AND deactivated_at IS NULL

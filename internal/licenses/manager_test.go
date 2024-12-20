@@ -558,7 +558,7 @@ func TestReleaseLicense_LicenseNotFound(t *testing.T) {
 	assert.Equal(t, result.Status, licenses.OperationStatusNotFound)
 }
 
-func TestCullInactiveNodes(t *testing.T) {
+func TestCullDeadNodes(t *testing.T) {
 	ctx := context.Background()
 	store, dbConn := testutils.NewMemoryStore(t)
 	defer testutils.CloseMemoryStore(dbConn)
@@ -600,7 +600,7 @@ func TestCullInactiveNodes(t *testing.T) {
     `, "test_fingerprint")
 	assert.NoError(t, err)
 
-	err = manager.CullInactiveNodes(ctx, 30*time.Second)
+	err = manager.CullDeadNodes(ctx, 30*time.Second)
 	assert.NoError(t, err)
 
 	license, err := manager.GetLicenseByID(ctx, result1.License.ID)

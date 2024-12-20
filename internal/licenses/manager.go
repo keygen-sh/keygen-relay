@@ -46,7 +46,7 @@ type Manager interface {
 	ClaimLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error)
 	ReleaseLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error)
 	Config() *Config
-	CullInactiveNodes(ctx context.Context, ttl time.Duration) error
+	CullDeadNodes(ctx context.Context, ttl time.Duration) error
 }
 
 type manager struct {
@@ -362,7 +362,7 @@ func (m *manager) findOrCreateNode(ctx context.Context, store db.Store, fingerpr
 	return node, nil
 }
 
-func (m *manager) CullInactiveNodes(ctx context.Context, ttl time.Duration) error {
+func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) error {
 	tx, err := m.store.BeginTx(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -370,16 +370,16 @@ func (m *manager) CullInactiveNodes(ctx context.Context, ttl time.Duration) erro
 	qtx := m.store.WithTx(tx)
 	defer tx.Rollback()
 
-	licenses, err := qtx.ReleaseLicensesFromInactiveNodes(ctx, ttl)
+	licenses, err := qtx.ReleaseLicensesFromDeadNodes(ctx, ttl)
 	if err != nil {
-		slog.Error("failed to release licenses from inactive nodes", "error", err)
+		slog.Error("failed to release licenses from dead nodes", "error", err)
 
 		return err
 	}
 
-	nodes, err := qtx.DeactivateInactiveNodes(ctx, ttl)
+	nodes, err := qtx.DeactivateDeadNodes(ctx, ttl)
 	if err != nil {
-		slog.Error("failed to delete inactive nodes", "error", err)
+		slog.Error("failed to delete dead nodes", "error", err)
 
 		return err
 	}
@@ -414,7 +414,7 @@ func (m *manager) CullInactiveNodes(ctx context.Context, ttl time.Duration) erro
 		}
 	}
 
-	slog.Debug("successfully released licenses and culled inactive nodes", "licenseCount", len(licenses), "nodeCount", len(nodes))
+	slog.Debug("successfully released licenses and culled dead nodes", "licenseCount", len(licenses), "nodeCount", len(nodes))
 
 	return nil
 }

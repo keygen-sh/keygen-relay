@@ -9,15 +9,15 @@ import (
 	"context"
 )
 
-const deactivateInactiveNodes = `-- name: DeactivateInactiveNodes :many
+const deactivateDeadNodes = `-- name: DeactivateDeadNodes :many
 UPDATE nodes
 SET deactivated_at = unixepoch()
 WHERE last_heartbeat_at <= strftime('%s', 'now', ?) AND deactivated_at IS NULL
 RETURNING id, fingerprint, last_heartbeat_at, created_at, deactivated_at
 `
 
-func (q *Queries) DeactivateInactiveNodes(ctx context.Context, strftime interface{}) ([]Node, error) {
-	rows, err := q.db.QueryContext(ctx, deactivateInactiveNodes, strftime)
+func (q *Queries) DeactivateDeadNodes(ctx context.Context, strftime interface{}) ([]Node, error) {
+	rows, err := q.db.QueryContext(ctx, deactivateDeadNodes, strftime)
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +76,8 @@ func (q *Queries) GetNodeByFingerprint(ctx context.Context, fingerprint string) 
 }
 
 const insertNode = `-- name: InsertNode :one
-INSERT INTO nodes (fingerprint, last_heartbeat_at, created_at)
-VALUES (?, NULL, unixepoch())
+INSERT INTO nodes (fingerprint, created_at)
+VALUES (?, unixepoch())
 RETURNING id, fingerprint, last_heartbeat_at, created_at, deactivated_at
 `
 

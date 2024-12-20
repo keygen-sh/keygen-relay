@@ -75,7 +75,7 @@ func (s *server) startCullRoutine(ctx context.Context) {
 	ticker := time.NewTicker(s.config.CullInterval)
 	defer ticker.Stop()
 
-	slog.Debug("starting cull routine for inactive nodes", "ttl", s.config.TTL, "cullInterval", s.config.CullInterval)
+	slog.Debug("starting cull routine for dead nodes", "ttl", s.config.TTL, "cullInterval", s.config.CullInterval)
 
 	for {
 		select {
@@ -90,10 +90,10 @@ func (s *server) startCullRoutine(ctx context.Context) {
 
 func (s *server) cull() {
 	ctx := context.Background()
-	err := s.manager.CullInactiveNodes(ctx, s.Config().TTL)
+	err := s.manager.CullDeadNodes(ctx, s.Config().TTL)
 	if err != nil {
-		slog.Error("failed to cull inactive nodes", "error", err)
+		slog.Error("failed to cull dead nodes", "error", err)
 	} else {
-		slog.Debug("successfully culled inactive nodes")
+		slog.Debug("successfully culled dead nodes")
 	}
 }

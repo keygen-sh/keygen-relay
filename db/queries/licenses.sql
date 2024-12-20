@@ -67,7 +67,7 @@ WHERE id = (
 )
 RETURNING *;
 
--- name: ReleaseLicensesFromInactiveNodes :many
+-- name: ReleaseLicensesFromDeadNodes :many
 UPDATE licenses
 SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id IN (

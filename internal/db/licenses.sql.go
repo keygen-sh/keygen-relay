@@ -237,7 +237,7 @@ func (q *Queries) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64) err
 	return err
 }
 
-const releaseLicensesFromInactiveNodes = `-- name: ReleaseLicensesFromInactiveNodes :many
+const releaseLicensesFromDeadNodes = `-- name: ReleaseLicensesFromDeadNodes :many
 UPDATE licenses
 SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id IN (
@@ -247,8 +247,8 @@ WHERE node_id IN (
 RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
-func (q *Queries) ReleaseLicensesFromInactiveNodes(ctx context.Context, strftime interface{}) ([]License, error) {
-	rows, err := q.db.QueryContext(ctx, releaseLicensesFromInactiveNodes, strftime)
+func (q *Queries) ReleaseLicensesFromDeadNodes(ctx context.Context, strftime interface{}) ([]License, error) {
+	rows, err := q.db.QueryContext(ctx, releaseLicensesFromDeadNodes, strftime)
 	if err != nil {
 		return nil, err
 	}

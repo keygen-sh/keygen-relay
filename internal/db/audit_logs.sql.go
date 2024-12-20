@@ -54,7 +54,7 @@ ORDER BY created_at DESC
 
 type GetAuditLogsByEntityParams struct {
 	EntityTypeID int64
-	EntityID     string
+	EntityID     int64
 }
 
 func (q *Queries) GetAuditLogsByEntity(ctx context.Context, arg GetAuditLogsByEntityParams) ([]AuditLog, error) {
@@ -94,7 +94,7 @@ VALUES (?, ?, ?)
 type InsertAuditLogParams struct {
 	EventTypeID  int64
 	EntityTypeID int64
-	EntityID     string
+	EntityID     int64
 }
 
 func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error {

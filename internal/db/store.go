@@ -60,38 +60,45 @@ func (s *Store) WithTx(tx *sql.Tx) *Store {
 	}
 }
 
-func (s *Store) InsertLicense(ctx context.Context, guid string, file []byte, key string) error {
+func (s *Store) InsertLicense(ctx context.Context, guid string, file []byte, key string) (*License, error) {
 	params := InsertLicenseParams{
 		Guid: guid,
 		File: file,
 		Key:  key,
 	}
-	return s.queries.InsertLicense(ctx, params)
+
+	license, err := s.queries.InsertLicense(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return &license, nil
 }
 
-func (s *Store) DeleteLicenseByGUIDTx(ctx context.Context, id string) error {
+func (s *Store) DeleteLicenseByGUIDTx(ctx context.Context, id string) (*License, error) {
 	tx, err := s.connection.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	qtx := s.queries.WithTx(tx)
 	defer tx.Rollback()
 
+	// FIXME(ezekg) is this needed?
 	_, err = qtx.GetLicenseByGUID(ctx, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = qtx.DeleteLicenseByGUID(ctx, id)
+	license, err := qtx.DeleteLicenseByGUID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("failed to delete license: %w", err)
+		return nil, fmt.Errorf("failed to delete license: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return nil
+	return &license, nil
 }
 
 func (s *Store) GetAllLicenses(ctx context.Context) ([]License, error) {
@@ -145,7 +152,7 @@ func (s *Store) PingNodeHeartbeatByFingerprint(ctx context.Context, fingerprint 
 // TODO(ezekg) allow event data? e.g. license.lease_extended {from:x,to:y} or license.leased {node:n} or node.heartbeat_ping {count:n}
 //
 //	but doing so would pose problems for future aggregation...
-func (s *Store) InsertAuditLog(ctx context.Context, eventTypeId EventTypeId, entityTypeId EntityTypeId, entityID string) error {
+func (s *Store) InsertAuditLog(ctx context.Context, eventTypeId EventTypeId, entityTypeId EntityTypeId, entityID int64) error {
 	params := InsertAuditLogParams{
 		EventTypeID:  int64(eventTypeId),
 		EntityTypeID: int64(entityTypeId),
@@ -158,7 +165,7 @@ func (s *Store) InsertAuditLog(ctx context.Context, eventTypeId EventTypeId, ent
 type BulkInsertAuditLogParams struct {
 	EventTypeID  EventTypeId
 	EntityTypeID EntityTypeId
-	EntityID     string
+	EntityID     int64
 }
 
 func (s *Store) BulkInsertAuditLogs(ctx context.Context, logs []BulkInsertAuditLogParams) error {

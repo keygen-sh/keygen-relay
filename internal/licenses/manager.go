@@ -101,7 +101,8 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 	guid := dec.License.ID
 	key := dec.License.Key
 
-	if err := m.store.InsertLicense(ctx, guid, cert, key); err != nil {
+	license, err := m.store.InsertLicense(ctx, guid, cert, key)
+	if err != nil {
 		slog.Debug("failed to insert license", "licenseGuid", guid, "error", err)
 
 		if isUniqueConstraintError(err) {
@@ -113,7 +114,7 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseAdded, db.EntityTypeLicense, guid); err != nil {
+		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseAdded, db.EntityTypeLicense, license.ID); err != nil {
 			slog.Debug("failed to insert audit log", "licenseGuid", guid, "error", err)
 		}
 	}
@@ -126,7 +127,7 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 func (m *manager) RemoveLicense(ctx context.Context, guid string) error {
 	slog.Debug("starting to remove license", "licenseGuid", guid)
 
-	err := m.store.DeleteLicenseByGUIDTx(ctx, guid)
+	license, err := m.store.DeleteLicenseByGUIDTx(ctx, guid)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("license %s not found", guid)
@@ -139,7 +140,7 @@ func (m *manager) RemoveLicense(ctx context.Context, guid string) error {
 
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseRemoved, db.EntityTypeLicense, guid); err != nil {
+		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseRemoved, db.EntityTypeLicense, license.ID); err != nil {
 			slog.Debug("failed to insert audit log", "licenseGuid", guid, "error", err)
 		}
 	}
@@ -224,8 +225,8 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 
 		if m.config.EnabledAudit {
 			if err := m.store.BulkInsertAuditLogs(ctx, []db.BulkInsertAuditLogParams{
-				{EventTypeID: db.EventTypeLicenseLeaseExtended, EntityTypeID: db.EntityTypeLicense, EntityID: claimedLicense.Guid},
-				{EventTypeID: db.EventTypeNodeHeartbeatPing, EntityTypeID: db.EntityTypeNode, EntityID: node.Fingerprint},
+				{EventTypeID: db.EventTypeLicenseLeaseExtended, EntityTypeID: db.EntityTypeLicense, EntityID: claimedLicense.ID},
+				{EventTypeID: db.EventTypeNodeHeartbeatPing, EntityTypeID: db.EntityTypeNode, EntityID: node.ID},
 			}); err != nil {
 				slog.Warn("failed to insert audit logs", "error", err)
 			}
@@ -261,8 +262,8 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 
 	if m.config.EnabledAudit {
 		if err := m.store.BulkInsertAuditLogs(ctx, []db.BulkInsertAuditLogParams{
-			{EventTypeID: db.EventTypeLicenseLeased, EntityTypeID: db.EntityTypeLicense, EntityID: newLicense.Guid},
-			{EventTypeID: db.EventTypeNodeHeartbeatPing, EntityTypeID: db.EntityTypeNode, EntityID: node.Fingerprint},
+			{EventTypeID: db.EventTypeLicenseLeased, EntityTypeID: db.EntityTypeLicense, EntityID: newLicense.ID},
+			{EventTypeID: db.EventTypeNodeHeartbeatPing, EntityTypeID: db.EntityTypeNode, EntityID: node.ID},
 		}); err != nil {
 			slog.Warn("failed to insert audit logs", "error", err)
 		}
@@ -320,8 +321,8 @@ func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*Lice
 
 	if m.config.EnabledAudit {
 		if err := m.store.BulkInsertAuditLogs(ctx, []db.BulkInsertAuditLogParams{
-			{EventTypeID: db.EventTypeLicenseReleased, EntityTypeID: db.EntityTypeLicense, EntityID: claimedLicense.Guid},
-			{EventTypeID: db.EventTypeNodeDeactivated, EntityTypeID: db.EntityTypeNode, EntityID: node.Fingerprint},
+			{EventTypeID: db.EventTypeLicenseReleased, EntityTypeID: db.EntityTypeLicense, EntityID: claimedLicense.ID},
+			{EventTypeID: db.EventTypeNodeDeactivated, EntityTypeID: db.EntityTypeNode, EntityID: node.ID},
 		}); err != nil {
 			slog.Warn("failed to insert audit logs", "error", err)
 		}
@@ -348,7 +349,7 @@ func (m *manager) findOrCreateNode(ctx context.Context, store db.Store, fingerpr
 			}
 
 			if m.config.EnabledAudit {
-				if err := store.InsertAuditLog(ctx, db.EventTypeNodeActivated, db.EntityTypeNode, node.Fingerprint); err != nil {
+				if err := store.InsertAuditLog(ctx, db.EventTypeNodeActivated, db.EntityTypeNode, node.ID); err != nil {
 					slog.Warn("failed to insert audit log", "nodeID", node.ID, "nodeFingerprint", node.Fingerprint, "error", err)
 				}
 			}
@@ -397,7 +398,7 @@ func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) error {
 			logs = append(logs, db.BulkInsertAuditLogParams{
 				EventTypeID:  db.EventTypeLicenseLeaseExpired,
 				EntityTypeID: db.EntityTypeLicense,
-				EntityID:     license.Guid,
+				EntityID:     license.ID,
 			})
 		}
 
@@ -405,7 +406,7 @@ func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) error {
 			logs = append(logs, db.BulkInsertAuditLogParams{
 				EventTypeID:  db.EventTypeNodeCulled,
 				EntityTypeID: db.EntityTypeNode,
-				EntityID:     node.Fingerprint,
+				EntityID:     node.ID,
 			})
 		}
 

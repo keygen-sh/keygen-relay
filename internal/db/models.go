@@ -8,7 +8,7 @@ type AuditLog struct {
 	ID           int64
 	EventTypeID  int64
 	EntityTypeID int64
-	EntityID     string
+	EntityID     int64
 	CreatedAt    int64
 }
 

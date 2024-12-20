@@ -99,14 +99,27 @@ func (q *Queries) ClaimLicenseRandom(ctx context.Context, nodeID *int64) (Licens
 	return i, err
 }
 
-const deleteLicenseByGUID = `-- name: DeleteLicenseByGUID :exec
+const deleteLicenseByGUID = `-- name: DeleteLicenseByGUID :one
 DELETE FROM licenses
 WHERE guid = ?
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
-func (q *Queries) DeleteLicenseByGUID(ctx context.Context, guid string) error {
-	_, err := q.db.ExecContext(ctx, deleteLicenseByGUID, guid)
-	return err
+func (q *Queries) DeleteLicenseByGUID(ctx context.Context, guid string) (License, error) {
+	row := q.db.QueryRowContext(ctx, deleteLicenseByGUID, guid)
+	var i License
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.File,
+		&i.Key,
+		&i.Claims,
+		&i.LastClaimedAt,
+		&i.LastReleasedAt,
+		&i.NodeID,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getAllLicenses = `-- name: GetAllLicenses :many
@@ -194,9 +207,10 @@ func (q *Queries) GetLicenseByNodeID(ctx context.Context, nodeID *int64) (Licens
 	return i, err
 }
 
-const insertLicense = `-- name: InsertLicense :exec
+const insertLicense = `-- name: InsertLicense :one
 INSERT INTO licenses (guid, file, key)
 VALUES (?, ?, ?)
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
 type InsertLicenseParams struct {
@@ -205,9 +219,21 @@ type InsertLicenseParams struct {
 	Key  string
 }
 
-func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) error {
-	_, err := q.db.ExecContext(ctx, insertLicense, arg.Guid, arg.File, arg.Key)
-	return err
+func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) (License, error) {
+	row := q.db.QueryRowContext(ctx, insertLicense, arg.Guid, arg.File, arg.Key)
+	var i License
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.File,
+		&i.Key,
+		&i.Claims,
+		&i.LastClaimedAt,
+		&i.LastReleasedAt,
+		&i.NodeID,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const releaseLicenseByNodeID = `-- name: ReleaseLicenseByNodeID :exec

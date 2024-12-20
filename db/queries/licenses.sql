@@ -1,6 +1,7 @@
--- name: InsertLicense :exec
+-- name: InsertLicense :one
 INSERT INTO licenses (guid, file, key)
-VALUES (?, ?, ?);
+VALUES (?, ?, ?)
+RETURNING *;
 
 -- name: GetLicenseByGUID :one
 SELECT *
@@ -17,9 +18,10 @@ SELECT *
 FROM licenses
 ORDER BY id;
 
--- name: DeleteLicenseByGUID :exec
+-- name: DeleteLicenseByGUID :one
 DELETE FROM licenses
-WHERE guid = ?;
+WHERE guid = ?
+RETURNING *;
 
 -- name: ReleaseLicenseByNodeID :exec
 UPDATE licenses

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
@@ -51,15 +52,29 @@ Version:
 
 			logger.Init(cfg.Logger, os.Stdout)
 
-			disableAudit, err := cmd.Flags().GetBool("no-audit")
-			if err != nil {
-				return fmt.Errorf("failed to parse 'no-audit' flag: %v", err)
+			if pragmas, err := cmd.Flags().GetStringSlice("pragma"); err == nil {
+				for _, pragma := range pragmas {
+					keyvalues := strings.SplitN(pragma, "=", 2)
+					if len(keyvalues) != 2 {
+						return fmt.Errorf("invalid pragma format: %s (expected key=value)", pragma)
+					}
+
+					key, value := keyvalues[0], keyvalues[1]
+					if key == "" || value == "" {
+						return fmt.Errorf("invalid pragma format: %s (expected key=value)", pragma)
+					}
+
+					cfg.DB.DatabasePragmas[key] = value
+				}
 			}
 
-			cfg.License.EnabledAudit = !disableAudit
+			if disableAudit, err := cmd.Flags().GetBool("no-audit"); err == nil {
+				cfg.License.EnabledAudit = !disableAudit
+			}
 
 			// init database connection in PersistentPreRun hook for getting persistent flags
 			var store *db.Store
+			var err error
 
 			store, conn, err = initStore(ctx, cfg)
 			if err != nil {
@@ -89,6 +104,7 @@ Version:
 	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", `log level e.g. -vvv for "info" (default -v=1 i.e. "error") [$DEBUG=1]`)
 	rootCmd.PersistentFlags().Bool("no-audit", try.Try(try.EnvBool("RELAY_NO_AUDIT"), try.Static(false)), "disable audit logs [$RELAY_NO_AUDIT=1]")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Logger.DisableColor, "no-color", false, "disable colors in command output [$NO_COLOR=1]")
+	rootCmd.PersistentFlags().StringSlice("pragma", nil, "database pragma key-value pairs (e.g., --pragma mmap_size=536870912)")
 
 	rootCmd.SetHelpCommand(cmd.HelpCmd())
 	rootCmd.AddCommand(cmd.AddCmd(manager))
@@ -121,67 +137,12 @@ func initStore(_ context.Context, cfg *config.Config) (*db.Store, *sql.DB, error
 
 	slog.Info("applying database pragmas", "path", cfg.DB.DatabaseFilePath)
 
-	// set the journal mode to Write-Ahead Logging for concurrency
-	if _, err := conn.Exec("PRAGMA journal_mode = WAL"); err != nil {
-		slog.Error("failed to set journal_mode pragma", "error", err)
+	for key, value := range cfg.DB.DatabasePragmas {
+		if _, err := conn.Exec(fmt.Sprintf("PRAGMA %s = %s", key, value)); err != nil {
+			slog.Error("failed to set pragma", "key", key, "value", value, "error", err)
 
-		return nil, nil, err
-	}
-
-	// set synchronous mode to NORMAL to better balance performance and safety
-	if _, err := conn.Exec("PRAGMA synchronous = NORMAL"); err != nil {
-		slog.Error("failed to set synchronous pragma", "error", err)
-
-		return nil, nil, err
-	}
-
-	// set busy timeout to 5 seconds to avoid lock-related errors
-	if _, err := conn.Exec("PRAGMA busy_timeout = 5000"); err != nil {
-		slog.Error("failed to set busy_timeout pragma", "error", err)
-
-		return nil, nil, err
-	}
-
-	// set cache size to 20MB for faster data access
-	if _, err := conn.Exec("PRAGMA cache_size = -20000"); err != nil {
-		slog.Error("failed to set cache_size pragma", "error", err)
-
-		return nil, nil, err
-	}
-
-	// enable foreign key constraints
-	if _, err := conn.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		slog.Error("failed to set foreign_keys pragma", "error", err)
-
-		return nil, nil, err
-	}
-
-	// enable auto vacuuming and set it to incremental mode for gradual space reclaiming
-	if _, err := conn.Exec("PRAGMA auto_vacuum = INCREMENTAL"); err != nil {
-		slog.Error("failed to set auto_vacuum pragma", "error", err)
-
-		return nil, nil, err
-	}
-
-	// store temporary tables and data in memory for better performance
-	if _, err := conn.Exec("PRAGMA temp_store = MEMORY"); err != nil {
-		slog.Error("failed to set temp_store pragma", "error", err)
-
-		return nil, nil, err
-	}
-
-	// set the mmap_size to 2GB for faster read/write access using memory-mapped I/O
-	if _, err := conn.Exec("PRAGMA mmap_size = 2147483648"); err != nil {
-		slog.Error("failed to set mmap_size pragma", "error", err)
-
-		return nil, nil, err
-	}
-
-	// set the page size to 8KB for balanced memory usage and performance
-	if _, err := conn.Exec("PRAGMA page_size = 8192"); err != nil {
-		slog.Error("failed to set page_size pragma", "error", err)
-
-		return nil, nil, err
+			return nil, nil, err
+		}
 	}
 
 	// apply migrations e.g. initial schema, etc.

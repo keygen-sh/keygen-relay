@@ -36,23 +36,15 @@ func ServeCmd(srv server.Server) *cobra.Command {
 		Use:   "serve",
 		Short: "run the relay server to manage license distribution",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			noHeartbeats, err := cmd.Flags().GetBool("no-heartbeats")
-			if err != nil {
-				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("failed to parse 'no-heartbeats' flag: %v", err))
-				return err
+			if ttl, err := cmd.Flags().GetDuration("ttl"); err == nil {
+				if err := validateTTL(ttl); err != nil {
+					output.PrintError(cmd.ErrOrStderr(), err.Error())
+					return err
+				}
 			}
 
-			cfg.EnabledHeartbeat = !noHeartbeats
-
-			ttl, err := cmd.Flags().GetDuration("ttl")
-			if err != nil {
-				output.PrintError(cmd.ErrOrStderr(), fmt.Sprintf("failed to parse 'ttl' flag: %v", err))
-				return err
-			}
-
-			if err := validateTTL(ttl); err != nil {
-				output.PrintError(cmd.ErrOrStderr(), err.Error())
-				return err
+			if disableHeartbeats, err := cmd.Flags().GetBool("no-heartbeats"); err == nil {
+				cfg.EnabledHeartbeat = !disableHeartbeats
 			}
 
 			srv.Manager().Config().Strategy = string(cfg.Strategy)

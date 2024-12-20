@@ -60,16 +60,16 @@ func (s *Store) WithTx(tx *sql.Tx) *Store {
 	}
 }
 
-func (s *Store) InsertLicense(ctx context.Context, id string, file []byte, key string) error {
+func (s *Store) InsertLicense(ctx context.Context, guid string, file []byte, key string) error {
 	params := InsertLicenseParams{
-		ID:   id,
+		Guid: guid,
 		File: file,
 		Key:  key,
 	}
 	return s.queries.InsertLicense(ctx, params)
 }
 
-func (s *Store) DeleteLicenseByIDTx(ctx context.Context, id string) error {
+func (s *Store) DeleteLicenseByGUIDTx(ctx context.Context, id string) error {
 	tx, err := s.connection.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -77,12 +77,12 @@ func (s *Store) DeleteLicenseByIDTx(ctx context.Context, id string) error {
 	qtx := s.queries.WithTx(tx)
 	defer tx.Rollback()
 
-	_, err = qtx.GetLicenseByID(ctx, id)
+	_, err = qtx.GetLicenseByGUID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	err = qtx.DeleteLicenseByID(ctx, id)
+	err = qtx.DeleteLicenseByGUID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete license: %w", err)
 	}
@@ -103,8 +103,8 @@ func (s *Store) GetAllLicenses(ctx context.Context) ([]License, error) {
 	return licenses, nil
 }
 
-func (s *Store) GetLicenseByID(ctx context.Context, id string) (*License, error) {
-	license, err := s.queries.GetLicenseByID(ctx, id)
+func (s *Store) GetLicenseByGUID(ctx context.Context, id string) (*License, error) {
+	license, err := s.queries.GetLicenseByGUID(ctx, id)
 	if err != nil {
 		return nil, err
 	}

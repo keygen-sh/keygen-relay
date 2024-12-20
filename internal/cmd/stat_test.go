@@ -19,12 +19,12 @@ func TestStatCmd_Success(t *testing.T) {
 	nodeID := int64(123)
 
 	manager := &testutils.FakeManager{
-		GetLicenseByIDFn: func(ctx context.Context, id string) (*db.License, error) {
+		GetLicenseByGUIDFn: func(ctx context.Context, id string) (*db.License, error) {
 			lastClaimedAt := lastClaimedAt.UTC().Unix()
 			lastReleasedAt := lastReleasedAt.UTC().Unix()
 
 			return &db.License{
-				ID:             "License_1",
+				Guid:           "License_1",
 				Key:            "License_Key1",
 				Claims:         5,
 				LastReleasedAt: &lastReleasedAt,
@@ -67,7 +67,7 @@ func TestStatCmd_MissingFlag(t *testing.T) {
 
 func TestStatCmd_Error(t *testing.T) {
 	manager := &testutils.FakeManager{
-		GetLicenseByIDFn: func(ctx context.Context, id string) (*db.License, error) {
+		GetLicenseByGUIDFn: func(ctx context.Context, id string) (*db.License, error) {
 			return nil, errors.New("license not found")
 		},
 	}

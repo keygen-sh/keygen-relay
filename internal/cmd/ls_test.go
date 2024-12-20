@@ -17,8 +17,8 @@ func TestLsCmd_Success(t *testing.T) {
 	manager := &testutils.FakeManager{
 		ListLicensesFn: func(ctx context.Context) ([]db.License, error) {
 			return []db.License{
-				{ID: "License_1", Key: "License_Key_1", Claims: 5},
-				{ID: "License_2", Key: "License_Key_2", Claims: 10},
+				{Guid: "License_1", Key: "License_Key_1", Claims: 5},
+				{Guid: "License_2", Key: "License_Key_2", Claims: 10},
 			}, nil
 		},
 	}

@@ -9,22 +9,6 @@ import (
 	"context"
 )
 
-const claimLicense = `-- name: ClaimLicense :exec
-UPDATE licenses
-SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
-WHERE id = ? AND node_id IS NULL
-`
-
-type ClaimLicenseParams struct {
-	NodeID *int64
-	ID     string
-}
-
-func (q *Queries) ClaimLicense(ctx context.Context, arg ClaimLicenseParams) error {
-	_, err := q.db.ExecContext(ctx, claimLicense, arg.NodeID, arg.ID)
-	return err
-}
-
 const claimLicenseFIFO = `-- name: ClaimLicenseFIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
@@ -35,7 +19,7 @@ WHERE id = (
     ORDER BY created_at ASC
     LIMIT 1
 )
-RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
 func (q *Queries) ClaimLicenseFIFO(ctx context.Context, nodeID *int64) (License, error) {
@@ -43,6 +27,7 @@ func (q *Queries) ClaimLicenseFIFO(ctx context.Context, nodeID *int64) (License,
 	var i License
 	err := row.Scan(
 		&i.ID,
+		&i.Guid,
 		&i.File,
 		&i.Key,
 		&i.Claims,
@@ -64,7 +49,7 @@ WHERE id = (
     ORDER BY created_at DESC
     LIMIT 1
 )
-RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
 func (q *Queries) ClaimLicenseLIFO(ctx context.Context, nodeID *int64) (License, error) {
@@ -72,6 +57,7 @@ func (q *Queries) ClaimLicenseLIFO(ctx context.Context, nodeID *int64) (License,
 	var i License
 	err := row.Scan(
 		&i.ID,
+		&i.Guid,
 		&i.File,
 		&i.Key,
 		&i.Claims,
@@ -93,7 +79,7 @@ WHERE id = (
     ORDER BY RANDOM()
     LIMIT 1
 )
-RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
 func (q *Queries) ClaimLicenseRandom(ctx context.Context, nodeID *int64) (License, error) {
@@ -101,6 +87,7 @@ func (q *Queries) ClaimLicenseRandom(ctx context.Context, nodeID *int64) (Licens
 	var i License
 	err := row.Scan(
 		&i.ID,
+		&i.Guid,
 		&i.File,
 		&i.Key,
 		&i.Claims,
@@ -112,18 +99,18 @@ func (q *Queries) ClaimLicenseRandom(ctx context.Context, nodeID *int64) (Licens
 	return i, err
 }
 
-const deleteLicenseByID = `-- name: DeleteLicenseByID :exec
+const deleteLicenseByGUID = `-- name: DeleteLicenseByGUID :exec
 DELETE FROM licenses
-WHERE id = ?
+WHERE guid = ?
 `
 
-func (q *Queries) DeleteLicenseByID(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteLicenseByID, id)
+func (q *Queries) DeleteLicenseByGUID(ctx context.Context, guid string) error {
+	_, err := q.db.ExecContext(ctx, deleteLicenseByGUID, guid)
 	return err
 }
 
 const getAllLicenses = `-- name: GetAllLicenses :many
-SELECT id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 FROM licenses
 ORDER BY id
 `
@@ -139,6 +126,7 @@ func (q *Queries) GetAllLicenses(ctx context.Context) ([]License, error) {
 		var i License
 		if err := rows.Scan(
 			&i.ID,
+			&i.Guid,
 			&i.File,
 			&i.Key,
 			&i.Claims,
@@ -160,17 +148,18 @@ func (q *Queries) GetAllLicenses(ctx context.Context) ([]License, error) {
 	return items, nil
 }
 
-const getLicenseByID = `-- name: GetLicenseByID :one
-SELECT id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
+const getLicenseByGUID = `-- name: GetLicenseByGUID :one
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 FROM licenses
-WHERE id = ?
+WHERE guid = ?
 `
 
-func (q *Queries) GetLicenseByID(ctx context.Context, id string) (License, error) {
-	row := q.db.QueryRowContext(ctx, getLicenseByID, id)
+func (q *Queries) GetLicenseByGUID(ctx context.Context, guid string) (License, error) {
+	row := q.db.QueryRowContext(ctx, getLicenseByGUID, guid)
 	var i License
 	err := row.Scan(
 		&i.ID,
+		&i.Guid,
 		&i.File,
 		&i.Key,
 		&i.Claims,
@@ -183,7 +172,7 @@ func (q *Queries) GetLicenseByID(ctx context.Context, id string) (License, error
 }
 
 const getLicenseByNodeID = `-- name: GetLicenseByNodeID :one
-SELECT id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 FROM licenses
 WHERE node_id = ?
 `
@@ -193,6 +182,7 @@ func (q *Queries) GetLicenseByNodeID(ctx context.Context, nodeID *int64) (Licens
 	var i License
 	err := row.Scan(
 		&i.ID,
+		&i.Guid,
 		&i.File,
 		&i.Key,
 		&i.Claims,
@@ -205,24 +195,18 @@ func (q *Queries) GetLicenseByNodeID(ctx context.Context, nodeID *int64) (Licens
 }
 
 const insertLicense = `-- name: InsertLicense :exec
-INSERT INTO licenses (id, file, key, claims, node_id)
-VALUES (?, ?, ?, ?, NULL)
+INSERT INTO licenses (guid, file, key)
+VALUES (?, ?, ?)
 `
 
 type InsertLicenseParams struct {
-	ID     string
-	File   []byte
-	Key    string
-	Claims int64
+	Guid string
+	File []byte
+	Key  string
 }
 
 func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) error {
-	_, err := q.db.ExecContext(ctx, insertLicense,
-		arg.ID,
-		arg.File,
-		arg.Key,
-		arg.Claims,
-	)
+	_, err := q.db.ExecContext(ctx, insertLicense, arg.Guid, arg.File, arg.Key)
 	return err
 }
 
@@ -244,7 +228,7 @@ WHERE node_id IN (
     SELECT id FROM nodes
     WHERE last_heartbeat_at <= strftime('%s', 'now', ?) AND deactivated_at IS NULL
 )
-RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `
 
 func (q *Queries) ReleaseLicensesFromDeadNodes(ctx context.Context, strftime interface{}) ([]License, error) {
@@ -258,6 +242,7 @@ func (q *Queries) ReleaseLicensesFromDeadNodes(ctx context.Context, strftime int
 		var i License
 		if err := rows.Scan(
 			&i.ID,
+			&i.Guid,
 			&i.File,
 			&i.Key,
 			&i.Claims,

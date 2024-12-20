@@ -1,11 +1,11 @@
 -- name: InsertLicense :exec
-INSERT INTO licenses (id, file, key, claims, node_id)
-VALUES (?, ?, ?, ?, NULL);
+INSERT INTO licenses (guid, file, key)
+VALUES (?, ?, ?);
 
--- name: GetLicenseByID :one
+-- name: GetLicenseByGUID :one
 SELECT *
 FROM licenses
-WHERE id = ?;
+WHERE guid = ?;
 
 -- name: GetLicenseByNodeID :one
 SELECT *
@@ -17,14 +17,9 @@ SELECT *
 FROM licenses
 ORDER BY id;
 
--- name: DeleteLicenseByID :exec
+-- name: DeleteLicenseByGUID :exec
 DELETE FROM licenses
-WHERE id = ?;
-
--- name: ClaimLicense :exec
-UPDATE licenses
-SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
-WHERE id = ? AND node_id IS NULL;
+WHERE guid = ?;
 
 -- name: ReleaseLicenseByNodeID :exec
 UPDATE licenses

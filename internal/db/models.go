@@ -23,7 +23,8 @@ type EventType struct {
 }
 
 type License struct {
-	ID             string
+	ID             int64
+	Guid           string
 	File           []byte
 	Key            string
 	Claims         int64

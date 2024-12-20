@@ -34,7 +34,7 @@ func TestAddLicense_Success(t *testing.T) {
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
-	license, err := manager.GetLicenseByID(context.Background(), "license_test_key")
+	license, err := manager.GetLicenseByGUID(context.Background(), "license_test_key")
 	assert.NoError(t, err)
 	assert.Equal(t, "test_key", license.Key)
 }
@@ -113,7 +113,7 @@ func TestRemoveLicense_Success(t *testing.T) {
 	assert.NoError(t, err, "failed to add license")
 
 	// check that the license was created
-	_, err = manager.GetLicenseByID(ctx, "license_test_key")
+	_, err = manager.GetLicenseByGUID(ctx, "license_test_key")
 	assert.NoError(t, err, "license should exist")
 
 	// remove the license
@@ -121,7 +121,7 @@ func TestRemoveLicense_Success(t *testing.T) {
 	assert.NoError(t, err, "failed to remove license")
 
 	// check that the license is removed
-	_, err = manager.GetLicenseByID(context.Background(), "license_test_key")
+	_, err = manager.GetLicenseByGUID(context.Background(), "license_test_key")
 	assert.Error(t, err, "license should not exist after deletion")
 	assert.Contains(t, err.Error(), "license license_test_key: license not found")
 }
@@ -182,7 +182,7 @@ func TestListLicenses_Success(t *testing.T) {
 	assert.Equal(t, "test_key_2", licenseList[1].Key)
 }
 
-func TestGetLicenseByID_Success(t *testing.T) {
+func TestGetLicenseByGUID_Success(t *testing.T) {
 	store, dbConn := testutils.NewMemoryStore(t)
 	defer testutils.CloseMemoryStore(dbConn)
 
@@ -203,12 +203,12 @@ func TestGetLicenseByID_Success(t *testing.T) {
 	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
-	license, err := manager.GetLicenseByID(context.Background(), "license_test_key")
+	license, err := manager.GetLicenseByGUID(context.Background(), "license_test_key")
 	assert.NoError(t, err)
 	assert.Equal(t, "test_key", license.Key)
 }
 
-func TestGetLicenseByID_Failure(t *testing.T) {
+func TestGetLicenseByGUID_Failure(t *testing.T) {
 	store, dbConn := testutils.NewMemoryStore(t)
 	defer testutils.CloseMemoryStore(dbConn)
 
@@ -226,7 +226,7 @@ func TestGetLicenseByID_Failure(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	_, err := manager.GetLicenseByID(context.Background(), "invalid_id")
+	_, err := manager.GetLicenseByGUID(context.Background(), "invalid_id")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "license invalid_id: license not found")
 }
@@ -397,11 +397,24 @@ func TestClaimLicense_FIFO_Strategy(t *testing.T) {
 	err = manager.AddLicense(ctx, "license3.lic", "key3", "public_key")
 	assert.NoError(t, err)
 
+	// we need to update created_at manually, because in tests the records are created very quickly in the same time
+	// update created_at for license_key1
+	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-3 seconds') WHERE guid = 'license_key1'`)
+	assert.NoError(t, err)
+
+	// update created_at for license_key2
+	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-2 seconds') WHERE guid = 'license_key2'`)
+	assert.NoError(t, err)
+
+	// update created_at for license_key3
+	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-1 seconds') WHERE guid = 'license_key3'`)
+	assert.NoError(t, err)
+
 	result, err := manager.ClaimLicense(ctx, "test_fingerprint")
 	assert.NoError(t, err)
 	assert.Equal(t, licenses.OperationStatusCreated, result.Status)
 	assert.NotNil(t, result.License)
-	assert.Equal(t, "license_key1", result.License.ID)
+	assert.Equal(t, "license_key1", result.License.Guid)
 	assert.Equal(t, "key1", result.License.Key)
 }
 
@@ -442,17 +455,13 @@ func TestClaimLicense_LIFO_Strategy(t *testing.T) {
 	err = manager.AddLicense(ctx, "license3.lic", "key3", "public_key")
 	assert.NoError(t, err)
 
-	// we need to update created_at manually, because in tests the records are created very quickly in the same time
-	// update created_at for license_key1
-	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-3 seconds') WHERE id = 'license_key1'`)
+	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-3 seconds') WHERE guid = 'license_key1'`)
 	assert.NoError(t, err)
 
-	// update created_at for license_key2
-	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-2 seconds') WHERE id = 'license_key2'`)
+	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-2 seconds') WHERE guid = 'license_key2'`)
 	assert.NoError(t, err)
 
-	// update created_at for license_key3
-	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-1 seconds') WHERE id = 'license_key3'`)
+	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-1 seconds') WHERE guid = 'license_key3'`)
 	assert.NoError(t, err)
 
 	// claim license with LIFO strategy
@@ -460,7 +469,7 @@ func TestClaimLicense_LIFO_Strategy(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, licenses.OperationStatusCreated, result.Status)
 	assert.NotNil(t, result.License)
-	assert.Equal(t, "license_key3", result.License.ID)
+	assert.Equal(t, "license_key3", result.License.Guid)
 	assert.Equal(t, "key3", result.License.Key)
 }
 
@@ -503,7 +512,7 @@ func TestReleaseLicense_Success(t *testing.T) {
 	assert.True(t, errors.Is(err, sql.ErrNoRows))
 
 	// checking the free license
-	claimedLicense, err := store.GetLicenseByID(ctx, result.License.ID)
+	claimedLicense, err := store.GetLicenseByGUID(ctx, result.License.Guid)
 	assert.NoError(t, err)
 	assert.Nil(t, claimedLicense.NodeID)
 	assert.NotNil(t, claimedLicense.LastReleasedAt)
@@ -603,12 +612,12 @@ func TestCullDeadNodes(t *testing.T) {
 	err = manager.CullDeadNodes(ctx, 30*time.Second)
 	assert.NoError(t, err)
 
-	license, err := manager.GetLicenseByID(ctx, result1.License.ID)
+	license, err := manager.GetLicenseByGUID(ctx, result1.License.Guid)
 	assert.NoError(t, err)
 	assert.Nil(t, license.NodeID)
 	assert.NotNil(t, license.ID)
 
-	license2, err := manager.GetLicenseByID(ctx, result2.License.ID)
+	license2, err := manager.GetLicenseByGUID(ctx, result2.License.Guid)
 	assert.NoError(t, err)
 	assert.NotNil(t, license2.NodeID)
 

@@ -41,7 +41,7 @@ type Manager interface {
 	AddLicense(ctx context.Context, licenseFilePath string, licenseKey string, publicKeyPath string) error
 	RemoveLicense(ctx context.Context, id string) error
 	ListLicenses(ctx context.Context) ([]db.License, error)
-	GetLicenseByID(ctx context.Context, id string) (*db.License, error)
+	GetLicenseByGUID(ctx context.Context, id string) (*db.License, error)
 	AttachStore(store db.Store)
 	ClaimLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error)
 	ReleaseLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error)
@@ -98,11 +98,11 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 		return fmt.Errorf("license decryption failed: %w", err)
 	}
 
-	id := dec.License.ID
+	guid := dec.License.ID
 	key := dec.License.Key
 
-	if err := m.store.InsertLicense(ctx, id, cert, key); err != nil {
-		slog.Debug("failed to insert license", "licenseID", id, "error", err)
+	if err := m.store.InsertLicense(ctx, guid, cert, key); err != nil {
+		slog.Debug("failed to insert license", "licenseGuid", guid, "error", err)
 
 		if isUniqueConstraintError(err) {
 			return fmt.Errorf("license with the provided key already exists")
@@ -113,38 +113,38 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseAdded, db.EntityTypeLicense, id); err != nil {
-			slog.Debug("failed to insert audit log", "licenseID", id, "error", err)
+		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseAdded, db.EntityTypeLicense, guid); err != nil {
+			slog.Debug("failed to insert audit log", "licenseGuid", guid, "error", err)
 		}
 	}
 
-	slog.Debug("added license successfully", "licenseID", id)
+	slog.Debug("added license successfully", "licenseGuid", guid)
 
 	return nil
 }
 
-func (m *manager) RemoveLicense(ctx context.Context, id string) error {
-	slog.Debug("starting to remove license", "id", id)
+func (m *manager) RemoveLicense(ctx context.Context, guid string) error {
+	slog.Debug("starting to remove license", "licenseGuid", guid)
 
-	err := m.store.DeleteLicenseByIDTx(ctx, id)
+	err := m.store.DeleteLicenseByGUIDTx(ctx, guid)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("license %s not found", id)
+			return fmt.Errorf("license %s not found", guid)
 		}
 
-		slog.Debug("failed to delete license", "licenseID", id, "error", err)
+		slog.Debug("failed to delete license", "licenseGuid", guid, "error", err)
 
 		return fmt.Errorf("failed to delete license: %w", err)
 	}
 
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
-		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseRemoved, db.EntityTypeLicense, id); err != nil {
-			slog.Debug("failed to insert audit log", "licenseID", id, "error", err)
+		if err := m.store.InsertAuditLog(ctx, db.EventTypeLicenseRemoved, db.EntityTypeLicense, guid); err != nil {
+			slog.Debug("failed to insert audit log", "licenseGuid", guid, "error", err)
 		}
 	}
 
-	slog.Debug("removed license successfully", "licenseID", id)
+	slog.Debug("removed license successfully", "licenseGuid", guid)
 
 	return nil
 }
@@ -170,23 +170,23 @@ func (m *manager) ListLicenses(ctx context.Context) ([]db.License, error) {
 	return licenses, nil
 }
 
-func (m *manager) GetLicenseByID(ctx context.Context, id string) (*db.License, error) {
-	slog.Debug("fetching license", "id", id)
+func (m *manager) GetLicenseByGUID(ctx context.Context, guid string) (*db.License, error) {
+	slog.Debug("fetching license", "licenseGuid", guid)
 
-	license, err := m.store.GetLicenseByID(ctx, id)
+	license, err := m.store.GetLicenseByGUID(ctx, guid)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Debug("license not found", "licenseID", id)
+			slog.Debug("license not found", "licenseGuid", guid)
 
-			return nil, fmt.Errorf("license %s: %w", id, ErrLicenseNotFound)
+			return nil, fmt.Errorf("license %s: %w", guid, ErrLicenseNotFound)
 		}
 
-		slog.Debug("failed to fetch license by ID", "licenseID", id, "error", err)
+		slog.Debug("failed to fetch license by ID", "licenseGuid", guid, "error", err)
 
 		return nil, err
 	}
 
-	slog.Debug("fetched license successfully", "licenseID", id)
+	slog.Debug("fetched license successfully", "licenseGuid", guid)
 
 	return license, nil
 }
@@ -224,14 +224,14 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 
 		if m.config.EnabledAudit {
 			if err := m.store.BulkInsertAuditLogs(ctx, []db.BulkInsertAuditLogParams{
-				{EventTypeID: db.EventTypeLicenseLeaseExtended, EntityTypeID: db.EntityTypeLicense, EntityID: claimedLicense.ID},
+				{EventTypeID: db.EventTypeLicenseLeaseExtended, EntityTypeID: db.EntityTypeLicense, EntityID: claimedLicense.Guid},
 				{EventTypeID: db.EventTypeNodeHeartbeatPing, EntityTypeID: db.EntityTypeNode, EntityID: node.Fingerprint},
 			}); err != nil {
 				slog.Warn("failed to insert audit logs", "error", err)
 			}
 		}
 
-		slog.Info("license extended successfully", "licenseID", claimedLicense.ID)
+		slog.Info("license extended successfully", "licenseGuid", claimedLicense.Guid)
 
 		return &LicenseOperationResult{
 			License: claimedLicense,
@@ -261,14 +261,14 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 
 	if m.config.EnabledAudit {
 		if err := m.store.BulkInsertAuditLogs(ctx, []db.BulkInsertAuditLogParams{
-			{EventTypeID: db.EventTypeLicenseLeased, EntityTypeID: db.EntityTypeLicense, EntityID: newLicense.ID},
+			{EventTypeID: db.EventTypeLicenseLeased, EntityTypeID: db.EntityTypeLicense, EntityID: newLicense.Guid},
 			{EventTypeID: db.EventTypeNodeHeartbeatPing, EntityTypeID: db.EntityTypeNode, EntityID: node.Fingerprint},
 		}); err != nil {
 			slog.Warn("failed to insert audit logs", "error", err)
 		}
 	}
 
-	slog.Info("new license claimed successfully", "licenseID", newLicense.ID)
+	slog.Info("new license claimed successfully", "licenseGuid", newLicense.Guid)
 
 	return &LicenseOperationResult{
 		License: newLicense,
@@ -320,14 +320,14 @@ func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*Lice
 
 	if m.config.EnabledAudit {
 		if err := m.store.BulkInsertAuditLogs(ctx, []db.BulkInsertAuditLogParams{
-			{EventTypeID: db.EventTypeLicenseReleased, EntityTypeID: db.EntityTypeLicense, EntityID: claimedLicense.ID},
+			{EventTypeID: db.EventTypeLicenseReleased, EntityTypeID: db.EntityTypeLicense, EntityID: claimedLicense.Guid},
 			{EventTypeID: db.EventTypeNodeDeactivated, EntityTypeID: db.EntityTypeNode, EntityID: node.Fingerprint},
 		}); err != nil {
 			slog.Warn("failed to insert audit logs", "error", err)
 		}
 	}
 
-	slog.Info("license released successfully", "licenseID", claimedLicense.ID)
+	slog.Info("license released successfully", "licenseGuid", claimedLicense.Guid)
 
 	return &LicenseOperationResult{Status: OperationStatusSuccess}, nil
 }
@@ -397,7 +397,7 @@ func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) error {
 			logs = append(logs, db.BulkInsertAuditLogParams{
 				EventTypeID:  db.EventTypeLicenseLeaseExpired,
 				EntityTypeID: db.EntityTypeLicense,
-				EntityID:     license.ID,
+				EntityID:     license.Guid,
 			})
 		}
 

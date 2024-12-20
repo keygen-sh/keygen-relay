@@ -63,7 +63,7 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 				lastClaimedAtStr := formatTime(lic.LastClaimedAt)
 				lastReleasedAtStr := formatTime(lic.LastReleasedAt)
 
-				tableRows = append(tableRows, table.Row{lic.ID, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr})
+				tableRows = append(tableRows, table.Row{lic.Guid, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr})
 			}
 
 			if err := renderer.Render(tableRows, columns); err != nil {

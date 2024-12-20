@@ -255,7 +255,7 @@ func (s *Store) DeactivateDeadNodes(ctx context.Context, ttl time.Duration) ([]N
 
 	nodes, err := s.queries.DeactivateDeadNodes(ctx, t)
 	if err != nil {
-		slog.Error("failed to delete dead nodes", "error", err)
+		slog.Error("failed to deactivate dead nodes", "error", err)
 
 		return nil, err
 	}

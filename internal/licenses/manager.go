@@ -311,7 +311,7 @@ func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*Lice
 	}
 
 	if err := qtx.DeactivateNodeByFingerprint(ctx, fingerprint); err != nil {
-		return nil, fmt.Errorf("failed to delete node: %w", err)
+		return nil, fmt.Errorf("failed to deactivate node: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -379,7 +379,7 @@ func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) error {
 
 	nodes, err := qtx.DeactivateDeadNodes(ctx, ttl)
 	if err != nil {
-		slog.Error("failed to delete dead nodes", "error", err)
+		slog.Error("failed to deactivate dead nodes", "error", err)
 
 		return err
 	}

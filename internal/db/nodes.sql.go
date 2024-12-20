@@ -9,14 +9,15 @@ import (
 	"context"
 )
 
-const deleteInactiveNodes = `-- name: DeleteInactiveNodes :many
-DELETE FROM nodes
-WHERE last_heartbeat_at <= strftime('%s', 'now', ?)
-RETURNING id, fingerprint, last_heartbeat_at, created_at
+const deactivateInactiveNodes = `-- name: DeactivateInactiveNodes :many
+UPDATE nodes
+SET deactivated_at = unixepoch()
+WHERE last_heartbeat_at <= strftime('%s', 'now', ?) AND deactivated_at IS NULL
+RETURNING id, fingerprint, last_heartbeat_at, created_at, deactivated_at
 `
 
-func (q *Queries) DeleteInactiveNodes(ctx context.Context, strftime interface{}) ([]Node, error) {
-	rows, err := q.db.QueryContext(ctx, deleteInactiveNodes, strftime)
+func (q *Queries) DeactivateInactiveNodes(ctx context.Context, strftime interface{}) ([]Node, error) {
+	rows, err := q.db.QueryContext(ctx, deactivateInactiveNodes, strftime)
 	if err != nil {
 		return nil, err
 	}
@@ -29,6 +30,7 @@ func (q *Queries) DeleteInactiveNodes(ctx context.Context, strftime interface{})
 			&i.Fingerprint,
 			&i.LastHeartbeatAt,
 			&i.CreatedAt,
+			&i.DeactivatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -43,19 +45,21 @@ func (q *Queries) DeleteInactiveNodes(ctx context.Context, strftime interface{})
 	return items, nil
 }
 
-const deleteNodeByFingerprint = `-- name: DeleteNodeByFingerprint :exec
-DELETE FROM nodes WHERE fingerprint = ?
+const deactivateNodeByFingerprint = `-- name: DeactivateNodeByFingerprint :exec
+UPDATE nodes
+SET deactivated_at = unixepoch()
+WHERE fingerprint = ? AND deactivated_at IS NULL
 `
 
-func (q *Queries) DeleteNodeByFingerprint(ctx context.Context, fingerprint string) error {
-	_, err := q.db.ExecContext(ctx, deleteNodeByFingerprint, fingerprint)
+func (q *Queries) DeactivateNodeByFingerprint(ctx context.Context, fingerprint string) error {
+	_, err := q.db.ExecContext(ctx, deactivateNodeByFingerprint, fingerprint)
 	return err
 }
 
 const getNodeByFingerprint = `-- name: GetNodeByFingerprint :one
-SELECT id, fingerprint, last_heartbeat_at, created_at
+SELECT id, fingerprint, last_heartbeat_at, created_at, deactivated_at
 FROM nodes
-WHERE fingerprint = ?
+WHERE fingerprint = ? AND deactivated_at IS NULL
 `
 
 func (q *Queries) GetNodeByFingerprint(ctx context.Context, fingerprint string) (Node, error) {
@@ -66,6 +70,7 @@ func (q *Queries) GetNodeByFingerprint(ctx context.Context, fingerprint string) 
 		&i.Fingerprint,
 		&i.LastHeartbeatAt,
 		&i.CreatedAt,
+		&i.DeactivatedAt,
 	)
 	return i, err
 }
@@ -73,7 +78,7 @@ func (q *Queries) GetNodeByFingerprint(ctx context.Context, fingerprint string) 
 const insertNode = `-- name: InsertNode :one
 INSERT INTO nodes (fingerprint, last_heartbeat_at, created_at)
 VALUES (?, NULL, unixepoch())
-RETURNING id, fingerprint, last_heartbeat_at, created_at
+RETURNING id, fingerprint, last_heartbeat_at, created_at, deactivated_at
 `
 
 func (q *Queries) InsertNode(ctx context.Context, fingerprint string) (Node, error) {
@@ -84,6 +89,7 @@ func (q *Queries) InsertNode(ctx context.Context, fingerprint string) (Node, err
 		&i.Fingerprint,
 		&i.LastHeartbeatAt,
 		&i.CreatedAt,
+		&i.DeactivatedAt,
 	)
 	return i, err
 }
@@ -91,7 +97,7 @@ func (q *Queries) InsertNode(ctx context.Context, fingerprint string) (Node, err
 const pingNodeHeartbeatByFingerprint = `-- name: PingNodeHeartbeatByFingerprint :exec
 UPDATE nodes
 SET last_heartbeat_at = unixepoch()
-WHERE fingerprint = ?
+WHERE fingerprint = ? AND deactivated_at IS NULL
 `
 
 func (q *Queries) PingNodeHeartbeatByFingerprint(ctx context.Context, fingerprint string) error {

@@ -310,7 +310,7 @@ func (m *manager) ReleaseLicense(ctx context.Context, fingerprint string) (*Lice
 		return nil, fmt.Errorf("failed to release license: %w", err)
 	}
 
-	if err := qtx.DeleteNodeByFingerprint(ctx, fingerprint); err != nil {
+	if err := qtx.DeactivateNodeByFingerprint(ctx, fingerprint); err != nil {
 		return nil, fmt.Errorf("failed to delete node: %w", err)
 	}
 
@@ -377,8 +377,7 @@ func (m *manager) CullInactiveNodes(ctx context.Context, ttl time.Duration) erro
 		return err
 	}
 
-	// FIXME(ezekg) soft-delete i.e. deactivate nodes? add config?
-	nodes, err := qtx.DeleteInactiveNodes(ctx, ttl)
+	nodes, err := qtx.DeactivateInactiveNodes(ctx, ttl)
 	if err != nil {
 		slog.Error("failed to delete inactive nodes", "error", err)
 

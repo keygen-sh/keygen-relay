@@ -3,17 +3,17 @@ INSERT INTO licenses (id, file, key, claims, node_id)
 VALUES (?, ?, ?, ?, NULL);
 
 -- name: GetLicenseByID :one
-SELECT id, file, key, claims, last_claimed_at, last_released_at, node_id, created_at
+SELECT *
 FROM licenses
 WHERE id = ?;
 
 -- name: GetLicenseByNodeID :one
-SELECT id, file, key, claims, last_claimed_at, last_released_at, node_id, created_at
+SELECT *
 FROM licenses
 WHERE node_id = ?;
 
 -- name: GetAllLicenses :many
-SELECT id, file, key, claims, last_claimed_at, last_released_at, node_id, created_at
+SELECT *
 FROM licenses
 ORDER BY id;
 
@@ -72,7 +72,7 @@ UPDATE licenses
 SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id IN (
     SELECT id FROM nodes
-    WHERE last_heartbeat_at <= strftime('%s', 'now', ?)
+    WHERE last_heartbeat_at <= strftime('%s', 'now', ?) AND deactivated_at IS NULL
 )
 RETURNING *;
 

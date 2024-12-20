@@ -1,22 +1,25 @@
 -- name: InsertNode :one
-INSERT INTO nodes (fingerprint, last_heartbeat_at, created_at)
-VALUES (?, NULL, unixepoch())
+INSERT INTO nodes (fingerprint, created_at)
+VALUES (?, unixepoch())
 RETURNING *;
 
 -- name: GetNodeByFingerprint :one
-SELECT id, fingerprint, last_heartbeat_at, created_at
+SELECT *
 FROM nodes
-WHERE fingerprint = ?;
+WHERE fingerprint = ? AND deactivated_at IS NULL;
 
 -- name: PingNodeHeartbeatByFingerprint :exec
 UPDATE nodes
 SET last_heartbeat_at = unixepoch()
-WHERE fingerprint = ?;
+WHERE fingerprint = ? AND deactivated_at IS NULL;
 
--- name: DeleteNodeByFingerprint :exec
-DELETE FROM nodes WHERE fingerprint = ?;
+-- name: DeactivateNodeByFingerprint :exec
+UPDATE nodes
+SET deactivated_at = unixepoch()
+WHERE fingerprint = ? AND deactivated_at IS NULL;
 
--- name: DeleteInactiveNodes :many
-DELETE FROM nodes
-WHERE last_heartbeat_at <= strftime('%s', 'now', ?)
+-- name: DeactivateInactiveNodes :many
+UPDATE nodes
+SET deactivated_at = unixepoch()
+WHERE last_heartbeat_at <= strftime('%s', 'now', ?) AND deactivated_at IS NULL
 RETURNING *;

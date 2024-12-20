@@ -38,4 +38,5 @@ type Node struct {
 	Fingerprint     string
 	LastHeartbeatAt *int64
 	CreatedAt       int64
+	DeactivatedAt   *int64
 }

@@ -125,8 +125,8 @@ func (s *Store) InsertNode(ctx context.Context, fingerprint string) (*Node, erro
 	return &node, nil
 }
 
-func (s *Store) DeleteNodeByFingerprint(ctx context.Context, fingerprint string) error {
-	return s.queries.DeleteNodeByFingerprint(ctx, fingerprint)
+func (s *Store) DeactivateNodeByFingerprint(ctx context.Context, fingerprint string) error {
+	return s.queries.DeactivateNodeByFingerprint(ctx, fingerprint)
 }
 
 func (s *Store) GetNodeByFingerprint(ctx context.Context, fingerprint string) (*Node, error) {
@@ -250,10 +250,10 @@ func (s *Store) ReleaseLicensesFromInactiveNodes(ctx context.Context, ttl time.D
 	return licenses, nil
 }
 
-func (s *Store) DeleteInactiveNodes(ctx context.Context, ttl time.Duration) ([]Node, error) {
+func (s *Store) DeactivateInactiveNodes(ctx context.Context, ttl time.Duration) ([]Node, error) {
 	t := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
 
-	nodes, err := s.queries.DeleteInactiveNodes(ctx, t)
+	nodes, err := s.queries.DeactivateInactiveNodes(ctx, t)
 	if err != nil {
 		slog.Error("failed to delete inactive nodes", "error", err)
 

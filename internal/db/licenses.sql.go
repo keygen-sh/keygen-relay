@@ -123,7 +123,7 @@ func (q *Queries) DeleteLicenseByID(ctx context.Context, id string) error {
 }
 
 const getAllLicenses = `-- name: GetAllLicenses :many
-SELECT id, file, key, claims, last_claimed_at, last_released_at, node_id, created_at
+SELECT id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 FROM licenses
 ORDER BY id
 `
@@ -161,7 +161,7 @@ func (q *Queries) GetAllLicenses(ctx context.Context) ([]License, error) {
 }
 
 const getLicenseByID = `-- name: GetLicenseByID :one
-SELECT id, file, key, claims, last_claimed_at, last_released_at, node_id, created_at
+SELECT id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 FROM licenses
 WHERE id = ?
 `
@@ -183,7 +183,7 @@ func (q *Queries) GetLicenseByID(ctx context.Context, id string) (License, error
 }
 
 const getLicenseByNodeID = `-- name: GetLicenseByNodeID :one
-SELECT id, file, key, claims, last_claimed_at, last_released_at, node_id, created_at
+SELECT id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 FROM licenses
 WHERE node_id = ?
 `
@@ -242,7 +242,7 @@ UPDATE licenses
 SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id IN (
     SELECT id FROM nodes
-    WHERE last_heartbeat_at <= strftime('%s', 'now', ?)
+    WHERE last_heartbeat_at <= strftime('%s', 'now', ?) AND deactivated_at IS NULL
 )
 RETURNING id, file, "key", claims, last_claimed_at, last_released_at, node_id, created_at
 `

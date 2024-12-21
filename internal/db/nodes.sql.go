@@ -12,7 +12,7 @@ import (
 const activateNode = `-- name: ActivateNode :one
 INSERT INTO nodes (fingerprint)
 VALUES (?)
-ON CONFLICT (fingerprint) DO UPDATE SET deactivated_at = NULL, last_heartbeat_at = unixepoch()
+ON CONFLICT (fingerprint) DO UPDATE SET deactivated_at = NULL
 RETURNING id, fingerprint, last_heartbeat_at, created_at, deactivated_at
 `
 

@@ -5,7 +5,9 @@
 > [!WARNING]
 > **During the beta period, the master branch may be unstable**. The master
 > branch will likely include unreleased code, and may not build at all. Please
-> use the latest [release](#installation) for a stable build.
+> use the latest [release](#installation) for a stable build. We may introduce
+> breaking changes during beta but will aim to provide automated migrations
+> when possible.
 
 > [!NOTE]
 > **During the beta, your feedback is greatly appreciated!** We'd love to hear

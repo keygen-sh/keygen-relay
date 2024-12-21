@@ -106,8 +106,8 @@ func (s *Store) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64) error
 	return s.queries.ReleaseLicenseByNodeID(ctx, nodeID)
 }
 
-func (s *Store) InsertNode(ctx context.Context, fingerprint string) (*Node, error) {
-	node, err := s.queries.InsertNode(ctx, fingerprint)
+func (s *Store) ActivateNode(ctx context.Context, fingerprint string) (*Node, error) {
+	node, err := s.queries.ActivateNode(ctx, fingerprint)
 	if err != nil {
 		return nil, err
 	}

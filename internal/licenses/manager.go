@@ -341,7 +341,7 @@ func (m *manager) findOrCreateNode(ctx context.Context, store db.Store, fingerpr
 	node, err := store.GetNodeByFingerprint(ctx, fingerprint)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			node, err = store.InsertNode(ctx, fingerprint)
+			node, err = store.ActivateNode(ctx, fingerprint)
 			if err != nil {
 				slog.Error("failed to insert node", "nodeFingerprint", fingerprint, "error", err)
 

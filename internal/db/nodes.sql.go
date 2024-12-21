@@ -9,6 +9,26 @@ import (
 	"context"
 )
 
+const activateNode = `-- name: ActivateNode :one
+INSERT INTO nodes (fingerprint)
+VALUES (?)
+ON CONFLICT (fingerprint) DO UPDATE SET deactivated_at = NULL, last_heartbeat_at = unixepoch()
+RETURNING id, fingerprint, last_heartbeat_at, created_at, deactivated_at
+`
+
+func (q *Queries) ActivateNode(ctx context.Context, fingerprint string) (Node, error) {
+	row := q.db.QueryRowContext(ctx, activateNode, fingerprint)
+	var i Node
+	err := row.Scan(
+		&i.ID,
+		&i.Fingerprint,
+		&i.LastHeartbeatAt,
+		&i.CreatedAt,
+		&i.DeactivatedAt,
+	)
+	return i, err
+}
+
 const deactivateDeadNodes = `-- name: DeactivateDeadNodes :many
 UPDATE nodes
 SET deactivated_at = unixepoch()
@@ -64,25 +84,6 @@ WHERE fingerprint = ? AND deactivated_at IS NULL
 
 func (q *Queries) GetNodeByFingerprint(ctx context.Context, fingerprint string) (Node, error) {
 	row := q.db.QueryRowContext(ctx, getNodeByFingerprint, fingerprint)
-	var i Node
-	err := row.Scan(
-		&i.ID,
-		&i.Fingerprint,
-		&i.LastHeartbeatAt,
-		&i.CreatedAt,
-		&i.DeactivatedAt,
-	)
-	return i, err
-}
-
-const insertNode = `-- name: InsertNode :one
-INSERT INTO nodes (fingerprint, created_at)
-VALUES (?, unixepoch())
-RETURNING id, fingerprint, last_heartbeat_at, created_at, deactivated_at
-`
-
-func (q *Queries) InsertNode(ctx context.Context, fingerprint string) (Node, error) {
-	row := q.db.QueryRowContext(ctx, insertNode, fingerprint)
 	var i Node
 	err := row.Scan(
 		&i.ID,

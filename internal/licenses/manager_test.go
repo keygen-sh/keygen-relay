@@ -559,12 +559,56 @@ func TestReleaseLicense_LicenseNotFound(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	_, err := store.InsertNode(ctx, "test_fingerprint")
+	_, err := store.ActivateNode(ctx, "test_fingerprint")
 	assert.NoError(t, err)
 
 	result, err := manager.ReleaseLicense(ctx, "test_fingerprint")
 	assert.Nil(t, err)
 	assert.Equal(t, result.Status, licenses.OperationStatusNotFound)
+}
+
+func TestActivateNode_ActivateDeactivateReactivate(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{},
+		func(filename string) ([]byte, error) {
+			return []byte("mock_certificate"), nil
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+	manager.AttachStore(*store)
+
+	// activate
+	node, err := store.ActivateNode(ctx, "test_fingerprint")
+	assert.NoError(t, err)
+	assert.NotNil(t, node)
+	assert.Equal(t, node.Fingerprint, "test_fingerprint")
+
+	node, err = store.GetNodeByFingerprint(ctx, "test_fingerprint")
+	assert.NoError(t, err)
+	assert.NotNil(t, node)
+
+	// deactivate
+	err = store.DeactivateNodeByFingerprint(ctx, "test_fingerprint")
+	assert.NoError(t, err)
+
+	node, err = store.GetNodeByFingerprint(ctx, "test_fingerprint")
+	assert.Error(t, err)
+	assert.Nil(t, node)
+
+	// reactivate
+	node, err = store.ActivateNode(ctx, "test_fingerprint")
+	assert.NoError(t, err)
+	assert.NotNil(t, node)
+
+	node, err = store.GetNodeByFingerprint(ctx, "test_fingerprint")
+	assert.NoError(t, err)
+	assert.NotNil(t, node)
 }
 
 func TestCullDeadNodes(t *testing.T) {

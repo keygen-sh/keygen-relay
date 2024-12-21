@@ -1,6 +1,7 @@
--- name: InsertNode :one
-INSERT INTO nodes (fingerprint, created_at)
-VALUES (?, unixepoch())
+-- name: ActivateNode :one
+INSERT INTO nodes (fingerprint)
+VALUES (?)
+ON CONFLICT (fingerprint) DO UPDATE SET deactivated_at = NULL
 RETURNING *;
 
 -- name: GetNodeByFingerprint :one

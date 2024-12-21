@@ -4,7 +4,7 @@ CREATE TABLE _audit_logs (
   event_type_id TINYINT NOT NULL REFERENCES event_types (id),
   entity_type_id TINYINT NOT NULL REFERENCES entity_types (id),
   entity_id INTEGER NOT NULL,
-  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
 -- copy data from the old table to the new

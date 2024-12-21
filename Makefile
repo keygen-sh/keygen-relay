@@ -24,8 +24,13 @@ ifdef DEBUG
 	BUILD_FLAGS += -x
 endif
 
+.PHONY: generate
+generate:
+	go generate ./...
+	sqlc generate
+
 .PHONY: build
-build:
+build: clean generate
 	go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o bin/relay ./cmd/relay
 
 .PHONY: build-linux-386
@@ -97,7 +102,7 @@ build-version:
 # 	docker buildx build --platform "linux/amd64,linux/arm64" --output type=oci,dest=dist/relay-$(PACKAGE_VERSION).tar .
 
 .PHONY: build-all
-build-all: clean build-linux-386 build-linux-amd64 build-linux-arm build-linux-arm64 build-linux-s390x \
+build-all: clean generate build-linux-386 build-linux-amd64 build-linux-arm build-linux-arm64 build-linux-s390x \
 	build-windows-386 build-windows-amd64 build-windows-arm64 build-installer build-version
 
 .PHONY: release-new

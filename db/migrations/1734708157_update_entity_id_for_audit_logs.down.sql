@@ -17,21 +17,23 @@ INSERT INTO
     created_at
   )
 SELECT
-  id,
-  event_type_id,
-  entity_type_id,
+  audit_logs.id,
+  audit_logs.event_type_id,
+  audit_logs.entity_type_id,
   COALESCE(
     CASE
-      entity_type_id
-      WHEN 1 THEN (SELECT guid FROM licenses WHERE id = entity_id LIMIT 1)
-      WHEN 2 THEN (SELECT fingerprint FROM nodes WHERE id = entity_id LIMIT 1)
+      audit_logs.entity_type_id
+      WHEN 1 THEN licenses.guid
+      WHEN 2 THEN nodes.fingerprint
       ELSE NULL
     END,
     'unknown'
   ) AS entity_id,
-  created_at
+  audit_logs.created_at
 FROM
-  audit_logs;
+  audit_logs
+  LEFT JOIN licenses ON licenses.id = audit_logs.entity_id
+  LEFT JOIN nodes ON nodes.id = audit_logs.entity_id;
 
 -- drop the old table
 DROP TABLE audit_logs;

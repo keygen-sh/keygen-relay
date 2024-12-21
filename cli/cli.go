@@ -104,7 +104,7 @@ Version:
 	rootCmd.PersistentFlags().CountVarP(&cfg.Logger.Verbosity, "verbose", "v", `log level e.g. -vvv for "info" (default -v=1 i.e. "error") [$DEBUG=1]`)
 	rootCmd.PersistentFlags().Bool("no-audit", try.Try(try.EnvBool("RELAY_NO_AUDIT"), try.Static(false)), "disable audit logs [$RELAY_NO_AUDIT=1]")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Logger.DisableColor, "no-color", false, "disable colors in command output [$NO_COLOR=1]")
-	rootCmd.PersistentFlags().StringSlice("pragma", nil, "database pragma key-value pairs (e.g., --pragma mmap_size=536870912)")
+	rootCmd.PersistentFlags().StringSlice("pragma", nil, "database pragma key-value pairs (e.g. --pragma mmap_size=536870912 --pragma synchronous=OFF)")
 
 	rootCmd.SetHelpCommand(cmd.HelpCmd())
 	rootCmd.AddCommand(cmd.AddCmd(manager))

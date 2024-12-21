@@ -27,7 +27,7 @@ SELECT
       WHEN 2 THEN nodes.id
       ELSE NULL
     END,
-    0 -- default
+    0 -- unknown
   ) AS entity_id,
   audit_logs.created_at
 FROM

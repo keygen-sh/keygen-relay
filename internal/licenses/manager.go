@@ -127,7 +127,7 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 func (m *manager) RemoveLicense(ctx context.Context, guid string) error {
 	slog.Debug("starting to remove license", "licenseGuid", guid)
 
-	license, err := m.store.DeleteLicenseByGUIDTx(ctx, guid)
+	license, err := m.store.DeleteLicenseByGUID(ctx, guid)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("license %s not found", guid)

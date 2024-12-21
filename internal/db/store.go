@@ -75,27 +75,10 @@ func (s *Store) InsertLicense(ctx context.Context, guid string, file []byte, key
 	return &license, nil
 }
 
-func (s *Store) DeleteLicenseByGUIDTx(ctx context.Context, id string) (*License, error) {
-	tx, err := s.connection.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	qtx := s.queries.WithTx(tx)
-	defer tx.Rollback()
-
-	// FIXME(ezekg) is this needed?
-	_, err = qtx.GetLicenseByGUID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	license, err := qtx.DeleteLicenseByGUID(ctx, id)
+func (s *Store) DeleteLicenseByGUID(ctx context.Context, id string) (*License, error) {
+	license, err := s.queries.DeleteLicenseByGUID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete license: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return &license, nil

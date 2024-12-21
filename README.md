@@ -159,9 +159,9 @@ The `serve` command supports the following flags:
 | Flag                 | Description                                                                                                                                                                           | Default          |
 |:---------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------|
 | `--port`, `-p`       | Specifies the port on which the relay server will run.                                                                                                                                | `6349`           |
-| `--no-heartbeats`    | Disables the heartbeat system. When this flag is enabled, the server will not automatically release inactive or dead nodes, and leases cannot be extended.                         | `false`          |
-| `--strategy`         | Specifies the license distribution strategy. Options: `fifo`, `lifo`, `rand`.                                                                                                           | `fifo`           |
-| `--ttl`, `-t`        | Sets the time-to-live for leases. Licenses will be automatically released after the time-to-live if a node heartbeat is not maintained. Options: e.g. `30s`, `1m`, `1h`, etc.         | `30s`            |
+| `--no-heartbeats`    | Disables the heartbeat system. When this flag is enabled, the server will not automatically release inactive or dead nodes, and leases cannot be extended.                            | `false`          |
+| `--strategy`         | Specifies the license distribution strategy. Options: `fifo`, `lifo`, `rand`.                                                                                                         | `fifo`           |
+| `--ttl`, `-t`        | Sets the time-to-live for leases. Licenses will be automatically released after the time-to-live if a node heartbeat is not maintained. Options: e.g. `30s`, `1m`, `1h`, etc.         | `60s`            |
 | `--cull-interval`    | Specifies how often the server should check for and deactivate inactive or dead nodes.                                                                                                | `15s`            |
 | `--database`         | Specify a custom database file for storing the license and node data.                                                                                                                 | `./relay.sqlite` |
 

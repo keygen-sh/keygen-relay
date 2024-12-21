@@ -51,7 +51,7 @@ func NewConfig() *Config {
 	return &Config{
 		ServerAddr:       "0.0.0.0",
 		ServerPort:       6349,
-		TTL:              30 * time.Second,
+		TTL:              1 * time.Minute,
 		EnabledHeartbeat: true,
 		Strategy:         FIFO,
 		CullInterval:     15 * time.Second,

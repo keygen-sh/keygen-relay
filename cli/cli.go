@@ -122,7 +122,7 @@ Version:
 }
 
 func initStore(_ context.Context, cfg *config.Config) (*db.Store, *sql.DB, error) {
-	dsn := fmt.Sprintf("file:%s?_txlock=exclusive", cfg.DB.DatabaseFilePath)
+	dsn := fmt.Sprintf("file:%s?_txlock=immediate", cfg.DB.DatabaseFilePath)
 	conn, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		slog.Error("failed to open database", "error", err)

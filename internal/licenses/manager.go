@@ -200,9 +200,9 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 	qtx := m.store.WithTx(tx)
 	defer tx.Rollback()
 
-	node, err := m.findOrCreateNode(ctx, *qtx, fingerprint)
+	node, err := m.findOrActivateNode(ctx, *qtx, fingerprint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch or create node: %w", err)
+		return nil, fmt.Errorf("failed to find or activate node: %w", err)
 	}
 
 	claimedLicense, err := qtx.GetLicenseByNodeID(ctx, &node.ID)
@@ -337,7 +337,7 @@ func (m *manager) Config() *Config {
 	return m.config
 }
 
-func (m *manager) findOrCreateNode(ctx context.Context, store db.Store, fingerprint string) (*db.Node, error) {
+func (m *manager) findOrActivateNode(ctx context.Context, store db.Store, fingerprint string) (*db.Node, error) {
 	node, err := store.GetNodeByFingerprint(ctx, fingerprint)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

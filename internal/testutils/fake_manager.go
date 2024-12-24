@@ -16,7 +16,7 @@ type FakeManager struct {
 	GetLicenseByGUIDFn func(ctx context.Context, id string) (*db.License, error)
 	ClaimLicenseFn     func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
 	ReleaseLicenseFn   func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
-	CullDeadNodesFn    func(ctx context.Context, ttl time.Duration) error
+	CullDeadNodesFn    func(ctx context.Context, ttl time.Duration) ([]db.Node, error)
 	ConfigFn           func() *licenses.Config
 }
 
@@ -68,12 +68,12 @@ func (f *FakeManager) ReleaseLicense(ctx context.Context, fingerprint string) (*
 	return nil, nil
 }
 
-func (f *FakeManager) CullDeadNodes(ctx context.Context, ttl time.Duration) error {
+func (f *FakeManager) CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.Node, error) {
 	if f.CullDeadNodesFn != nil {
 		return f.CullDeadNodesFn(ctx, ttl)
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (f *FakeManager) Config() *licenses.Config {

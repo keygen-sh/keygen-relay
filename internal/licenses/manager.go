@@ -46,7 +46,7 @@ type Manager interface {
 	ClaimLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error)
 	ReleaseLicense(ctx context.Context, fingerprint string) (*LicenseOperationResult, error)
 	Config() *Config
-	CullDeadNodes(ctx context.Context, ttl time.Duration) error
+	CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.Node, error)
 }
 
 type manager struct {
@@ -232,7 +232,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 			}
 		}
 
-		slog.Info("license extended successfully", "licenseGuid", claimedLicense.Guid)
+		slog.Info("lease extended successfully", "licenseGuid", claimedLicense.Guid)
 
 		return &LicenseOperationResult{
 			License: claimedLicense,
@@ -269,7 +269,7 @@ func (m *manager) ClaimLicense(ctx context.Context, fingerprint string) (*Licens
 		}
 	}
 
-	slog.Info("new license claimed successfully", "licenseGuid", newLicense.Guid)
+	slog.Info("new lease claimed successfully", "licenseGuid", newLicense.Guid)
 
 	return &LicenseOperationResult{
 		License: newLicense,
@@ -363,10 +363,10 @@ func (m *manager) findOrActivateNode(ctx context.Context, store db.Store, finger
 	return node, nil
 }
 
-func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) error {
+func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.Node, error) {
 	tx, err := m.store.BeginTx(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	qtx := m.store.WithTx(tx)
 	defer tx.Rollback()
@@ -375,20 +375,20 @@ func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) error {
 	if err != nil {
 		slog.Error("failed to release licenses from dead nodes", "error", err)
 
-		return err
+		return nil, err
 	}
 
 	nodes, err := qtx.DeactivateDeadNodes(ctx, ttl)
 	if err != nil {
 		slog.Error("failed to deactivate dead nodes", "error", err)
 
-		return err
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		slog.Error("failed to commit transaction", "error", err)
 
-		return err
+		return nil, err
 	}
 
 	if m.config.EnabledAudit {
@@ -415,9 +415,7 @@ func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) error {
 		}
 	}
 
-	slog.Debug("successfully released licenses and culled dead nodes", "licenseCount", len(licenses), "nodeCount", len(nodes))
-
-	return nil
+	return nodes, nil
 }
 
 func isUniqueConstraintError(err error) bool {

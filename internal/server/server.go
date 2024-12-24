@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
@@ -17,12 +16,14 @@ type Server interface {
 	Mount(r *mux.Router)
 	Config() *Config
 	Manager() licenses.Manager
+	Reaper() Reaper
 }
 
 type server struct {
 	config  *Config
 	router  *mux.Router
 	manager licenses.Manager
+	reaper  Reaper
 }
 
 func New(c *Config, m licenses.Manager) Server {
@@ -30,6 +31,7 @@ func New(c *Config, m licenses.Manager) Server {
 		config:  c,
 		router:  mux.NewRouter(),
 		manager: m,
+		reaper:  NewReaper(c, m),
 	}
 }
 
@@ -41,17 +43,19 @@ func (s *server) Run() error {
 	slog.Info("starting server", "port", s.config.ServerPort)
 
 	if s.Config().EnabledHeartbeat {
-		go s.startCullRoutine(ctx)
+		go s.reaper.Start(ctx)
 	}
 
-	err := http.ListenAndServe(address, s.router)
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := http.ListenAndServe(address, s.router); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("server failed to start", "error", err)
+
 		cancel()
+
 		return err
 	}
 
 	slog.Info("server stopped")
+
 	return nil
 }
 
@@ -71,29 +75,6 @@ func (s *server) Manager() licenses.Manager {
 	return s.manager
 }
 
-func (s *server) startCullRoutine(ctx context.Context) {
-	ticker := time.NewTicker(s.config.CullInterval)
-	defer ticker.Stop()
-
-	slog.Debug("starting cull routine for dead nodes", "ttl", s.config.TTL, "cullInterval", s.config.CullInterval)
-
-	for {
-		select {
-		case <-ticker.C:
-			s.cull()
-		case <-ctx.Done():
-			slog.Debug("stopping cull routine")
-			return
-		}
-	}
-}
-
-func (s *server) cull() {
-	ctx := context.Background()
-	err := s.manager.CullDeadNodes(ctx, s.Config().TTL)
-	if err != nil {
-		slog.Error("failed to cull dead nodes", "error", err)
-	} else {
-		slog.Debug("successfully culled dead nodes")
-	}
+func (s *server) Reaper() Reaper {
+	return s.reaper
 }

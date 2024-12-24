@@ -649,12 +649,14 @@ func TestCullDeadNodes(t *testing.T) {
 
 	// simulate inactive node by updating last_heartbeat_at
 	_, err = dbConn.ExecContext(ctx, `
-        UPDATE nodes SET last_heartbeat_at = strftime('%s', 'now', '-120 seconds') WHERE fingerprint = ?;
+			UPDATE nodes SET last_heartbeat_at = strftime('%s', 'now', '-120 seconds') WHERE fingerprint = ?;
     `, "test_fingerprint")
 	assert.NoError(t, err)
 
-	err = manager.CullDeadNodes(ctx, 30*time.Second)
+	nodes, err := manager.CullDeadNodes(ctx, 30*time.Second)
 	assert.NoError(t, err)
+	assert.Equal(t, len(nodes), 1)
+	assert.Equal(t, nodes[0].Fingerprint, "test_fingerprint")
 
 	license, err := manager.GetLicenseByGUID(ctx, result1.License.Guid)
 	assert.NoError(t, err)

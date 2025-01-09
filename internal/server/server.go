@@ -39,14 +39,14 @@ func (s *server) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	address := fmt.Sprintf(":%d", s.config.ServerPort)
-	slog.Info("starting server", "port", s.config.ServerPort)
+	addr := fmt.Sprintf("%s:%d", s.config.ServerAddr, s.config.ServerPort)
+	slog.Info("starting server", "addr", s.config.ServerAddr, "port", s.config.ServerPort)
 
 	if s.Config().EnabledHeartbeat {
 		go s.reaper.Start(ctx)
 	}
 
-	if err := http.ListenAndServe(address, s.router); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := http.ListenAndServe(addr, s.router); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("server failed to start", "error", err)
 
 		cancel()

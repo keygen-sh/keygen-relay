@@ -14,7 +14,7 @@ exec sleep 1
 # FIXME(ezekg) sh hack because testscript exits on interrupt i.e. a non-zero exit code
 # should be unreachable at default bind addr
 exec sh -c 'curl -sS -X PUT http://0.0.0.0:65007/v1/nodes/test_fingerprint || true'
-stderr 'Failed to connect to 0\.0\.0\.0 port 65007: Connection refused'
+stderr 'curl: \(7\) Failed to connect to 0\.0\.0\.0 port 65007'
 
 # should be reachable at custom bind addr
 exec curl -s -X PUT http://$BIND:$PORT/v1/nodes/test_fingerprint

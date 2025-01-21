@@ -1,6 +1,10 @@
-FROM golang:1.23-alpine AS build
+FROM golang:1.23-alpine AS base
+FROM sqlc/sqlc:latest AS sqlc
+
+FROM base AS build
 WORKDIR /go/src/github.com/keygen-sh/keygen-relay
 RUN apk add --no-cache gcc musl-dev sqlite-dev make
+COPY --from=sqlc /workspace/sqlc /usr/bin/sqlc
 COPY . .
 RUN make build
 

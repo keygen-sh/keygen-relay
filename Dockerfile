@@ -22,4 +22,4 @@ ENV RELAY_PORT=6349
 ENTRYPOINT ["relay"]
 
 EXPOSE 6349
-CMD ["relay serve"]
+CMD ["serve"]

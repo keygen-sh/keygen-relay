@@ -1,5 +1,5 @@
 FROM golang:1.23-alpine AS base
-FROM sqlc/sqlc:latest AS sqlc
+FROM sqlc/sqlc:1.27.0 AS sqlc
 
 FROM base AS build
 WORKDIR /go/src/github.com/keygen-sh/keygen-relay

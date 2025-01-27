@@ -49,6 +49,7 @@ build-linux-arm:
 build-linux-arm64:
 	CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC="zig cc -target aarch64-linux" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay-linux-arm64-$(PACKAGE_VERSION) ./cmd/relay
 
+# FIXME(ezekg) re: broken builds, see: https://github.com/ziglang/zig/issues/20689
 # .PHONY: build-linux-mips
 # build-linux-mips:
 # 	CGO_ENABLED=1 GOOS=linux GOARCH=mips GOMIPS=softfloat CC="zig cc -target mips-linux -mfloat-abi=soft" go build $(BUILD_FLAGS) -ldflags $(BUILD_LDFLAGS) -o dist/relay-linux-mips-$(PACKAGE_VERSION) ./cmd/relay
@@ -97,14 +98,15 @@ build-installer:
 build-version:
 	cp VERSION dist/version
 
-# .PHONY: build-image
-# build-image:
-# 	docker buildx build --platform "linux/amd64,linux/arm64" --output type=oci,dest=dist/relay-$(PACKAGE_VERSION).tar .
+.PHONY: build-image
+build-image:
+	docker buildx build --platform "linux/amd64,linux/arm64" --output type=oci,dest=- . > dist/relay-$(PACKAGE_VERSION).tar
 
 .PHONY: build-all
 build-all: clean generate build-linux-386 build-linux-amd64 build-linux-arm build-linux-arm64 build-linux-s390x \
-	build-windows-386 build-windows-amd64 build-windows-arm64 build-installer build-version
+	build-windows-386 build-windows-amd64 build-windows-arm64 build-installer build-version build-image
 
+# TODO(ezekg) should we refactor into relay-cli and relay-oci packages?
 .PHONY: release-new
 release-new:
 	keygen new --name "Keygen Relay v$(PACKAGE_VERSION)" --channel $(PACKAGE_CHANNEL) --version $(PACKAGE_VERSION)
@@ -184,30 +186,30 @@ ifeq ($(PACKAGE_CHANNEL),stable)
 	keygen tag latest --release $(PACKAGE_VERSION)
 endif
 
-# .PHONY: release-image-new
-# release-image-new:
-# 	keygen new --name "Keygen Relay v$(PACKAGE_VERSION)" --channel $(PACKAGE_CHANNEL) --version $(PACKAGE_VERSION) --package relay
+.PHONY: release-image-new
+release-image-new:
+	keygen new --name "Keygen Relay v$(PACKAGE_VERSION)" --channel $(PACKAGE_CHANNEL) --version $(PACKAGE_VERSION) --package relay
 
-# .PHONY: release-image-tarball
-# release-image-tarball:
-# 	keygen upload dist/relay-$(PACKAGE_VERSION).tar --filename relay.tar --release $(PACKAGE_VERSION) --package relay
+.PHONY: release-image-tarball
+release-image-tarball:
+	keygen upload dist/relay-$(PACKAGE_VERSION).tar --filename relay.tar --release $(PACKAGE_VERSION) --package relay
 
-# .PHONY: release-image-tag
-# release-image-tag:
-# ifeq ($(PACKAGE_CHANNEL),stable)
-# 	keygen untag latest v$(PACKAGE_MAJOR) v$(PACKAGE_MAJOR).$(PACKAGE_MINOR) --release latest --package relay
-# 	keygen tag latest v$(PACKAGE_MAJOR) v$(PACKAGE_MAJOR).$(PACKAGE_MINOR) --release $(PACKAGE_VERSION) --package relay
-# endif
+.PHONY: release-image-tag
+release-image-tag:
+ifeq ($(PACKAGE_CHANNEL),stable)
+	keygen untag latest v$(PACKAGE_MAJOR) v$(PACKAGE_MAJOR).$(PACKAGE_MINOR) --release latest --package relay
+	keygen tag latest v$(PACKAGE_MAJOR) v$(PACKAGE_MAJOR).$(PACKAGE_MINOR) --release $(PACKAGE_VERSION) --package relay
+endif
 
-# .PHONY: release-image
-# release-image:
-# 	release-image-new release-image-tarball release-image-tag
+.PHONY: release-image
+release-image:
+	release-image-new release-image-tarball release-image-tag
 
-# FIXME(ezekg) refactor into release-cli
+# FIXME(ezekg) refactor into release-cli and release-oci recipes
 .PHONY: release
 release: release-new release-linux-386 release-linux-amd64 release-linux-arm release-linux-arm64 \
 	release-linux-s390x release-windows-386 release-windows-amd64 release-windows-arm64 \
-	release-installer release-version release-publish release-tag
+	release-installer release-version release-publish release-tag release-image
 
 .PHONY: test
 test:
@@ -227,7 +229,8 @@ bench:
 .PHONY: clean
 clean:
 	go clean
-	rm -rf dist/*
+	rm -rf dist/* bin/*
+	mkdir -p dist bin
 
 .PHONY: vet
 vet:

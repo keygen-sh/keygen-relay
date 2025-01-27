@@ -2,19 +2,6 @@
 
 [![CI](https://github.com/keygen-sh/keygen-relay/actions/workflows/test.yml/badge.svg)](https://github.com/keygen-sh/keygen-relay/actions)
 
-> [!WARNING]
-> **During the beta period, the master branch may be unstable**. The master
-> branch will likely include unreleased code, and may not build at all. Please
-> use the latest [release](#installation) for a stable build. We may introduce
-> breaking changes during beta but will aim to provide automated migrations
-> when possible.
-
-> [!NOTE]
-> **During the beta, your feedback is greatly appreciated!** We'd love to hear
-> about your use-cases and how you're running Relay inside of your customer
-> environments — from networking to deployment. Feel free to open a [discussion](https://github.com/keygen-sh/keygen-relay/discussions),
-> or reach out to us on [Discord](https://keygen.sh/discord/).
-
 Relay is an offline-first on-premise licensing server backed by [Keygen](https://keygen.sh).
 Use Relay to securely manage distribution of cryptographically signed and
 encrypted license files across nodes in an offline or air-gapped environment.

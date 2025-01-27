@@ -202,8 +202,7 @@ ifeq ($(PACKAGE_CHANNEL),stable)
 endif
 
 .PHONY: release-image
-release-image:
-	release-image-new release-image-tarball release-image-tag
+release-image: release-image-new release-image-tarball release-image-tag
 
 # FIXME(ezekg) refactor into release-cli and release-oci recipes
 .PHONY: release

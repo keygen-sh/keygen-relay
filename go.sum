@@ -57,6 +57,8 @@ github.com/keygen-sh/jsonapi-go v1.2.1 h1:NTSIAxl2+7S5fPnKgrYwNjQSWbdKRtrFq26SD8
 github.com/keygen-sh/jsonapi-go v1.2.1/go.mod h1:8j9vsLiKyJyDqmt8r3tYaYNmXszq2+cFhoO6QdMdAes=
 github.com/keygen-sh/keygen-go/v3 v3.2.0 h1:OJqnGtY6z4ZA434kZqfNVHDmSrN5zq4l4XItcB3tECY=
 github.com/keygen-sh/keygen-go/v3 v3.2.0/go.mod h1:YoFyryzXEk6XrbT3H8EUUU+JcIJkQu414TA6CvZgS/E=
+github.com/keygen-sh/machineid v1.1.1 h1:L6G3+l5/0ZgvDST1EE6L8Yfqcss7EC8xs0Q8gEQyIo0=
+github.com/keygen-sh/machineid v1.1.1/go.mod h1:xBhEE0H4t3N05kn+vBNlOnhTf5NMz36YmrmpdrjpgsI=
 github.com/lib/pq v1.10.9 h1:YXG7RB+JIjhP29X+OtkiDnYaXQwpS4JEWq7dtCCRUEw=
 github.com/lib/pq v1.10.9/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/lmittmann/tint v1.0.5 h1:NQclAutOfYsqs2F1Lenue6OoWCajs5wJcP3DfWVpePw=

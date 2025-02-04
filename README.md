@@ -271,11 +271,9 @@ ORDER BY
 If you have concerns about storage, or do not wish to keep audit logs, use
 Relay's `--no-audit` flag to disable them.
 
-## Developing
+## Building
 
-### Building
-
-To build Keygen Relay from the source, clone this repository and run:
+To build Keygen Relay from source, clone this repository and run:
 
 ```bash
 go build -o relay ./cmd/relay
@@ -295,6 +293,57 @@ make build-linux-amd64
 
 # or all platforms...
 make build-all
+```
+
+### Node-locking
+
+You may node-lock Relay to a specific machine, but doing so requires custom
+compiling Relay with a few extra build flags:
+
+```bash
+# ed25519 public key for cryptographically verifying machine file (required)
+export BUILD_NODE_LOCKED_PUBLIC_KEY='e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788'
+
+# expected machine fingerprint (required)
+export BUILD_NODE_LOCKED_FINGERPRINT='9b16295949dee586573df060ee9006a8'
+
+# expected machine platform (optional)
+export BUILD_NODE_LOCKED_PLATFORM='linux/amd64'
+
+# expected machine hostname (optional)
+export BUILD_NODE_LOCKED_HOSTNAME='relay'
+
+# expected machine local ip (optional)
+export BUILD_NODE_LOCKED_IP='192.168.1.1'
+
+# build node-locked binary
+BUILD_NODE_LOCKED=1 make build-linux-amd64
+```
+
+Machines are fingerprinted using [`keygen-sh/machineid`](https://github.com/keygen-sh/machineid).
+You may use the `machineid` CLI to determine the machine's fingerprint before
+compilation. After compilation, [checkout](https://keygen.sh/docs/api/machines/#machines-actions-check-out)
+and distribute an encrypted machine file and license key to the end-user, and
+use the `--locker-machine-file-path` and `--locker-license-key` flags to pass
+them to Relay.
+
+```bash
+relay serve -vvvv --locker-machine-file-path /etc/keygen/relay.lic \
+  --locker-license-key '73F7DA-19BCBF-30B806-2F4C7D-3C2ACE-V3'
+```
+
+Relay will first read, verify and decrypt the machine file, and then the
+underlying machine will be asserted against the machine file and the expected
+node-locked values provided during compilation.
+
+## Developing
+
+### Building
+
+To build Relay for the current platform, run the following `make` command:
+
+```bash
+make build
 ```
 
 ### Releasing

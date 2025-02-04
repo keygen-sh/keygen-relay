@@ -19,6 +19,7 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/config"
 	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/locker"
 	"github.com/keygen-sh/keygen-relay/internal/logger"
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/keygen-sh/keygen-relay/internal/try"
@@ -52,6 +53,23 @@ Version:
 
 			logger.Init(cfg.Logger, os.Stdout)
 
+			// attempt to unlock if relay is node-locked
+			// FIXME(ezekg) allow help?
+			if locker.Locked() {
+				slog.Info("relay is node-locked", "fingerprint", locker.Fingerprint != "", "platform", locker.Platform != "", "hostname", locker.Hostname != "", "ip", locker.IP != "")
+				slog.Debug("machine file config", "path", cfg.Locker.MachineFilePath, "key", cfg.Locker.LicenseKey)
+
+				dataset, err := locker.Unlock(*cfg.Locker)
+				if err != nil {
+					slog.Error("failed to unlock relay", "error", err, "path", cfg.Locker.MachineFilePath, "key", cfg.Locker.LicenseKey)
+
+					return fmt.Errorf("failed to unlock relay: %w", err)
+				}
+
+				slog.Debug("machine file dataset", "dataset", dataset)
+			}
+
+			// apply database pragmas
 			if pragmas, err := cmd.Flags().GetStringSlice("pragma"); err == nil {
 				for _, pragma := range pragmas {
 					keyvalues := strings.SplitN(pragma, "=", 2)
@@ -105,6 +123,14 @@ Version:
 	rootCmd.PersistentFlags().Bool("no-audit", try.Try(try.EnvBool("RELAY_NO_AUDIT"), try.Static(false)), "disable audit logs [$RELAY_NO_AUDIT=1]")
 	rootCmd.PersistentFlags().BoolVar(&cfg.Logger.DisableColor, "no-color", false, "disable colors in command output [$NO_COLOR=1]")
 	rootCmd.PersistentFlags().StringSlice("pragma", nil, "database pragma key-value pairs (e.g. --pragma mmap_size=536870912 --pragma synchronous=OFF)")
+
+	if locker.Locked() {
+		rootCmd.PersistentFlags().StringVar(&cfg.Locker.MachineFilePath, "locker-machine-file-path", try.Try(try.Env("RELAY_LOCKER_MACHINE_FILE_PATH"), try.Static("./relay.lic")), "the path to a machine file for unlocking relay [$RELAY_LOCKER_MACHINE_FILE_PATH=./relay.lic]")
+		rootCmd.PersistentFlags().StringVar(&cfg.Locker.LicenseKey, "locker-license-key", try.Try(try.Env("RELAY_LOCKER_LICENSE_KEY"), try.Static("")), "the path to a license key for unlocking relay [$RELAY_LOCKER_LICENSE_KEY=xxx]")
+
+		_ = rootCmd.MarkPersistentFlagRequired("locker-machine-file-path")
+		_ = rootCmd.MarkPersistentFlagRequired("locker-license-key")
+	}
 
 	rootCmd.SetHelpCommand(cmd.HelpCmd())
 	rootCmd.AddCommand(cmd.AddCmd(manager))

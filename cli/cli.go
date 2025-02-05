@@ -130,7 +130,7 @@ Version:
 
 	if locker.Locked() {
 		rootCmd.PersistentFlags().StringVar(&cfg.Locker.MachineFilePath, "node-locked-machine-file-path", try.Try(try.Env("RELAY_NODE_LOCKED_MACHINE_FILE_PATH"), try.Static("./relay.lic")), "the path to a machine file for unlocking relay [$RELAY_NODE_LOCKED_MACHINE_FILE_PATH=./relay.lic]")
-		rootCmd.PersistentFlags().StringVar(&cfg.Locker.LicenseKey, "node-locked-license-key", try.Try(try.Env("RELAY_NODE_LOCKED_LICENSE_KEY"), try.Static("")), "the path to a license key for unlocking relay [$RELAY_NODE_LOCKED_LICENSE_KEY=xxx]")
+		rootCmd.PersistentFlags().StringVar(&cfg.Locker.LicenseKey, "node-locked-license-key", try.Try(try.Env("RELAY_NODE_LOCKED_LICENSE_KEY"), try.Static("")), "the license key for unlocking relay [$RELAY_NODE_LOCKED_LICENSE_KEY=xxx]")
 	}
 
 	rootCmd.SetHelpCommand(cmd.HelpCmd())

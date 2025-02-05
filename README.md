@@ -15,6 +15,8 @@ across M nodes, ensuring that only N nodes are licensed at one time.
 Relay provides an app-facing REST API that allows nodes to claim a lease on a
 license and release it when no longer needed.
 
+In low-trust environments, Relay can be [node-locked](#node-locking).
+
 ## Background
 
 Relay was born out of a limitation in Keygen — and really, a limitation in all
@@ -297,44 +299,51 @@ make build-all
 
 ### Node-locking
 
-You may node-lock Relay to a specific machine, but doing so requires custom
-compiling Relay with a few extra build flags:
+Node-locking is a powerful way to secure Relay in low-trust environments by
+tying it to a specific machine. To enable this, you'll need to build Relay
+with a few extra flags:
 
 ```bash
-# ed25519 public key for cryptographically verifying machine file (required)
+# Your account's Ed25519 public key for verifying license files (required)
 export BUILD_NODE_LOCKED_PUBLIC_KEY='e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788'
 
-# expected machine fingerprint (required)
+# Machine fingerprint to lock to (required)
 export BUILD_NODE_LOCKED_FINGERPRINT='9b16295949dee586573df060ee9006a8'
 
-# expected machine platform (optional)
+# Platform identifier (optional)
 export BUILD_NODE_LOCKED_PLATFORM='linux/amd64'
 
-# expected machine hostname (optional)
+# Hostname (optional)
 export BUILD_NODE_LOCKED_HOSTNAME='relay'
 
-# expected machine local ip (optional)
+# Local IP address (optional)
 export BUILD_NODE_LOCKED_IP='192.168.1.1'
 
-# build node-locked binary
+# Build the node-locked binary using the above constraints
 BUILD_NODE_LOCKED=1 make build-linux-amd64
 ```
 
-Machines are fingerprinted using [`keygen-sh/machineid`](https://github.com/keygen-sh/machineid).
-You may use the `machineid` CLI to determine the machine's fingerprint before
-compilation. After compilation, [checkout](https://keygen.sh/docs/api/machines/#machines-actions-check-out)
-and distribute an encrypted machine file and license key to the end-user, and
-use the `--locker-machine-file-path` and `--locker-license-key` flags to pass
-them to Relay.
+Relay fingerprints machines using [`keygen-sh/machineid`](https://github.com/keygen-sh/machineid).
+To retrieve a machine’s fingerprint before building, use the `machineid` CLI.
+(If you need an alternate fingerprinting method, open an [issue](https://github.com/keygen-sh/keygen-relay/issues)
+or a [pull request](https://github.com/keygen-sh/keygen-relay/pulls))!
+
+Once built, you can [checkout](https://keygen.sh/docs/api/machines/#machines-actions-check-out)
+and distribute an encrypted machine file along with a license key to the
+end-user. Relay can then validate the machine before running, ensuring
+it matches the locked configuration.
+
+To provide the machine file and license key, use the `--locker-machine-file-path`
+and `--locker-license-key` flags:
 
 ```bash
 relay serve -vvvv --locker-machine-file-path /etc/keygen/relay.lic \
   --locker-license-key '73F7DA-19BCBF-30B806-2F4C7D-3C2ACE-V3'
 ```
 
-Relay will first read, verify and decrypt the machine file, and then the
-underlying machine will be asserted against the machine file and the expected
-node-locked values provided during compilation.
+Relay will verify and decrypt the machine file, then check that the system
+matches the expected values. This makes it easy to enforce machine-level
+security and prevent unauthorized use.
 
 ## Developing
 

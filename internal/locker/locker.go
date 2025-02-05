@@ -43,7 +43,7 @@ func Unlock(config Config) (*keygen.MachineFileDataset, error) {
 		return nil, fmt.Errorf("license key is required")
 	}
 
-	fingerprint, err := machineid.ID()
+	fingerprint, err := machineid.ProtectedID("keygen-relay")
 	if err != nil {
 		return nil, fmt.Errorf("machine could not determine fingerprint: %w", err)
 	}

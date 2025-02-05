@@ -43,6 +43,7 @@ func Run() int {
 	if locker.Locked() {
 		designation := "+node-locked"
 
+		// add partial fingerprint for debugging purposes unless it's too short
 		if n := len(locker.Fingerprint); n >= 16 {
 			designation = designation + "." + locker.Fingerprint[:4] + ".." + locker.Fingerprint[n-4:]
 		}

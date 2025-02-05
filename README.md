@@ -308,7 +308,7 @@ with a few extra flags:
 export BUILD_NODE_LOCKED_PUBLIC_KEY='e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788'
 
 # Machine fingerprint to lock to (required)
-export BUILD_NODE_LOCKED_FINGERPRINT='9b16295949dee586573df060ee9006a8'
+export BUILD_NODE_LOCKED_FINGERPRINT='364646b45d9b732f1baaeee9382f4e7e541e65e8a9fd4aa72e4853477d85bf08'
 
 # Platform identifier (optional)
 export BUILD_NODE_LOCKED_PLATFORM='linux/amd64'
@@ -323,10 +323,20 @@ export BUILD_NODE_LOCKED_IP='192.168.1.1'
 BUILD_NODE_LOCKED=1 make build-linux-amd64
 ```
 
-Relay fingerprints machines using [`keygen-sh/machineid`](https://github.com/keygen-sh/machineid).
-To retrieve a machine’s fingerprint before building, use the `machineid` CLI.
+Relay fingerprints machines using [`keygen-sh/machineid`](https://github.com/keygen-sh/machineid)
+using the app name `keygen-relay` as the SHA256-HMAC secret.
+
+To retrieve a machine’s fingerprint before building, use the `machineid` CLI:
+
+```bash
+go install github.com/keygen-sh/machineid/cmd/machineid
+
+machineid --appid keygen-relay
+# => 364646b45d9b732f1baaeee9382f4e7e541e65e8a9fd4aa72e4853477d85bf08
+```
+
 (If you need an alternate fingerprinting method, open an [issue](https://github.com/keygen-sh/keygen-relay/issues)
-or a [pull request](https://github.com/keygen-sh/keygen-relay/pulls))!
+or a [pull request](https://github.com/keygen-sh/keygen-relay/pulls)!)
 
 Once built, you can [checkout](https://keygen.sh/docs/api/machines/#machines-actions-check-out)
 and distribute an encrypted machine file along with a license key to the

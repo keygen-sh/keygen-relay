@@ -64,7 +64,7 @@ func Unlock(config Config) (*keygen.MachineFileDataset, error) {
 
 	dataset, err := verifier.Decrypt(key, fingerprint)
 	switch {
-	case err == keygen.ErrLicenseFileExpired:
+	case err == keygen.ErrSystemClockUnsynced:
 		return nil, fmt.Errorf("machine file is desynced with system clock: %w", err)
 	case err == keygen.ErrLicenseFileExpired:
 		return nil, fmt.Errorf("machine file is expired: %w", err)

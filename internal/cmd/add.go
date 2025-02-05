@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/locker"
 	"github.com/keygen-sh/keygen-relay/internal/output"
 	"github.com/keygen-sh/keygen-relay/internal/try"
 	"github.com/spf13/cobra"
@@ -9,9 +10,9 @@ import (
 
 func AddCmd(manager licenses.Manager) *cobra.Command {
 	var (
+		publicKey string = locker.PublicKey
 		filePath  string
 		key       string
-		publicKey string
 	)
 
 	cmd := &cobra.Command{
@@ -34,7 +35,10 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 
 	cmd.Flags().StringVar(&filePath, "file", "", "path to a signed and encrypted license file")
 	cmd.Flags().StringVar(&key, "key", "", "license key for decryption")
-	cmd.Flags().StringVar(&publicKey, "public-key", try.Try(try.Env("RELAY_PUBLIC_KEY"), try.Static("")), "your keygen.sh public key for verification [$KEYGEN_PUBLIC_KEY=e8601...e48b6]")
+
+	if !locker.Locked() {
+		cmd.Flags().StringVar(&publicKey, "public-key", try.Try(try.Env("RELAY_PUBLIC_KEY"), try.Static("")), "your keygen.sh public key for verification [$KEYGEN_PUBLIC_KEY=e8601...e48b6]")
+	}
 
 	_ = cmd.MarkFlagRequired("file")
 	_ = cmd.MarkFlagRequired("key")

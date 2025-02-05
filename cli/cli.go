@@ -38,6 +38,17 @@ func Run() int {
 	cfg := config.New()
 	manager := licenses.NewManager(cfg.License, os.ReadFile, licenses.NewKeygenLicenseVerifier)
 	srv := server.New(cfg.Server, manager)
+	version := Version
+
+	if locker.Locked() {
+		designation := "+node-locked"
+
+		if n := len(locker.Fingerprint); n >= 16 {
+			designation = designation + "." + locker.Fingerprint[:4] + ".." + locker.Fingerprint[n-4:]
+		}
+
+		version = version + designation
+	}
 
 	rootCmd := &cobra.Command{
 		Use:   "relay",
@@ -45,9 +56,9 @@ func Run() int {
 		Long: `relay is a small command line utility that distributes license files to nodes on a local network
 
 Version:
-  relay/` + Version + " " + runtime.GOOS + "-" + runtime.GOARCH + " " + runtime.Version(),
+  relay/` + version + " " + runtime.GOOS + "-" + runtime.GOARCH + " " + runtime.Version(),
 		SilenceUsage: true,
-		Version:      Version,
+		Version:      version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.CalledAs() == "help" {
 				return nil

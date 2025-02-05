@@ -323,10 +323,11 @@ export BUILD_NODE_LOCKED_IP='192.168.1.1'
 BUILD_NODE_LOCKED=1 make build-linux-amd64
 ```
 
-Relay fingerprints machines using [`keygen-sh/machineid`](https://github.com/keygen-sh/machineid)
-using the app name `keygen-relay` as the SHA256-HMAC secret.
+Relay fingerprints machines using [`keygen-sh/machineid`](https://github.com/keygen-sh/machineid),
+which calculates the HMAC-SHA256 of the app ID, `keygen-relay`, keyed by the
+underlying machine ID.
 
-To retrieve a machine’s fingerprint before building, use the `machineid` CLI:
+To determine a machine’s fingerprint before building, use the `machineid` CLI:
 
 ```bash
 go install github.com/keygen-sh/machineid/cmd/machineid

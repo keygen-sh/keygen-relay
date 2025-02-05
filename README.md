@@ -88,11 +88,11 @@ relay add --file license.lic --key xxx --public-key xxx
 
 The `add` command supports the following flags:
 
-| Flag                 | Description                                       |
-|:---------------------|:--------------------------------------------------|
-| `--file`             | Path to the license file to add to the pool.      |
-| `--key`              | License key for decryption.                       |
-| `--public-key`       | Your account public key for license verification. |
+| Flag                 | Description                                                                                                 |
+|:---------------------|:------------------------------------------------------------------------------------------------------------|
+| `--file`             | Path to the license file to add to the pool.                                                                |
+| `--key`              | License key for decryption.                                                                                 |
+| `--public-key`       | Your account's public key for license file verification. (Not available when [node-locked](#node-locking).) |
 
 #### Delete license
 

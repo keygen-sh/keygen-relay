@@ -15,7 +15,7 @@ across M nodes, ensuring that only N nodes are licensed at one time.
 Relay provides an app-facing REST API that allows nodes to claim a lease on a
 license and release it when no longer needed.
 
-In low-trust environments, Relay can be [node-locked](#node-locking).
+In low-trust environments, Relay itself can be [node-locked](#node-locking).
 
 ## Background
 

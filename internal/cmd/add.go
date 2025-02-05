@@ -37,7 +37,7 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 	cmd.Flags().StringVar(&key, "key", "", "license key for decryption")
 
 	if !locker.Locked() {
-		cmd.Flags().StringVar(&publicKey, "public-key", try.Try(try.Env("RELAY_PUBLIC_KEY"), try.Static("")), "your keygen.sh public key for verification [$KEYGEN_PUBLIC_KEY=e8601...e48b6]")
+		cmd.Flags().StringVar(&publicKey, "public-key", try.Try(try.Env("RELAY_PUBLIC_KEY"), try.Static("")), "your keygen.sh public key for verification [$KEYGEN_PUBLIC_KEY=e860..48b6]")
 	}
 
 	_ = cmd.MarkFlagRequired("file")

@@ -60,7 +60,7 @@ Version:
 		SilenceUsage: true,
 		Version:      version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if cmd.CalledAs() == "help" {
+			if cmd.CalledAs() == "help" || cmd.CalledAs() == "version" {
 				return nil
 			}
 

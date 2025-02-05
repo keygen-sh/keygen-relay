@@ -333,12 +333,12 @@ and distribute an encrypted machine file along with a license key to the
 end-user. Relay can then validate the machine before running, ensuring
 it matches the locked configuration.
 
-To provide the machine file and license key, use the `--locker-machine-file-path`
-and `--locker-license-key` flags:
+To provide the machine file and license key, use the `--node-locked-machine-file-path`
+and `--node-locked-license-key` flags, respectively:
 
 ```bash
-relay serve -vvvv --locker-machine-file-path /etc/keygen/relay.lic \
-  --locker-license-key '73F7DA-19BCBF-30B806-2F4C7D-3C2ACE-V3'
+relay serve -vvvv --node-locked-machine-file-path /etc/keygen/relay.lic \
+  --node-locked-license-key '73F7DA-19BCBF-30B806-2F4C7D-3C2ACE-V3'
 ```
 
 Relay will verify and decrypt the machine file, then check that the system

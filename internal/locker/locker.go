@@ -35,6 +35,14 @@ func Locked() bool {
 // current machine's fingerprint
 func Unlock(config Config) (*keygen.MachineFileDataset, error) {
 	path, key := config.MachineFilePath, config.LicenseKey
+	if path == "" {
+		return nil, fmt.Errorf("machine file path is required")
+	}
+
+	if key == "" {
+		return nil, fmt.Errorf("license key is required")
+	}
+
 	fingerprint, err := machineid.ID()
 	if err != nil {
 		return nil, fmt.Errorf("machine could not determine fingerprint: %w", err)

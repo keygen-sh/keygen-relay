@@ -10,7 +10,7 @@ import (
 
 func AddCmd(manager licenses.Manager) *cobra.Command {
 	var (
-		publicKey string = locker.PublicKey
+		publicKey = locker.PublicKey
 		filePath  string
 		key       string
 	)

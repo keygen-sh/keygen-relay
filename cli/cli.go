@@ -49,15 +49,16 @@ Version:
 		SilenceUsage: true,
 		Version:      Version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
+			if cmd.CalledAs() == "help" {
+				return nil
+			}
 
 			logger.Init(cfg.Logger, os.Stdout)
 
 			// attempt to unlock if relay is node-locked
-			// FIXME(ezekg) allow help?
 			if locker.Locked() {
 				slog.Info("relay is node-locked", "fingerprint", locker.Fingerprint != "", "platform", locker.Platform != "", "hostname", locker.Hostname != "", "ip", locker.IP != "")
-				slog.Debug("machine file config", "path", cfg.Locker.MachineFilePath, "key", cfg.Locker.LicenseKey)
+				slog.Debug("locker config", "path", cfg.Locker.MachineFilePath, "key", cfg.Locker.LicenseKey)
 
 				dataset, err := locker.Unlock(*cfg.Locker)
 				if err != nil {
@@ -91,8 +92,11 @@ Version:
 			}
 
 			// init database connection in PersistentPreRun hook for getting persistent flags
-			var store *db.Store
-			var err error
+			var (
+				ctx   = cmd.Context()
+				store *db.Store
+				err   error
+			)
 
 			store, conn, err = initStore(ctx, cfg)
 			if err != nil {
@@ -125,11 +129,8 @@ Version:
 	rootCmd.PersistentFlags().StringSlice("pragma", nil, "database pragma key-value pairs (e.g. --pragma mmap_size=536870912 --pragma synchronous=OFF)")
 
 	if locker.Locked() {
-		rootCmd.PersistentFlags().StringVar(&cfg.Locker.MachineFilePath, "locker-machine-file-path", try.Try(try.Env("RELAY_LOCKER_MACHINE_FILE_PATH"), try.Static("./relay.lic")), "the path to a machine file for unlocking relay [$RELAY_LOCKER_MACHINE_FILE_PATH=./relay.lic]")
-		rootCmd.PersistentFlags().StringVar(&cfg.Locker.LicenseKey, "locker-license-key", try.Try(try.Env("RELAY_LOCKER_LICENSE_KEY"), try.Static("")), "the path to a license key for unlocking relay [$RELAY_LOCKER_LICENSE_KEY=xxx]")
-
-		_ = rootCmd.MarkPersistentFlagRequired("locker-machine-file-path")
-		_ = rootCmd.MarkPersistentFlagRequired("locker-license-key")
+		rootCmd.PersistentFlags().StringVar(&cfg.Locker.MachineFilePath, "node-locked-machine-file-path", try.Try(try.Env("RELAY_NODE_LOCKED_MACHINE_FILE_PATH"), try.Static("./relay.lic")), "the path to a machine file for unlocking relay [$RELAY_NODE_LOCKED_MACHINE_FILE_PATH=./relay.lic]")
+		rootCmd.PersistentFlags().StringVar(&cfg.Locker.LicenseKey, "node-locked-license-key", try.Try(try.Env("RELAY_NODE_LOCKED_LICENSE_KEY"), try.Static("")), "the path to a license key for unlocking relay [$RELAY_NODE_LOCKED_LICENSE_KEY=xxx]")
 	}
 
 	rootCmd.SetHelpCommand(cmd.HelpCmd())

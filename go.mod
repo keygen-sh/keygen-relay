@@ -9,7 +9,7 @@ require (
 	github.com/fatih/color v1.17.0
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/gorilla/mux v1.8.1
-	github.com/keygen-sh/keygen-go/v3 v3.2.0
+	github.com/keygen-sh/keygen-go/v3 v3.2.1
 	github.com/keygen-sh/machineid v1.1.1
 	github.com/lmittmann/tint v1.0.5
 	github.com/mattn/go-isatty v0.0.20

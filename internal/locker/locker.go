@@ -72,14 +72,14 @@ func Unlock(config Config) (*keygen.MachineFileDataset, error) {
 		return nil, fmt.Errorf("machine file could not be decrypted: %w", err)
 	}
 
-	if expected, actual := Fingerprint, fingerprint; dataset.Machine.Fingerprint != expected || expected != actual {
+	if expected, actual := Fingerprint, fingerprint; dataset.Machine.Fingerprint != expected || actual != expected {
 		return nil, fmt.Errorf("machine file fingerprint mismatch")
 	}
 
 	if Platform != "" {
 		platform := runtime.GOOS + "/" + runtime.GOARCH
 
-		if expected, actual := Platform, platform; dataset.Machine.Platform != expected || expected != actual {
+		if expected, actual := Platform, platform; dataset.Machine.Platform != expected || actual != expected {
 			return nil, fmt.Errorf("machine file platform mismatch")
 		}
 	}
@@ -90,7 +90,7 @@ func Unlock(config Config) (*keygen.MachineFileDataset, error) {
 			return nil, fmt.Errorf("machine could not determine hostname: %w", err)
 		}
 
-		if expected, actual := Hostname, hostname; dataset.Machine.Hostname != expected || expected != actual {
+		if expected, actual := Hostname, hostname; dataset.Machine.Hostname != expected || actual != expected {
 			return nil, fmt.Errorf("machine file hostname mismatch")
 		}
 	}
@@ -101,7 +101,7 @@ func Unlock(config Config) (*keygen.MachineFileDataset, error) {
 			return nil, fmt.Errorf("machine could not determine ip: %w", err)
 		}
 
-		if expected, actual := IP, ip; dataset.Machine.IP != expected || expected != actual {
+		if expected, actual := IP, ip; dataset.Machine.IP != expected || actual != expected {
 			return nil, fmt.Errorf("machine file ip mismatch")
 		}
 	}

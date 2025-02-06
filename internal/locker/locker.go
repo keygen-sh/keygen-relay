@@ -30,10 +30,30 @@ func init() {
 
 // Locked returns a boolean whether or not Relay is node-locked
 func Locked() bool {
-	return Fingerprint != "" // decent proxy for node-locked
+	return PublicKey != "" && Fingerprint != "" // decent proxy for node-locked
 }
 
-// LockedAddr returns a boolean whether or not Relay's bind address is locked
+// LockedFingerprint returns a boolean whether or not Relay is locked to a machine fingerprint
+func LockedFingerprint() bool {
+	return Fingerprint != ""
+}
+
+// LockedPlatform returns a boolean whether or not Relay is locked to a machine platform
+func LockedPlatform() bool {
+	return Platform != ""
+}
+
+// LockedHostname returns a boolean whether or not Relay is locked to a machine hostname
+func LockedHostname() bool {
+	return Hostname != ""
+}
+
+// LockedIP returns a boolean whether or not Relay is locked to a machine IP address
+func LockedIP() bool {
+	return IP != ""
+}
+
+// LockedAddr returns a boolean whether or not Relay's bind IP address is locked
 func LockedAddr() bool {
 	return Addr != ""
 }
@@ -88,7 +108,7 @@ func Unlock(config Config) (*keygen.MachineFileDataset, error) {
 		return nil, fmt.Errorf("machine file fingerprint mismatch")
 	}
 
-	if Platform != "" {
+	if LockedPlatform() {
 		platform := runtime.GOOS + "/" + runtime.GOARCH
 
 		if expected, actual := Platform, platform; dataset.Machine.Platform != expected || actual != expected {
@@ -96,7 +116,7 @@ func Unlock(config Config) (*keygen.MachineFileDataset, error) {
 		}
 	}
 
-	if Hostname != "" {
+	if LockedHostname() {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return nil, fmt.Errorf("machine could not determine hostname: %w", err)
@@ -107,7 +127,7 @@ func Unlock(config Config) (*keygen.MachineFileDataset, error) {
 		}
 	}
 
-	if IP != "" {
+	if LockedIP() {
 		ip, err := getPrivateIP()
 		if err != nil {
 			return nil, fmt.Errorf("machine could not determine ip: %w", err)

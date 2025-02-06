@@ -319,6 +319,12 @@ export BUILD_NODE_LOCKED_HOSTNAME='relay'
 # Local IP address (optional)
 export BUILD_NODE_LOCKED_IP='192.168.1.1'
 
+# Relay bind addr (optional)
+export BUILD_NODE_LOCKED_ADDR='0.0.0.0'
+
+# Relay port (optional)
+export BUILD_NODE_LOCKED_PORT='6349'
+
 # Build the node-locked binary using the above constraints
 BUILD_NODE_LOCKED=1 make build-linux-amd64
 ```

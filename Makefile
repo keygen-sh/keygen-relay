@@ -35,6 +35,14 @@ ifdef BUILD_NODE_LOCKED
 	ifdef BUILD_NODE_LOCKED_IP
 		BUILD_LDFLAGS += -X $(PACKAGE_NAME)/internal/locker.IP=$(BUILD_NODE_LOCKED_IP)
 	endif
+
+	ifdef BUILD_NODE_LOCKED_ADDR
+		BUILD_LDFLAGS += -X $(PACKAGE_NAME)/internal/locker.Addr=$(BUILD_NODE_LOCKED_ADDR)
+	endif
+
+	ifdef BUILD_NODE_LOCKED_PORT
+		BUILD_LDFLAGS += -X $(PACKAGE_NAME)/internal/locker.Port=$(BUILD_NODE_LOCKED_PORT)
+	endif
 endif
 
 ifdef DEBUG

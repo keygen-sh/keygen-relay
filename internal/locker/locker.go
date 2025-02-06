@@ -19,6 +19,8 @@ var (
 	Platform    string // optional
 	Hostname    string // optional
 	IP          string // optional
+	Addr        string // optional
+	Port        string // optional
 )
 
 func init() {
@@ -29,6 +31,16 @@ func init() {
 // Locked returns a boolean whether or not Relay is node-locked
 func Locked() bool {
 	return Fingerprint != "" // decent proxy for node-locked
+}
+
+// LockedAddr returns a boolean whether or not Relay's bind address is locked
+func LockedAddr() bool {
+	return Addr != ""
+}
+
+// LockedPort returns a boolean whether or not Relay's port is locked
+func LockedPort() bool {
+	return Port != ""
 }
 
 // Unlock attempts to unlock Relay via a machine file and license key using the

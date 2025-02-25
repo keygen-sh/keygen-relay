@@ -74,22 +74,6 @@ build-linux-arm:
 build-linux-arm64:
 	CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC="zig cc -target aarch64-linux" go build $(BUILD_FLAGS) -ldflags "$(BUILD_LDFLAGS)" -o dist/relay-linux-arm64-$(PACKAGE_VERSION) ./cmd/relay
 
-# .PHONY: build-linux-mips
-# build-linux-mips:
-# 	CGO_ENABLED=1 GOOS=linux GOARCH=mips GOMIPS=softfloat CC="zig cc -target mips-linux -mfloat-abi=soft" go build $(BUILD_FLAGS) -ldflags "$(BUILD_LDFLAGS)" -o dist/relay-linux-mips-$(PACKAGE_VERSION) ./cmd/relay
-
-# .PHONY: build-linux-mipsle
-# build-linux-mipsle:
-# 	CGO_ENABLED=1 GOOS=linux GOARCH=mipsle GOMIPS=softfloat CC="zig cc -target mipsel-linux -mfloat-abi=soft" go build $(BUILD_FLAGS) -ldflags "$(BUILD_LDFLAGS)" -o dist/relay-linux-mipsle-$(PACKAGE_VERSION) ./cmd/relay
-
-# .PHONY: build-linux-mips64
-# build-linux-mips64:
-# 	CGO_ENABLED=1 GOOS=linux GOARCH=mips64 GOMIPS=softfloat CC="zig cc -target mips64-linux -mfloat-abi=soft" go build $(BUILD_FLAGS) -ldflags "$(BUILD_LDFLAGS)" -o dist/relay-linux-mips64-$(PACKAGE_VERSION) ./cmd/relay
-
-# .PHONY: build-linux-mips64le
-# build-linux-mips64le:
-# 	CGO_ENABLED=1 GOOS=linux GOARCH=mips64le GOMIPS=softfloat CC="zig cc -target mips64el-linux -mfloat-abi=soft" go build $(BUILD_FLAGS) -ldflags "$(BUILD_LDFLAGS)" -o dist/relay-linux-mips64le-$(PACKAGE_VERSION) ./cmd/relay
-
 .PHONY: build-linux-s390x
 build-linux-s390x:
 	CGO_ENABLED=1 GOOS=linux GOARCH=s390x CC="zig cc -target s390x-linux" go build $(BUILD_FLAGS) -ldflags "$(BUILD_LDFLAGS)" -o dist/relay-linux-s390x-$(PACKAGE_VERSION) ./cmd/relay
@@ -150,22 +134,6 @@ release-linux-arm:
 .PHONY: release-linux-arm64
 release-linux-arm64:
 	keygen upload dist/relay-linux-arm64-$(PACKAGE_VERSION) --filename relay_linux_arm64 --release $(PACKAGE_VERSION) --platform linux --arch arm64
-
-# .PHONY: release-linux-mips
-# release-linux-mips:
-# 	keygen upload dist/relay-linux-mips-$(PACKAGE_VERSION) --filename relay_linux_mips --release $(PACKAGE_VERSION) --platform linux --arch mips
-
-# .PHONY: release-linux-mipsle
-# release-linux-mipsle:
-# 	keygen upload dist/relay-linux-mipsle-$(PACKAGE_VERSION) --filename relay_linux_mipsle --release $(PACKAGE_VERSION) --platform linux --arch mipsle
-
-# .PHONY: release-linux-mips64
-# release-linux-mips64:
-# 	keygen upload dist/relay-linux-mips64-$(PACKAGE_VERSION) --filename relay_linux_mips64 --release $(PACKAGE_VERSION) --platform linux --arch mips64
-
-# .PHONY: release-linux-mips64le
-# release-linux-mips64le:
-# 	keygen upload dist/relay-linux-mips64le-$(PACKAGE_VERSION) --filename relay_linux_mips64le --release $(PACKAGE_VERSION) --platform linux --arch mips64le
 
 .PHONY: release-linux-s390x
 release-linux-s390x:

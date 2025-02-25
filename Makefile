@@ -74,7 +74,6 @@ build-linux-arm:
 build-linux-arm64:
 	CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC="zig cc -target aarch64-linux" go build $(BUILD_FLAGS) -ldflags "$(BUILD_LDFLAGS)" -o dist/relay-linux-arm64-$(PACKAGE_VERSION) ./cmd/relay
 
-# FIXME(ezekg) re: broken builds, see: https://github.com/ziglang/zig/issues/20689
 # .PHONY: build-linux-mips
 # build-linux-mips:
 # 	CGO_ENABLED=1 GOOS=linux GOARCH=mips GOMIPS=softfloat CC="zig cc -target mips-linux -mfloat-abi=soft" go build $(BUILD_FLAGS) -ldflags "$(BUILD_LDFLAGS)" -o dist/relay-linux-mips-$(PACKAGE_VERSION) ./cmd/relay

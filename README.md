@@ -229,6 +229,11 @@ providing the path to the Relay database file:
 sqlite3 ./relay.sqlite
 ```
 
+```bash
+.mode box --wrap 60 --wordwrap on --noquote
+.headers on
+```
+
 ```sql
 -- recent events
 SELECT

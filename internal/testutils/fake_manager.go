@@ -10,7 +10,7 @@ import (
 
 type FakeManager struct {
 	store              db.Store
-	AddLicenseFn       func(ctx context.Context, filePath, key, publicKey string) error
+	AddLicenseFn       func(ctx context.Context, filePath, key, publicKey string) (*db.License, error)
 	RemoveLicenseFn    func(ctx context.Context, id string) error
 	ListLicensesFn     func(ctx context.Context) ([]db.License, error)
 	GetLicenseByGUIDFn func(ctx context.Context, id string) (*db.License, error)
@@ -20,11 +20,11 @@ type FakeManager struct {
 	ConfigFn           func() *licenses.Config
 }
 
-func (f *FakeManager) AddLicense(ctx context.Context, filePath, key, publicKey string) error {
+func (f *FakeManager) AddLicense(ctx context.Context, filePath, key, publicKey string) (*db.License, error) {
 	if f.AddLicenseFn != nil {
 		return f.AddLicenseFn(ctx, filePath, key, publicKey)
 	}
-	return nil
+	return &db.License{}, nil
 }
 
 func (f *FakeManager) RemoveLicense(ctx context.Context, id string) error {

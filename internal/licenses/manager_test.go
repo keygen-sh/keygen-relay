@@ -31,7 +31,7 @@ func TestAddLicense_Success(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
 	license, err := manager.GetLicenseByGUID(context.Background(), "license_test_key")
@@ -57,10 +57,10 @@ func TestAddLicense_Failure(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
-	err = manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
+	_, err = manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "license with the provided key already exists")
 }
@@ -83,7 +83,7 @@ func TestAddLicense_FileNotFound(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	err := manager.AddLicense(context.Background(), "non_existent.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(context.Background(), "non_existent.lic", "test_key", "test_public_key")
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "license file not found at 'non_existent.lic'")
@@ -109,7 +109,7 @@ func TestRemoveLicense_Success(t *testing.T) {
 	manager.AttachStore(*store)
 
 	// add a license that to be deleted
-	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err, "failed to add license")
 
 	// check that the license was created
@@ -170,9 +170,9 @@ func TestListLicenses_Success(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	err := manager.AddLicense(context.Background(), "test_license_1.lic", "test_key_1", "test_public_key_1")
+	_, err := manager.AddLicense(context.Background(), "test_license_1.lic", "test_key_1", "test_public_key_1")
 	assert.NoError(t, err)
-	err = manager.AddLicense(context.Background(), "test_license_2.lic", "test_key_2", "test_public_key_2")
+	_, err = manager.AddLicense(context.Background(), "test_license_2.lic", "test_key_2", "test_public_key_2")
 	assert.NoError(t, err)
 
 	licenseList, err := manager.ListLicenses(context.Background())
@@ -200,7 +200,7 @@ func TestGetLicenseByGUID_Success(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
 	license, err := manager.GetLicenseByGUID(context.Background(), "license_test_key")
@@ -251,7 +251,7 @@ func TestClaimLicense_Success(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
 	result, err := manager.ClaimLicense(ctx, "test_fingerprint")
@@ -309,7 +309,7 @@ func TestClaimLicense_AlreadyClaimed_WithHeartbeatEnabled(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
 	// First getting the license
@@ -346,7 +346,7 @@ func TestClaimLicense_AlreadyClaimed_WithHeartbeatDisabled(t *testing.T) {
 	manager.AttachStore(*store)
 
 	// add the license
-	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
 	// first getting the license
@@ -390,11 +390,11 @@ func TestClaimLicense_FIFO_Strategy(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	err := manager.AddLicense(ctx, "license1.lic", "key1", "public_key")
+	_, err := manager.AddLicense(ctx, "license1.lic", "key1", "public_key")
 	assert.NoError(t, err)
-	err = manager.AddLicense(ctx, "license2.lic", "key2", "public_key")
+	_, err = manager.AddLicense(ctx, "license2.lic", "key2", "public_key")
 	assert.NoError(t, err)
-	err = manager.AddLicense(ctx, "license3.lic", "key3", "public_key")
+	_, err = manager.AddLicense(ctx, "license3.lic", "key3", "public_key")
 	assert.NoError(t, err)
 
 	// we need to update created_at manually, because in tests the records are created very quickly in the same time
@@ -446,13 +446,13 @@ func TestClaimLicense_LIFO_Strategy(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	err := manager.AddLicense(ctx, "license1.lic", "key1", "public_key")
+	_, err := manager.AddLicense(ctx, "license1.lic", "key1", "public_key")
 	assert.NoError(t, err)
 
-	err = manager.AddLicense(ctx, "license2.lic", "key2", "public_key")
+	_, err = manager.AddLicense(ctx, "license2.lic", "key2", "public_key")
 	assert.NoError(t, err)
 
-	err = manager.AddLicense(ctx, "license3.lic", "key3", "public_key")
+	_, err = manager.AddLicense(ctx, "license3.lic", "key3", "public_key")
 	assert.NoError(t, err)
 
 	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-3 seconds') WHERE guid = 'license_key1'`)
@@ -493,7 +493,7 @@ func TestReleaseLicense_Success(t *testing.T) {
 	manager.AttachStore(*store)
 
 	// adding the license and then getting it
-	err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
 	result, err := manager.ClaimLicense(ctx, "test_fingerprint")
@@ -630,9 +630,9 @@ func TestCullDeadNodes(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	err := manager.AddLicense(ctx, "license1.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, "license1.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
-	err = manager.AddLicense(ctx, "license2.lic", "test_key_2", "test_public_key")
+	_, err = manager.AddLicense(ctx, "license2.lic", "test_key_2", "test_public_key")
 	assert.NoError(t, err)
 
 	// сlaim the first license

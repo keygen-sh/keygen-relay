@@ -38,7 +38,7 @@ type LicenseOperationResult struct {
 type FileReaderFunc func(filename string) ([]byte, error)
 
 type Manager interface {
-	AddLicense(ctx context.Context, licenseFilePath string, licenseKey string, publicKeyPath string) error
+	AddLicense(ctx context.Context, licenseFilePath string, licenseKey string, publicKeyPath string) (*db.License, error)
 	RemoveLicense(ctx context.Context, id string) error
 	ListLicenses(ctx context.Context) ([]db.License, error)
 	GetLicenseByGUID(ctx context.Context, id string) (*db.License, error)
@@ -68,7 +68,7 @@ func (m *manager) AttachStore(store db.Store) {
 	m.store = store
 }
 
-func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licenseKey string, publicKey string) error {
+func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licenseKey string, publicKey string) (*db.License, error) {
 	slog.Debug("starting to add a new license", "filePath", licenseFilePath)
 
 	cert, err := m.dataReader(licenseFilePath)
@@ -76,12 +76,12 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 		if errors.Is(err, os.ErrNotExist) {
 			slog.Warn("license file not found", "filePath", licenseFilePath)
 
-			return fmt.Errorf("license file not found at '%s'", licenseFilePath)
+			return nil, fmt.Errorf("license file not found at '%s'", licenseFilePath)
 		}
 
 		slog.Error("failed to read license file", "filePath", licenseFilePath, "error", err)
 
-		return fmt.Errorf("failed to read license file: %w", err)
+		return nil, fmt.Errorf("failed to read license file: %w", err)
 	}
 
 	slog.Debug("successfully read the license file", "filePath", licenseFilePath)
@@ -90,12 +90,12 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 	keygen.PublicKey = publicKey
 
 	if err := lic.Verify(); err != nil {
-		return fmt.Errorf("license verification failed: %w", err)
+		return nil, fmt.Errorf("license verification failed: %w", err)
 	}
 
 	dec, err := lic.Decrypt(licenseKey)
 	if err != nil {
-		return fmt.Errorf("license decryption failed: %w", err)
+		return nil, fmt.Errorf("license decryption failed: %w", err)
 	}
 
 	guid := dec.License.ID
@@ -106,10 +106,10 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 		slog.Debug("failed to insert license", "licenseGuid", guid, "error", err)
 
 		if isUniqueConstraintError(err) {
-			return fmt.Errorf("license with the provided key already exists")
+			return nil, fmt.Errorf("license with the provided key already exists")
 		}
 
-		return fmt.Errorf("failed to insert license: %w", err)
+		return nil, fmt.Errorf("failed to insert license: %w", err)
 	}
 
 	// Log audit, but do not fail the operation if it fails
@@ -121,7 +121,7 @@ func (m *manager) AddLicense(ctx context.Context, licenseFilePath string, licens
 
 	slog.Debug("added license successfully", "licenseGuid", guid)
 
-	return nil
+	return license, nil
 }
 
 func (m *manager) RemoveLicense(ctx context.Context, guid string) error {

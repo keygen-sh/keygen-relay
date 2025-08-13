@@ -1,0 +1,36 @@
+# See https://docs.docker.com/engine/reference/builder/#dockerignore-file for more about ignoring files.
+
+# Ignore git directory.
+/.git/
+
+# Ignore all environment files.
+/.env*
+!/.env.example
+
+# Ignore all binfiles.
+/bin/*
+!/bin/.keep
+
+# Ignore all logfiles and tempfiles.
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+
+# Ignore pidfiles, but keep the directory.
+/tmp/pids/*
+!/tmp/pids/
+!/tmp/pids/.keep
+
+# Ignore storage (uploaded files in development and any SQLite databases).
+/storage/*
+!/storage/.keep
+/tmp/storage/*
+!/tmp/storage/
+!/tmp/storage/.keep
+/*.sqlite
+/*.sqlite-*
+
+# Ignore all macOS SDK files.
+/sdk/*
+!/sdk/.keep

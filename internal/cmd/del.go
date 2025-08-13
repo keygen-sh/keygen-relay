@@ -7,26 +7,34 @@ import (
 )
 
 func DelCmd(manager licenses.Manager) *cobra.Command {
-	var licenseID string
-
 	cmd := &cobra.Command{
 		Use:          "del",
-		Short:        "delete a license from the local relay server's pool",
+		Short:        "delete license(s) from the local relay server's pool",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := manager.RemoveLicense(cmd.Context(), licenseID)
+			licenseIDs, err := cmd.Flags().GetStringSlice("license")
 			if err != nil {
 				output.PrintError(cmd.ErrOrStderr(), err.Error())
+
 				return nil
 			}
 
-			output.PrintSuccess(cmd.OutOrStdout(), "license deleted successfully")
+			for _, licenseID := range licenseIDs {
+				err := manager.RemoveLicense(cmd.Context(), licenseID)
+				if err != nil {
+					output.PrintError(cmd.ErrOrStderr(), err.Error())
+
+					return nil
+				}
+
+				output.PrintSuccess(cmd.OutOrStdout(), "license deleted successfully: %s", licenseID)
+			}
 
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&licenseID, "license", "", "license ID to remove")
+	cmd.Flags().StringSlice("license", nil, "license ID to remove")
 	_ = cmd.MarkFlagRequired("license")
 
 	return cmd

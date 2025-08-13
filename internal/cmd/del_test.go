@@ -30,6 +30,30 @@ func TestDelCmd_Success(t *testing.T) {
 	err := delCmd.Execute()
 	assert.NoError(t, err)
 	assert.Empty(t, errBuf.String())
+	assert.Contains(t, outBuf.String(), "license deleted successfully: test-id")
+}
+
+func TestDelCmd_MultiSuccess(t *testing.T) {
+	manager := &testutils.FakeManager{
+		RemoveLicenseFn: func(ctx context.Context, id string) error {
+			return nil
+		},
+	}
+
+	delCmd := cmd.DelCmd(manager)
+
+	outBuf := new(bytes.Buffer)
+	errBuf := new(bytes.Buffer)
+	delCmd.SetOut(outBuf)
+	delCmd.SetErr(errBuf)
+
+	delCmd.SetArgs([]string{"--license=1", "--license=2"})
+
+	err := delCmd.Execute()
+	assert.NoError(t, err)
+	assert.Empty(t, errBuf.String())
+	assert.Contains(t, outBuf.String(), "license deleted successfully: 1")
+	assert.Contains(t, outBuf.String(), "license deleted successfully: 2")
 }
 
 func TestDelCmd_Error(t *testing.T) {

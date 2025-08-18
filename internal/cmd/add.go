@@ -13,6 +13,7 @@ import (
 func AddCmd(manager licenses.Manager) *cobra.Command {
 	var (
 		publicKey = locker.PublicKey
+		pool      *string
 	)
 
 	cmd := &cobra.Command{
@@ -21,6 +22,13 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			publicKey = strings.TrimSpace(publicKey)
+
+			// workaround for lack of support for nullable string flags
+			if p, err := cmd.Flags().GetString("pool"); err == nil {
+				if p != "" {
+					pool = &p
+				}
+			}
 
 			files, err := cmd.Flags().GetStringSlice("file")
 			if err != nil {
@@ -46,7 +54,7 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 				file := files[i]
 				key := strings.TrimSpace(keys[i])
 
-				license, err := manager.AddLicense(cmd.Context(), file, key, publicKey)
+				license, err := manager.AddLicense(cmd.Context(), pool, file, key, publicKey)
 				if err != nil {
 					output.PrintError(cmd.ErrOrStderr(), err.Error())
 
@@ -62,6 +70,7 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 
 	cmd.Flags().StringSlice("file", nil, "path to a signed and encrypted license file")
 	cmd.Flags().StringSlice("key", nil, "license key for decryption")
+	cmd.Flags().String("pool", try.Try(try.Env("RELAY_POOL"), try.Static("")), "pool to add the license to [$KEYGEN_POOL]")
 
 	if !locker.Locked() {
 		cmd.Flags().StringVar(&publicKey, "public-key", try.Try(try.Env("RELAY_PUBLIC_KEY"), try.Static("")), "your keygen.sh public key for verification [$KEYGEN_PUBLIC_KEY=e860..48b6]")

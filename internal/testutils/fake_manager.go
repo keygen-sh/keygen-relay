@@ -10,40 +10,40 @@ import (
 
 type FakeManager struct {
 	store              db.Store
-	AddLicenseFn       func(ctx context.Context, filePath, key, publicKey string) (*db.License, error)
-	RemoveLicenseFn    func(ctx context.Context, id string) error
-	ListLicensesFn     func(ctx context.Context) ([]db.License, error)
-	GetLicenseByGUIDFn func(ctx context.Context, id string) (*db.License, error)
-	ClaimLicenseFn     func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
-	ReleaseLicenseFn   func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error)
+	AddLicenseFn       func(ctx context.Context, pool *string, filePath, key, publicKey string) (*db.License, error)
+	RemoveLicenseFn    func(ctx context.Context, pool *string, id string) error
+	ListLicensesFn     func(ctx context.Context, pool *string) ([]db.License, error)
+	GetLicenseByGUIDFn func(ctx context.Context, pool *string, id string) (*db.License, error)
+	ClaimLicenseFn     func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error)
+	ReleaseLicenseFn   func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error)
 	CullDeadNodesFn    func(ctx context.Context, ttl time.Duration) ([]db.Node, error)
 	ConfigFn           func() *licenses.Config
 }
 
-func (f *FakeManager) AddLicense(ctx context.Context, filePath, key, publicKey string) (*db.License, error) {
+func (f *FakeManager) AddLicense(ctx context.Context, pool *string, filePath, key, publicKey string) (*db.License, error) {
 	if f.AddLicenseFn != nil {
-		return f.AddLicenseFn(ctx, filePath, key, publicKey)
+		return f.AddLicenseFn(ctx, pool, filePath, key, publicKey)
 	}
 	return &db.License{}, nil
 }
 
-func (f *FakeManager) RemoveLicense(ctx context.Context, id string) error {
+func (f *FakeManager) RemoveLicense(ctx context.Context, pool *string, id string) error {
 	if f.RemoveLicenseFn != nil {
-		return f.RemoveLicenseFn(ctx, id)
+		return f.RemoveLicenseFn(ctx, pool, id)
 	}
 	return nil
 }
 
-func (f *FakeManager) ListLicenses(ctx context.Context) ([]db.License, error) {
+func (f *FakeManager) ListLicenses(ctx context.Context, pool *string) ([]db.License, error) {
 	if f.ListLicensesFn != nil {
-		return f.ListLicensesFn(ctx)
+		return f.ListLicensesFn(ctx, pool)
 	}
 	return []db.License{}, nil
 }
 
-func (f *FakeManager) GetLicenseByGUID(ctx context.Context, id string) (*db.License, error) {
+func (f *FakeManager) GetLicenseByGUID(ctx context.Context, pool *string, id string) (*db.License, error) {
 	if f.GetLicenseByGUIDFn != nil {
-		return f.GetLicenseByGUIDFn(ctx, id)
+		return f.GetLicenseByGUIDFn(ctx, pool, id)
 	}
 	return &db.License{}, nil
 }
@@ -52,17 +52,17 @@ func (f *FakeManager) AttachStore(store db.Store) {
 	f.store = store
 }
 
-func (f *FakeManager) ClaimLicense(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
+func (f *FakeManager) ClaimLicense(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
 	if f.ClaimLicenseFn != nil {
-		return f.ClaimLicenseFn(ctx, fingerprint)
+		return f.ClaimLicenseFn(ctx, pool, fingerprint)
 	}
 
 	return nil, nil
 }
 
-func (f *FakeManager) ReleaseLicense(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
+func (f *FakeManager) ReleaseLicense(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
 	if f.ReleaseLicenseFn != nil {
-		return f.ReleaseLicenseFn(ctx, fingerprint)
+		return f.ReleaseLicenseFn(ctx, pool, fingerprint)
 	}
 
 	return nil, nil

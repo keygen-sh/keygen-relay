@@ -18,19 +18,22 @@ import (
 )
 
 func TestClaimLicense_NewNode_Success(t *testing.T) {
-	manager := &testutils.FakeManager{
-		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
-			return &licenses.LicenseOperationResult{
-				License: &db.License{
-					File: []byte("test_license_file"),
-					Key:  "test_license_key",
-				},
-				Status: licenses.OperationStatusCreated,
-			}, nil
+	srv := testutils.NewMockServer(
+		server.NewConfig(),
+		&testutils.FakeManager{
+			ClaimLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
+				return &licenses.LicenseOperationResult{
+					License: &db.License{
+						File: []byte("test_license_file"),
+						Key:  "test_license_key",
+					},
+					Status: licenses.OperationStatusCreated,
+				}, nil
+			},
 		},
-	}
+	)
 
-	handler := server.NewHandler(manager)
+	handler := server.NewHandler(srv)
 
 	req := httptest.NewRequest(http.MethodPut, "/v1/nodes/test_fingerprint", nil)
 	rr := httptest.NewRecorder()
@@ -49,19 +52,22 @@ func TestClaimLicense_NewNode_Success(t *testing.T) {
 }
 
 func TestClaimLicense_ExistingNode_Extended(t *testing.T) {
-	manager := &testutils.FakeManager{
-		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
-			return &licenses.LicenseOperationResult{
-				License: &db.License{
-					File: []byte("test_license_file"),
-					Key:  "test_license_key",
-				},
-				Status: licenses.OperationStatusExtended,
-			}, nil
+	srv := testutils.NewMockServer(
+		server.NewConfig(),
+		&testutils.FakeManager{
+			ClaimLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
+				return &licenses.LicenseOperationResult{
+					License: &db.License{
+						File: []byte("test_license_file"),
+						Key:  "test_license_key",
+					},
+					Status: licenses.OperationStatusExtended,
+				}, nil
+			},
 		},
-	}
+	)
 
-	handler := server.NewHandler(manager)
+	handler := server.NewHandler(srv)
 
 	req := httptest.NewRequest(http.MethodPut, "/v1/nodes/test_fingerprint", nil)
 	rr := httptest.NewRecorder()
@@ -75,15 +81,18 @@ func TestClaimLicense_ExistingNode_Extended(t *testing.T) {
 }
 
 func TestClaimLicense_HeartbeatDisabled_Conflict(t *testing.T) {
-	manager := &testutils.FakeManager{
-		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
-			return &licenses.LicenseOperationResult{
-				Status: licenses.OperationStatusConflict,
-			}, nil
+	srv := testutils.NewMockServer(
+		server.NewConfig(),
+		&testutils.FakeManager{
+			ClaimLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
+				return &licenses.LicenseOperationResult{
+					Status: licenses.OperationStatusConflict,
+				}, nil
+			},
 		},
-	}
+	)
 
-	handler := server.NewHandler(manager)
+	handler := server.NewHandler(srv)
 
 	req := httptest.NewRequest(http.MethodPut, "/v1/nodes/test_fingerprint", nil)
 	rr := httptest.NewRecorder()
@@ -97,15 +106,18 @@ func TestClaimLicense_HeartbeatDisabled_Conflict(t *testing.T) {
 }
 
 func TestClaimLicense_NoLicensesAvailable(t *testing.T) {
-	manager := &testutils.FakeManager{
-		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
-			return &licenses.LicenseOperationResult{
-				Status: licenses.OperationStatusNoLicensesAvailable,
-			}, nil
+	srv := testutils.NewMockServer(
+		server.NewConfig(),
+		&testutils.FakeManager{
+			ClaimLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
+				return &licenses.LicenseOperationResult{
+					Status: licenses.OperationStatusNoLicensesAvailable,
+				}, nil
+			},
 		},
-	}
+	)
 
-	handler := server.NewHandler(manager)
+	handler := server.NewHandler(srv)
 
 	req := httptest.NewRequest(http.MethodPut, "/v1/nodes/test_fingerprint", nil)
 	rr := httptest.NewRecorder()
@@ -119,13 +131,16 @@ func TestClaimLicense_NoLicensesAvailable(t *testing.T) {
 }
 
 func TestClaimLicense_InternalServerError(t *testing.T) {
-	manager := &testutils.FakeManager{
-		ClaimLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
-			return nil, errors.New("database error")
+	srv := testutils.NewMockServer(
+		server.NewConfig(),
+		&testutils.FakeManager{
+			ClaimLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
+				return nil, errors.New("database error")
+			},
 		},
-	}
+	)
 
-	handler := server.NewHandler(manager)
+	handler := server.NewHandler(srv)
 
 	req := httptest.NewRequest(http.MethodPut, "/v1/nodes/test_fingerprint", nil)
 	rr := httptest.NewRecorder()
@@ -139,15 +154,18 @@ func TestClaimLicense_InternalServerError(t *testing.T) {
 }
 
 func TestReleaseLicense_Success(t *testing.T) {
-	manager := &testutils.FakeManager{
-		ReleaseLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
-			return &licenses.LicenseOperationResult{
-				Status: licenses.OperationStatusSuccess,
-			}, nil
+	srv := testutils.NewMockServer(
+		server.NewConfig(),
+		&testutils.FakeManager{
+			ReleaseLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
+				return &licenses.LicenseOperationResult{
+					Status: licenses.OperationStatusSuccess,
+				}, nil
+			},
 		},
-	}
+	)
 
-	handler := server.NewHandler(manager)
+	handler := server.NewHandler(srv)
 
 	req := httptest.NewRequest(http.MethodDelete, "/v1/nodes/test_fingerprint", nil)
 	rr := httptest.NewRecorder()
@@ -161,15 +179,18 @@ func TestReleaseLicense_Success(t *testing.T) {
 }
 
 func TestReleaseLicense_NotFound(t *testing.T) {
-	manager := &testutils.FakeManager{
-		ReleaseLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
-			return &licenses.LicenseOperationResult{
-				Status: licenses.OperationStatusNotFound,
-			}, nil
+	srv := testutils.NewMockServer(
+		server.NewConfig(),
+		&testutils.FakeManager{
+			ReleaseLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
+				return &licenses.LicenseOperationResult{
+					Status: licenses.OperationStatusNotFound,
+				}, nil
+			},
 		},
-	}
+	)
 
-	handler := server.NewHandler(manager)
+	handler := server.NewHandler(srv)
 
 	req := httptest.NewRequest(http.MethodDelete, "/v1/nodes/non_existent_fingerprint", nil)
 	rr := httptest.NewRecorder()
@@ -183,13 +204,16 @@ func TestReleaseLicense_NotFound(t *testing.T) {
 }
 
 func TestReleaseLicense_InternalServerError(t *testing.T) {
-	manager := &testutils.FakeManager{
-		ReleaseLicenseFn: func(ctx context.Context, fingerprint string) (*licenses.LicenseOperationResult, error) {
-			return nil, errors.New("database error")
+	srv := testutils.NewMockServer(
+		server.NewConfig(),
+		&testutils.FakeManager{
+			ReleaseLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
+				return nil, errors.New("database error")
+			},
 		},
-	}
+	)
 
-	handler := server.NewHandler(manager)
+	handler := server.NewHandler(srv)
 
 	req := httptest.NewRequest(http.MethodDelete, "/v1/nodes/test_fingerprint", nil)
 	rr := httptest.NewRecorder()

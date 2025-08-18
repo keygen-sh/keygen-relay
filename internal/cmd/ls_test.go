@@ -15,7 +15,7 @@ import (
 
 func TestLsCmd_Success(t *testing.T) {
 	manager := &testutils.FakeManager{
-		ListLicensesFn: func(ctx context.Context) ([]db.License, error) {
+		ListLicensesFn: func(ctx context.Context, pool *string) ([]db.License, error) {
 			return []db.License{
 				{Guid: "License_1", Key: "License_Key_1", Claims: 5},
 				{Guid: "License_2", Key: "License_Key_2", Claims: 10},
@@ -38,7 +38,7 @@ func TestLsCmd_Success(t *testing.T) {
 
 func TestLsCmd_NoLicenses(t *testing.T) {
 	manager := &testutils.FakeManager{
-		ListLicensesFn: func(ctx context.Context) ([]db.License, error) {
+		ListLicensesFn: func(ctx context.Context, pool *string) ([]db.License, error) {
 			return []db.License{}, nil
 		},
 	}
@@ -57,7 +57,7 @@ func TestLsCmd_NoLicenses(t *testing.T) {
 
 func TestLsCmd_Error(t *testing.T) {
 	manager := &testutils.FakeManager{
-		ListLicensesFn: func(ctx context.Context) ([]db.License, error) {
+		ListLicensesFn: func(ctx context.Context, pool *string) ([]db.License, error) {
 			return nil, errors.New("failed to list licenses")
 		},
 	}

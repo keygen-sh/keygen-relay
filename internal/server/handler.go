@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -23,13 +24,16 @@ type Handler interface {
 }
 
 type handler struct {
-	licenseManager licenses.Manager
-	Server         *Server
+	manager licenses.Manager
+	config  *Config
+	server  Server
 }
 
-func NewHandler(m licenses.Manager) Handler {
+func NewHandler(server Server) Handler {
 	return &handler{
-		licenseManager: m,
+		manager: server.Manager(),
+		config:  server.Config(),
+		server:  server,
 	}
 }
 
@@ -45,10 +49,30 @@ func (h *handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 	fingerprint := mux.Vars(r)["fingerprint"]
+	pool := h.config.Pool
 
-	result, err := h.licenseManager.ClaimLicense(r.Context(), fingerprint)
+	if p := r.Header.Get("Relay-Pool"); p != "" {
+		if pool != nil && *pool != p {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "unsupported pool header"})
+			return
+		}
+
+		pool = &p
+	}
+
+	result, err := h.manager.ClaimLicense(r.Context(), pool, fingerprint)
 	if err != nil {
 		slog.Error("failed to claim license", "error", err)
+
+		if errors.Is(err, licenses.ErrBadPool) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid pool header"})
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "failed to claim license"})
@@ -86,10 +110,30 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) ReleaseLicense(w http.ResponseWriter, r *http.Request) {
 	fingerprint := mux.Vars(r)["fingerprint"]
+	pool := h.config.Pool
 
-	result, err := h.licenseManager.ReleaseLicense(r.Context(), fingerprint)
+	if p := r.Header.Get("Relay-Pool"); p != "" {
+		if pool != nil && *pool != p {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "unsupported pool header"})
+			return
+		}
+
+		pool = &p
+	}
+
+	result, err := h.manager.ReleaseLicense(r.Context(), pool, fingerprint)
 	if err != nil {
 		slog.Error("failed to release license", "error", err)
+
+		if errors.Is(err, licenses.ErrBadPool) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid pool header"})
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "failed to release license"})

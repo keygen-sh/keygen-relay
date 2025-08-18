@@ -40,7 +40,12 @@ func (s *server) Run() error {
 	defer cancel()
 
 	addr := fmt.Sprintf("%s:%d", s.config.ServerAddr, s.config.ServerPort)
-	slog.Info("starting server", "addr", s.config.ServerAddr, "port", s.config.ServerPort)
+
+	if pool := s.config.Pool; pool != nil {
+		slog.Info("starting server", "addr", s.config.ServerAddr, "port", s.config.ServerPort, "pool", *pool)
+	} else {
+		slog.Info("starting server", "addr", s.config.ServerAddr, "port", s.config.ServerPort)
+	}
 
 	if s.Config().EnabledHeartbeat {
 		go s.reaper.Start(ctx)

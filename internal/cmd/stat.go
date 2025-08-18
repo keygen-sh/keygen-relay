@@ -21,7 +21,7 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 		Short:        "print stats for a license in the local relay server's pool",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			license, err := manager.GetLicenseByGUID(cmd.Context(), licenseID)
+			license, err := manager.GetLicenseByGUID(cmd.Context(), nil, licenseID)
 			if err != nil {
 				output.PrintError(cmd.ErrOrStderr(), err.Error())
 

@@ -13,7 +13,7 @@ import (
 
 func TestDelCmd_Success(t *testing.T) {
 	manager := &testutils.FakeManager{
-		RemoveLicenseFn: func(ctx context.Context, id string) error {
+		RemoveLicenseFn: func(ctx context.Context, pool *string, id string) error {
 			return nil
 		},
 	}
@@ -35,7 +35,7 @@ func TestDelCmd_Success(t *testing.T) {
 
 func TestDelCmd_MultiSuccess(t *testing.T) {
 	manager := &testutils.FakeManager{
-		RemoveLicenseFn: func(ctx context.Context, id string) error {
+		RemoveLicenseFn: func(ctx context.Context, pool *string, id string) error {
 			return nil
 		},
 	}
@@ -58,7 +58,7 @@ func TestDelCmd_MultiSuccess(t *testing.T) {
 
 func TestDelCmd_Error(t *testing.T) {
 	manager := &testutils.FakeManager{
-		RemoveLicenseFn: func(ctx context.Context, id string) error {
+		RemoveLicenseFn: func(ctx context.Context, pool *string, id string) error {
 			return errors.New("failed to remove license")
 		},
 	}

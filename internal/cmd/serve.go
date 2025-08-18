@@ -19,7 +19,7 @@ const minTTL = 30 * time.Second
 func ServeCmd(srv server.Server) *cobra.Command {
 	cfg := srv.Config()
 
-	handler := server.NewHandler(srv.Manager())
+	handler := server.NewHandler(srv)
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
 
@@ -47,6 +47,13 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 			if disableHeartbeats, err := cmd.Flags().GetBool("no-heartbeats"); err == nil {
 				cfg.EnabledHeartbeat = !disableHeartbeats
+			}
+
+			// workaround for lack of support for nullable string flags
+			if p, err := cmd.Flags().GetString("pool"); err == nil {
+				if p != "" {
+					cfg.Pool = &p
+				}
 			}
 
 			srv.Manager().Config().Strategy = string(cfg.Strategy)
@@ -92,8 +99,10 @@ func ServeCmd(srv server.Server) *cobra.Command {
 	cmd.Flags().Bool("no-heartbeats", try.Try(try.EnvBool("RELAY_NO_HEARTBEATS"), try.Static(false)), "disable node heartbeat monitoring and culling as well as lease extensions [$RELAY_NO_HEARTBEAT=1]")
 	cmd.Flags().Var(&cfg.Strategy, "strategy", `strategy for license distribution e.g. "fifo", "lifo", or "rand" [$RELAY_STRATEGY=rand]`)
 	cmd.Flags().DurationVar(&cfg.CullInterval, "cull-interval", try.Try(try.EnvDuration("RELAY_CULL_INTERVAL"), try.Static(cfg.CullInterval)), "interval at which to cull dead nodes [$RELAY_CULL_INTERVAL=15s]")
+	cmd.Flags().String("pool", try.Try(try.Env("RELAY_POOL"), try.Static("")), "pool to serve licenses from [$KEYGEN_POOL]")
 
 	_ = cmd.RegisterFlagCompletionFunc("strategy", strategyTypeCompletion)
+	_ = cmd.RegisterFlagCompletionFunc("pool", poolTypeCompletion)
 
 	return cmd
 }
@@ -107,4 +116,9 @@ func validateTTL(ttl time.Duration) error {
 
 func strategyTypeCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return []string{"fifo", "lifo", "rand"}, cobra.ShellCompDirectiveDefault
+}
+
+func poolTypeCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	// TODO(ezekg) query pools
+	return []string{}, cobra.ShellCompDirectiveDefault
 }

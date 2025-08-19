@@ -70,7 +70,7 @@ func (m *manager) AttachStore(store db.Store) {
 }
 
 func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFilePath string, licenseKey string, publicKey string) (*db.License, error) {
-	slog.Debug("starting to add a new license", "pool", strptr(poolName), "filePath", licenseFilePath)
+	slog.Debug("starting to add a new license", "pool", deref(poolName), "filePath", licenseFilePath)
 
 	cert, err := m.dataReader(licenseFilePath)
 	if err != nil {
@@ -145,7 +145,7 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 }
 
 func (m *manager) RemoveLicense(ctx context.Context, poolName *string, guid string) error {
-	slog.Debug("starting to remove license", "pool", strptr(poolName), "licenseGuid", guid)
+	slog.Debug("starting to remove license", "pool", deref(poolName), "licenseGuid", guid)
 
 	var pool *db.Pool
 	var err error
@@ -153,7 +153,7 @@ func (m *manager) RemoveLicense(ctx context.Context, poolName *string, guid stri
 	if poolName != nil {
 		pool, err = m.store.GetPoolByName(ctx, *poolName)
 		if err != nil {
-			slog.Debug("failed to fetch pool", "poolName", poolName, "error", err)
+			slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
 
 			return ErrBadPool
 		}
@@ -183,7 +183,7 @@ func (m *manager) RemoveLicense(ctx context.Context, poolName *string, guid stri
 }
 
 func (m *manager) ListLicenses(ctx context.Context, poolName *string) ([]db.License, error) {
-	slog.Debug("fetching licenses", "pool", strptr(poolName))
+	slog.Debug("fetching licenses", "pool", deref(poolName))
 
 	var licenses []db.License
 	var pool *db.Pool
@@ -192,7 +192,7 @@ func (m *manager) ListLicenses(ctx context.Context, poolName *string) ([]db.Lice
 	if poolName != nil {
 		pool, err = m.store.GetPoolByName(ctx, *poolName)
 		if err != nil {
-			slog.Debug("failed to fetch pool", "poolName", poolName, "error", err)
+			slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
 
 			return nil, ErrBadPool
 		}
@@ -228,7 +228,7 @@ func (m *manager) GetLicenseByGUID(ctx context.Context, poolName *string, guid s
 	if poolName != nil {
 		pool, err = m.store.GetPoolByName(ctx, *poolName)
 		if err != nil {
-			slog.Debug("failed to fetch pool", "poolName", poolName, "error", err)
+			slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
 
 			return nil, ErrBadPool
 		}
@@ -553,19 +553,19 @@ func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.No
 func isUniqueConstraintError(err error) bool {
 	var sqliteErr sqlite3.Error
 
-	ok := errors.As(err, &sqliteErr)
-
-	if ok && errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
-		return true
+	if ok := errors.As(err, &sqliteErr); ok {
+		return errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique)
 	}
 
 	return false
 }
 
-func strptr(p *string) any {
-	if p == nil {
-		return nil
+func deref[T any](t *T) T {
+	var zero T
+
+	if t == nil {
+		return zero
 	}
 
-	return *p
+	return *t
 }

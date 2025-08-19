@@ -10,6 +10,7 @@ type AuditLog struct {
 	EntityTypeID int64
 	EntityID     int64
 	CreatedAt    int64
+	PoolID       *int64
 }
 
 type EntityType struct {

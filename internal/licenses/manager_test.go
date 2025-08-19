@@ -89,6 +89,34 @@ func TestAddLicense_FileNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "license file not found at 'non_existent.lic'")
 }
 
+func TestAddPooledLicense_Success(t *testing.T) {
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			EnabledAudit: true,
+		},
+		func(filename string) ([]byte, error) {
+			return []byte("mock_certificate"), nil
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+
+	manager.AttachStore(*store)
+
+	poolName := "test-pool"
+	_, err := manager.AddLicense(context.Background(), &poolName, "test_license.lic", "test_key", "test_public_key")
+	assert.NoError(t, err)
+
+	license, err := manager.GetLicenseByGUID(context.Background(), &poolName, "license_test_key")
+	assert.NoError(t, err)
+	assert.Equal(t, "test_key", license.Key)
+	assert.NotNil(t, license.PoolID)
+}
+
 func TestRemoveLicense_Success(t *testing.T) {
 	ctx := context.Background()
 	store, dbConn := testutils.NewMemoryStore(t)
@@ -122,6 +150,45 @@ func TestRemoveLicense_Success(t *testing.T) {
 
 	// check that the license is removed
 	_, err = manager.GetLicenseByGUID(context.Background(), nil, "license_test_key")
+	assert.Error(t, err, "license should not exist after deletion")
+	assert.Contains(t, err.Error(), "license license_test_key: license not found")
+}
+
+func TestRemovePooledLicense_Success(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			EnabledAudit: true,
+		},
+		func(filename string) ([]byte, error) {
+			return []byte("mock_certificate"), nil
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+
+	manager.AttachStore(*store)
+
+	poolName := "test-pool"
+
+	// add a license that to be deleted
+	_, err := manager.AddLicense(ctx, &poolName, "test_license.lic", "test_key", "test_public_key")
+	assert.NoError(t, err, "failed to add license")
+
+	// check that the license was created
+	_, err = manager.GetLicenseByGUID(ctx, &poolName, "license_test_key")
+	assert.NoError(t, err, "license should exist")
+
+	// remove the license
+	err = manager.RemoveLicense(ctx, &poolName, "license_test_key")
+	assert.NoError(t, err, "failed to remove license")
+
+	// check that the license is removed
+	_, err = manager.GetLicenseByGUID(context.Background(), &poolName, "license_test_key")
 	assert.Error(t, err, "license should not exist after deletion")
 	assert.Contains(t, err.Error(), "license license_test_key: license not found")
 }
@@ -180,6 +247,85 @@ func TestListLicenses_Success(t *testing.T) {
 	assert.Len(t, licenseList, 2)
 	assert.Equal(t, "test_key_1", licenseList[0].Key)
 	assert.Equal(t, "test_key_2", licenseList[1].Key)
+}
+
+func TestListPooledLicenses_Isolation(t *testing.T) {
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			EnabledAudit: true,
+		},
+		func(filename string) ([]byte, error) {
+			switch filename {
+			case "license_pool1_1.lic":
+				return []byte("mock_certificate_pool1_1"), nil
+			case "license_pool1_2.lic":
+				return []byte("mock_certificate_pool1_2"), nil
+			case "license_pool2_1.lic":
+				return []byte("mock_certificate_pool2_1"), nil
+			case "license_default_1.lic":
+				return []byte("mock_certificate_default_1"), nil
+			case "license_default_2.lic":
+				return []byte("mock_certificate_default_2"), nil
+			default:
+				return []byte("mock_certificate"), nil
+			}
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+
+	manager.AttachStore(*store)
+
+	pool1 := "pool-1"
+	pool2 := "pool-2"
+
+	// Add licenses to pool-1
+	_, err := manager.AddLicense(context.Background(), &pool1, "license_pool1_1.lic", "key_pool1_1", "test_public_key")
+	assert.NoError(t, err)
+	_, err = manager.AddLicense(context.Background(), &pool1, "license_pool1_2.lic", "key_pool1_2", "test_public_key")
+	assert.NoError(t, err)
+
+	// Add license to pool-2
+	_, err = manager.AddLicense(context.Background(), &pool2, "license_pool2_1.lic", "key_pool2_1", "test_public_key")
+	assert.NoError(t, err)
+
+	// Add licenses to default pool (nil)
+	_, err = manager.AddLicense(context.Background(), nil, "license_default_1.lic", "key_default_1", "test_public_key")
+	assert.NoError(t, err)
+	_, err = manager.AddLicense(context.Background(), nil, "license_default_2.lic", "key_default_2", "test_public_key")
+	assert.NoError(t, err)
+
+	// List pool-1 licenses - should have 2
+	licenseList, err := manager.ListLicenses(context.Background(), &pool1)
+	assert.NoError(t, err)
+	assert.Len(t, licenseList, 2)
+	assert.Equal(t, "key_pool1_1", licenseList[0].Key)
+	assert.Equal(t, "key_pool1_2", licenseList[1].Key)
+
+	// List pool-2 licenses - should have 1
+	licenseList, err = manager.ListLicenses(context.Background(), &pool2)
+	assert.NoError(t, err)
+	assert.Len(t, licenseList, 1)
+	assert.Equal(t, "key_pool2_1", licenseList[0].Key)
+
+	// List ALL licenses (nil pool) - should have 5 total
+	licenseList, err = manager.ListLicenses(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.Len(t, licenseList, 5)
+	// Verify all licenses are present
+	keys := make(map[string]bool)
+	for _, lic := range licenseList {
+		keys[lic.Key] = true
+	}
+	assert.True(t, keys["key_pool1_1"])
+	assert.True(t, keys["key_pool1_2"])
+	assert.True(t, keys["key_pool2_1"])
+	assert.True(t, keys["key_default_1"])
+	assert.True(t, keys["key_default_2"])
 }
 
 func TestGetLicenseByGUID_Success(t *testing.T) {
@@ -255,6 +401,39 @@ func TestClaimLicense_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	result, err := manager.ClaimLicense(ctx, nil, "test_fingerprint")
+	assert.NoError(t, err)
+	assert.Equal(t, result.Status, licenses.OperationStatusCreated)
+	assert.NotNil(t, result.License)
+	assert.NotNil(t, result.License.LastClaimedAt)
+	assert.NotNil(t, result.License.CreatedAt)
+	assert.Equal(t, "test_key", result.License.Key)
+}
+
+func TestClaimPooledLicense_Success(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			Strategy:          "fifo",
+			EnabledAudit:      true,
+			ExtendOnHeartbeat: true,
+		},
+		func(filename string) ([]byte, error) {
+			return []byte("mock_certificate"), nil
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+	manager.AttachStore(*store)
+
+	poolName := "test-pool"
+	_, err := manager.AddLicense(ctx, &poolName, "test_license.lic", "test_key", "test_public_key")
+	assert.NoError(t, err)
+
+	result, err := manager.ClaimLicense(ctx, &poolName, "test_fingerprint")
 	assert.NoError(t, err)
 	assert.Equal(t, result.Status, licenses.OperationStatusCreated)
 	assert.NotNil(t, result.License)
@@ -513,6 +692,55 @@ func TestReleaseLicense_Success(t *testing.T) {
 
 	// checking the free license
 	claimedLicense, err := store.GetLicenseByGUID(ctx, result.License.Guid)
+	assert.NoError(t, err)
+	assert.Nil(t, claimedLicense.NodeID)
+	assert.NotNil(t, claimedLicense.LastReleasedAt)
+}
+
+func TestReleasePooledLicense_Success(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			Strategy:     "fifo",
+			EnabledAudit: true,
+		},
+		func(filename string) ([]byte, error) {
+			return []byte("mock_certificate"), nil
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+	manager.AttachStore(*store)
+
+	poolName := "test-pool"
+
+	// adding the license and then getting it
+	_, err := manager.AddLicense(ctx, &poolName, "test_license.lic", "test_key", "test_public_key")
+	assert.NoError(t, err)
+
+	result, err := manager.ClaimLicense(ctx, &poolName, "test_fingerprint")
+	assert.NoError(t, err)
+	assert.Equal(t, result.Status, licenses.OperationStatusCreated)
+	assert.NotNil(t, result.License)
+
+	// Release the license
+	releaseResult, err := manager.ReleaseLicense(ctx, &poolName, "test_fingerprint")
+	assert.NoError(t, err)
+	assert.Equal(t, releaseResult.Status, licenses.OperationStatusSuccess)
+
+	// checking the empty node
+	_, err = store.GetNodeByFingerprint(ctx, "test_fingerprint")
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, sql.ErrNoRows))
+
+	// checking the free license - need to get pool first
+	pool, err := store.GetPoolByName(ctx, poolName)
+	assert.NoError(t, err)
+	claimedLicense, err := store.GetPooledLicenseByGUID(ctx, pool, result.License.Guid)
 	assert.NoError(t, err)
 	assert.Nil(t, claimedLicense.NodeID)
 	assert.NotNil(t, claimedLicense.LastReleasedAt)

@@ -99,15 +99,6 @@ func (s *Store) GetAllLicenses(ctx context.Context) ([]License, error) {
 	return licenses, nil
 }
 
-func (s *Store) GetUnpooledLicenses(ctx context.Context) ([]License, error) {
-	licenses, err := s.queries.GetUnpooledLicenses(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return licenses, nil
-}
-
 func (s *Store) GetPooledLicenses(ctx context.Context, pool *Pool) ([]License, error) {
 	licenses, err := s.queries.GetPooledLicenses(ctx, &pool.ID)
 	if err != nil {

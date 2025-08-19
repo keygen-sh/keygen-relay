@@ -33,12 +33,6 @@ SELECT *
 FROM licenses
 ORDER BY id;
 
--- name: GetUnpooledLicenses :many
-SELECT *
-FROM licenses
-WHERE pool_id IS NULL
-ORDER BY id;
-
 -- name: GetPooledLicenses :many
 SELECT *
 FROM licenses
@@ -47,12 +41,7 @@ ORDER BY id;
 
 -- name: DeleteLicenseByGUID :one
 DELETE FROM licenses
-WHERE guid = ? AND pool_id IS NULL
-RETURNING *;
-
--- name: DeletePooledLicenseByGUID :one
-DELETE FROM licenses
-WHERE guid = ? AND pool_id = ?
+WHERE guid = ?
 RETURNING *;
 
 -- name: ReleaseLicenseByNodeID :exec

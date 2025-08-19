@@ -208,11 +208,15 @@ func (s *Store) DeletePoolByID(ctx context.Context, id int64) (*Pool, error) {
 // TODO(ezekg) allow event data? e.g. license.lease_extended {from:x,to:y} or license.leased {node:n} or node.heartbeat_ping {count:n}
 //
 //	but doing so would pose problems for future aggregation...
-func (s *Store) InsertAuditLog(ctx context.Context, eventTypeId EventTypeId, entityTypeId EntityTypeId, entityID int64) error {
+func (s *Store) InsertAuditLog(ctx context.Context, pool *Pool, eventTypeId EventTypeId, entityTypeId EntityTypeId, entityID int64) error {
 	params := InsertAuditLogParams{
 		EventTypeID:  int64(eventTypeId),
 		EntityTypeID: int64(entityTypeId),
 		EntityID:     entityID,
+	}
+
+	if pool != nil {
+		params.PoolID = &pool.ID
 	}
 
 	return s.queries.InsertAuditLog(ctx, params)
@@ -222,6 +226,7 @@ type BulkInsertAuditLogParams struct {
 	EventTypeID  EventTypeId
 	EntityTypeID EntityTypeId
 	EntityID     int64
+	Pool         *Pool
 }
 
 func (s *Store) BulkInsertAuditLogs(ctx context.Context, logs []BulkInsertAuditLogParams) error {
@@ -237,6 +242,10 @@ func (s *Store) BulkInsertAuditLogs(ctx context.Context, logs []BulkInsertAuditL
 			EventTypeID:  int64(log.EventTypeID),
 			EntityTypeID: int64(log.EntityTypeID),
 			EntityID:     log.EntityID,
+		}
+
+		if log.Pool != nil {
+			params.PoolID = &log.Pool.ID
 		}
 
 		if err := qtx.queries.InsertAuditLog(ctx, params); err != nil {

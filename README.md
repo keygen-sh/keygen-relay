@@ -93,6 +93,9 @@ The `add` command supports the following flags:
 | `--file`             | Path to the license file to add to the pool.                                                                |
 | `--key`              | License key for decryption.                                                                                 |
 | `--public-key`       | Your account's public key for license file verification. (Not available when [node-locked](#node-locking).) |
+| `--pool`             | Add the license to a specific named pool.                                                                   |
+
+The `add` command supports multiple `--file` and `--key` pairs.
 
 #### Delete license
 
@@ -108,6 +111,8 @@ The `del` command supports the following flags:
 |:------------|:------------------------------------------------------|
 | `--license` | The unique ID of the license to delete from the pool. |
 
+The `del` command supports multiple `--license` flags.
+
 #### List licenses
 
 To list all the licenses in the pool, use the `ls` command:
@@ -121,6 +126,7 @@ The `ls` command supports the following flags:
 | Flag      | Description                                   |
 |:----------|:----------------------------------------------|
 | `--plain` | Print results non-interactively in plaintext. |
+| `--pool`  | Print licenses from a specific pool.          |
 
 #### Stat license
 
@@ -155,6 +161,7 @@ The `serve` command supports the following flags:
 | `--ttl`, `-t`        | Sets the time-to-live for leases. Licenses will be automatically released after the time-to-live if a node heartbeat is not maintained. Options: e.g. `30s`, `1m`, `1h`, etc.         | `60s`            |
 | `--cull-interval`    | Specifies how often the server should check for and deactivate inactive or dead nodes.                                                                                                | `15s`            |
 | `--database`         | Specify a custom database file for storing the license and node data.                                                                                                                 | `./relay.sqlite` |
+| `--pool`             | Specify a specific pool to serve licenses from.                                                                                                                                       |                  |
 
 E.g. to start the server on port `8080`, with a 30 second node TTL and FIFO
 distribution strategy:
@@ -219,6 +226,45 @@ Accepts a `fingerprint`, the node fingerprint used for the lease.
 Returns `204 No Content` with no content. If a lease does not exist for the
 node, the server will return a `404 Not Found`.
 
+## Pools
+
+Relay supports a concept called "pools," where, via the `--pool` flag, licenses
+can be added into distinct license pools, effectively allowing you to run
+multiple Relays under a single Relay instance. Pools can be used to separate
+licenses between environments, products, etc.
+
+Alternatively, the `serve` command can also be configured to serve from a
+specific pool:
+
+```bash
+relay serve --pool "prod" -vvvv
+```
+
+Consumers of Relay can specify a pool using the `Relay-Pool` header:
+
+```bash
+fingerprint=$(cat /etc/machine-id | openssl dgst -sha256 -hmac "prod" -binary | xxd -p -c 256)
+
+curl -v -X PUT -H "Relay-Pool: prod" "http://localhost:6349/v1/nodes/$fingerprint"
+```
+
+> [!WARNING]
+> As demonstrated above, we recommend using an HMAC on node fingerprints, to
+> prevent node collisions, especially in situations where a node could be used
+> across pools.
+>
+> Cross-pool node collisions will result in a `409 Conflict`.
+
+If Relay is serving from a specific pool, i.e. via the `--pool` flag, the
+`Relay-Pool` header MUST match the configured pool, or it can be omitted to
+default to the configured pool. If Relay is configured to serve from the `prod`
+pool and a request comes in for the `dev` pool, a `400 Bad Request` will be
+returned.
+
+Otherwise, if Relay is serving from all pools, the `Relay-Pool` header can be
+provided to interact with a specific pool, or omitted to consume from the
+global pool.
+
 ## Logs
 
 Relay comes equipped with audit logs out-of-the-box, allowing the full history
@@ -250,7 +296,7 @@ SELECT
   audit_logs.*
 FROM
   audit_logs
-JOIN
+INNER JOIN
   event_types ON event_types.id = audit_logs.event_type_id
 WHERE
   event_types.name = 'license.leased'
@@ -264,13 +310,17 @@ SELECT
   datetime(audit_logs.created_at, 'unixepoch') AS created_at,
   event_types.name AS event_type,
   entity_types.name AS entity_type,
-  audit_logs.entity_id
+  audit_logs.entity_id,
+  audit_logs.pool_id,
+  pools.name AS pool_name
 FROM
   audit_logs
-JOIN
+INNER JOIN
   event_types ON event_types.id = audit_logs.event_type_id
-JOIN
+INNER JOIN
   entity_types ON entity_types.id = audit_logs.entity_type_id
+LEFT OUTER JOIN
+  pools ON pools.id = audit_logs.pool_id
 ORDER BY
   audit_logs.created_at ASC;
 ```

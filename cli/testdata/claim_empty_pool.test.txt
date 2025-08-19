@@ -1,0 +1,31 @@
+# add license to prod pool
+exec relay add --pool prod --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
+
+# add another license to dev pool 
+exec relay add --pool dev --file license_2.lic --key 9A96B8-FD08CD-8C433B-7657C8-8A8655-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
+
+# set a port as environment variable
+env PORT=65056
+
+# start the server with heartbeat disabled
+exec relay serve --port $PORT &server_process_test&
+
+# wait for the server to start
+exec sleep 1
+
+# claim the only license from dev pool
+exec curl -s -o claim_response.txt -w "%{http_code}" -X PUT -H 'Relay-Pool: dev' http://localhost:$PORT/v1/nodes/test_fingerprint
+stdout '201'
+
+# try to claim another license from the now-empty dev pool
+exec curl -s -o response.txt -w "%{http_code}" -X PUT -H 'Relay-Pool: dev' http://localhost:$PORT/v1/nodes/test_fingerprint2
+
+# expect a gone response with status code 410 (no licenses available)
+stdout '410'
+
+# check that the response contains error about no licenses available
+exec grep '"error"' response.txt
+exec grep 'no licenses available' response.txt
+
+# kill the process (stop the server)
+kill server_process_test

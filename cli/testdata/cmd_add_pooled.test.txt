@@ -1,0 +1,32 @@
+# add a license to prod pool
+exec relay add --pool prod --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
+
+# expect output indicating success
+stdout 'license added successfully'
+
+# add another license to dev pool
+exec relay add --pool dev --file license_2.lic --key 9A96B8-FD08CD-8C433B-7657C8-8A8655-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
+
+# expect output indicating success
+stdout 'license added successfully'
+
+# list licenses in prod pool
+exec relay ls --pool prod --plain
+
+# expect only the prod pool license
+stdout 'dcea31a4-1664-4633-9f52-4a1b0b5ea2ef'
+! stdout 'e9b6f649-d8c2-49e3-9d41-aab32f0d08a3'
+
+# list licenses in dev pool  
+exec relay ls --pool dev --plain
+
+# expect only the dev pool license
+stdout 'e9b6f649-d8c2-49e3-9d41-aab32f0d08a3'
+! stdout 'dcea31a4-1664-4633-9f52-4a1b0b5ea2ef'
+
+# list all licenses (no pool specified)
+exec relay ls --plain
+
+# expect all licenses to be listed
+stdout 'dcea31a4-1664-4633-9f52-4a1b0b5ea2ef'
+stdout 'e9b6f649-d8c2-49e3-9d41-aab32f0d08a3'

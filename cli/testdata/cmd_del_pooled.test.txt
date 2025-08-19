@@ -1,0 +1,34 @@
+# add a license to prod pool
+exec relay add --pool prod --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
+
+# add another license to dev pool
+exec relay add --pool dev --file license_2.lic --key 9A96B8-FD08CD-8C433B-7657C8-8A8655-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
+
+# confirm both licenses are added
+exec relay ls --plain
+stdout 'dcea31a4-1664-4633-9f52-4a1b0b5ea2ef'
+stdout 'e9b6f649-d8c2-49e3-9d41-aab32f0d08a3'
+
+# delete license from prod pool using GUID
+exec relay del --license dcea31a4-1664-4633-9f52-4a1b0b5ea2ef
+
+# expect output indicating success
+stdout 'license deleted successfully'
+
+# verify the license is deleted from prod pool
+exec relay ls --pool prod --plain
+stdout 'license pool is empty'
+
+# verify the dev pool license still exists
+exec relay ls --pool dev --plain
+stdout 'e9b6f649-d8c2-49e3-9d41-aab32f0d08a3'
+
+# delete license from dev pool using GUID
+exec relay del --license e9b6f649-d8c2-49e3-9d41-aab32f0d08a3
+
+# expect output indicating success
+stdout 'license deleted successfully'
+
+# verify both pools are now empty
+exec relay ls --plain
+stdout 'license pool is empty'

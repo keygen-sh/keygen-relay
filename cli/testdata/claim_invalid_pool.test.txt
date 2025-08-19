@@ -1,0 +1,24 @@
+# add license to prod pool
+exec relay add --pool prod --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
+
+# set a port as environment variable
+env PORT=65055
+
+# start the server with heartbeat disabled
+exec relay serve --port $PORT &server_process_test&
+
+# wait for the server to start
+exec sleep 1
+
+# try to claim a license from invalid pool using Relay-Pool header
+exec curl -s -o response.txt -w "%{http_code}" -X PUT -H 'Relay-Pool: nonexistent' http://localhost:$PORT/v1/nodes/test_fingerprint
+
+# expect a bad request response with status code 400
+stdout '400'
+
+# check that the response contains error about invalid pool
+exec grep '"error"' response.txt
+exec grep 'invalid pool' response.txt
+
+# kill the process (stop the server)
+kill server_process_test

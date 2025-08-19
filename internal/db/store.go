@@ -126,6 +126,15 @@ func (s *Store) GetLicenseByGUID(ctx context.Context, id string) (*License, erro
 	return &license, nil
 }
 
+func (s *Store) GetUnpooledLicenseByGUID(ctx context.Context, id string) (*License, error) {
+	license, err := s.queries.GetUnpooledLicenseByGUID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &license, nil
+}
+
 func (s *Store) GetPooledLicenseByGUID(ctx context.Context, pool *Pool, id string) (*License, error) {
 	license, err := s.queries.GetPooledLicenseByGUID(ctx, GetPooledLicenseByGUIDParams{id, &pool.ID})
 	if err != nil {

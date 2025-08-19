@@ -6,6 +6,11 @@ RETURNING *;
 -- name: GetLicenseByGUID :one
 SELECT *
 FROM licenses
+WHERE guid = ?;
+
+-- name: GetUnpooledLicenseByGUID :one
+SELECT *
+FROM licenses
 WHERE guid = ? and pool_id IS NULL;
 
 -- name: GetPooledLicenseByGUID :one

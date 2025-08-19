@@ -257,9 +257,9 @@ curl -v -X PUT -H "Relay-Pool: prod" "http://localhost:6349/v1/nodes/$fingerprin
 
 If Relay is serving from a specific pool, i.e. via the `--pool` flag, the
 `Relay-Pool` header MUST match the configured pool, or it can be omitted to
-default to the configured pool. If Relay is configured to serve from the `prod`
-pool and a request comes in for the `dev` pool, a `400 Bad Request` will be
-returned.
+default to the configured pool. E.g. if Relay is configured to serve from the
+`prod` pool and a request comes in for the `dev` pool, a `400 Bad Request` will
+be returned.
 
 Otherwise, if Relay is serving from all pools, the `Relay-Pool` header can be
 provided to interact with a specific pool, or omitted to consume from the

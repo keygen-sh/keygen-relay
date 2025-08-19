@@ -212,41 +212,12 @@ func (q *Queries) ClaimPooledLicenseRandom(ctx context.Context, arg ClaimPooledL
 
 const deleteLicenseByGUID = `-- name: DeleteLicenseByGUID :one
 DELETE FROM licenses
-WHERE guid = ? AND pool_id IS NULL
+WHERE guid = ?
 RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 `
 
 func (q *Queries) DeleteLicenseByGUID(ctx context.Context, guid string) (License, error) {
 	row := q.db.QueryRowContext(ctx, deleteLicenseByGUID, guid)
-	var i License
-	err := row.Scan(
-		&i.ID,
-		&i.Guid,
-		&i.File,
-		&i.Key,
-		&i.Claims,
-		&i.LastClaimedAt,
-		&i.LastReleasedAt,
-		&i.NodeID,
-		&i.PoolID,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const deletePooledLicenseByGUID = `-- name: DeletePooledLicenseByGUID :one
-DELETE FROM licenses
-WHERE guid = ? AND pool_id = ?
-RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
-`
-
-type DeletePooledLicenseByGUIDParams struct {
-	Guid   string
-	PoolID *int64
-}
-
-func (q *Queries) DeletePooledLicenseByGUID(ctx context.Context, arg DeletePooledLicenseByGUIDParams) (License, error) {
-	row := q.db.QueryRowContext(ctx, deletePooledLicenseByGUID, arg.Guid, arg.PoolID)
 	var i License
 	err := row.Scan(
 		&i.ID,
@@ -472,47 +443,6 @@ func (q *Queries) GetUnpooledLicenseByGUID(ctx context.Context, guid string) (Li
 		&i.CreatedAt,
 	)
 	return i, err
-}
-
-const getUnpooledLicenses = `-- name: GetUnpooledLicenses :many
-SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
-FROM licenses
-WHERE pool_id IS NULL
-ORDER BY id
-`
-
-func (q *Queries) GetUnpooledLicenses(ctx context.Context) ([]License, error) {
-	rows, err := q.db.QueryContext(ctx, getUnpooledLicenses)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []License
-	for rows.Next() {
-		var i License
-		if err := rows.Scan(
-			&i.ID,
-			&i.Guid,
-			&i.File,
-			&i.Key,
-			&i.Claims,
-			&i.LastClaimedAt,
-			&i.LastReleasedAt,
-			&i.NodeID,
-			&i.PoolID,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const insertLicense = `-- name: InsertLicense :one

@@ -306,7 +306,7 @@ func (q *Queries) GetAllLicenses(ctx context.Context) ([]License, error) {
 const getLicenseByGUID = `-- name: GetLicenseByGUID :one
 SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 FROM licenses
-WHERE guid = ? and pool_id IS NULL
+WHERE guid = ?
 `
 
 func (q *Queries) GetLicenseByGUID(ctx context.Context, guid string) (License, error) {
@@ -448,6 +448,30 @@ func (q *Queries) GetPooledLicenses(ctx context.Context, poolID *int64) ([]Licen
 		return nil, err
 	}
 	return items, nil
+}
+
+const getUnpooledLicenseByGUID = `-- name: GetUnpooledLicenseByGUID :one
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
+FROM licenses
+WHERE guid = ? and pool_id IS NULL
+`
+
+func (q *Queries) GetUnpooledLicenseByGUID(ctx context.Context, guid string) (License, error) {
+	row := q.db.QueryRowContext(ctx, getUnpooledLicenseByGUID, guid)
+	var i License
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.File,
+		&i.Key,
+		&i.Claims,
+		&i.LastClaimedAt,
+		&i.LastReleasedAt,
+		&i.NodeID,
+		&i.PoolID,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getUnpooledLicenses = `-- name: GetUnpooledLicenses :many

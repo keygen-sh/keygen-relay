@@ -13,8 +13,10 @@ import (
 )
 
 func StatCmd(manager licenses.Manager) *cobra.Command {
-	var licenseID string
-	var plain bool
+	var (
+		licenseID string
+		plain     bool
+	)
 
 	cmd := &cobra.Command{
 		Use:          "stat",
@@ -32,6 +34,7 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 				{Title: "id", Width: 36},
 				{Title: "claims", Width: 8},
 				{Title: "node_id", Width: 8},
+				{Title: "pool_id", Width: 8},
 				{Title: "last_claimed_at", Width: 20},
 				{Title: "last_released_at", Width: 20},
 			}
@@ -45,11 +48,18 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 				nodeIDStr = "-"
 			}
 
+			var poolIDStr string
+			if license.PoolID != nil {
+				poolIDStr = strconv.FormatInt(*license.PoolID, 10)
+			} else {
+				poolIDStr = "-"
+			}
+
 			lastClaimedAtStr := formatTime(license.LastClaimedAt)
 			lastReleasedAtStr := formatTime(license.LastReleasedAt)
 
 			tableRows := []table.Row{
-				{license.Guid, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
+				{license.Guid, claimsStr, nodeIDStr, poolIDStr, lastClaimedAtStr, lastReleasedAtStr},
 			}
 
 			var renderer ui.TableRenderer

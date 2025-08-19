@@ -265,7 +265,7 @@ func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprin
 
 	var pool *db.Pool
 	if poolName != nil {
-		pool, err = m.store.GetPoolByName(ctx, *poolName)
+		pool, err = qtx.GetPoolByName(ctx, *poolName)
 		if err != nil {
 			slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
 
@@ -386,7 +386,7 @@ func (m *manager) ReleaseLicense(ctx context.Context, poolName *string, fingerpr
 	var pool *db.Pool
 
 	if poolName != nil {
-		pool, err = m.store.GetPoolByName(ctx, *poolName)
+		pool, err = qtx.GetPoolByName(ctx, *poolName)
 		if err != nil {
 			slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
 

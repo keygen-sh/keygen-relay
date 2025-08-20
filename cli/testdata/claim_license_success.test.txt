@@ -6,7 +6,7 @@ exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --
 # set a port as environment variable
 env PORT=65005
 
-# start the server with heartbeat disabled
+# start the server on port
 exec relay serve --port $PORT &server_process_test&
 
 # wait for the server to start

@@ -408,13 +408,12 @@ func (m *manager) ReleaseLicense(ctx context.Context, poolName *string, fingerpr
 	}
 
 	if pool != nil {
-		if err := qtx.ReleasePooledLicenseByNodeID(ctx, pool, &node.ID); err != nil {
-			return nil, fmt.Errorf("failed to release license: %w", err)
-		}
+		err = qtx.ReleasePooledLicenseByNodeID(ctx, pool, &node.ID)
 	} else {
-		if err := qtx.ReleaseLicenseByNodeID(ctx, &node.ID); err != nil {
-			return nil, fmt.Errorf("failed to release license: %w", err)
-		}
+		err = qtx.ReleaseLicenseByNodeID(ctx, &node.ID)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to release license: %w", err)
 	}
 
 	if err := qtx.DeactivateNodeByFingerprint(ctx, fingerprint); err != nil {

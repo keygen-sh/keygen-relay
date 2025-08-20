@@ -1,13 +1,13 @@
 # add license to prod pool
 exec relay add --pool prod --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
 
-# add another license to dev pool 
+# add another license to dev pool
 exec relay add --pool dev --file license_2.lic --key 9A96B8-FD08CD-8C433B-7657C8-8A8655-V3 --public-key e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788
 
 # set a port as environment variable
 env PORT=65056
 
-# start the server with heartbeat disabled
+# start the server on port
 exec relay serve --port $PORT &server_process_test&
 
 # wait for the server to start

@@ -23,9 +23,21 @@ stdout '400'
 exec grep '"error"' response.txt
 exec grep 'unsupported pool header' response.txt
 
-# verify we can claim from the configured pool (prod)
+# verify we can claim from the configured pool (explicit prod)
 exec curl -s -o success_response.txt -w "%{http_code}" -X PUT -H 'Relay-Pool: prod' http://localhost:$PORT/v1/nodes/test_fingerprint
 stdout '201'
+
+# verify we can release from the configured pool (explicit prod)
+exec curl -s -o success_response.txt -w "%{http_code}" -X DELETE -H 'Relay-Pool: prod' http://localhost:$PORT/v1/nodes/test_fingerprint
+stdout '204'
+
+# verify we can claim from the configured pool (implicit prod)
+exec curl -s -o success_response.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
+stdout '201'
+
+# verify we can release from the configured pool (implicit prod)
+exec curl -s -o success_response.txt -w "%{http_code}" -X DELETE http://localhost:$PORT/v1/nodes/test_fingerprint
+stdout '204'
 
 # kill the process (stop the server)
 kill server_process_test

@@ -1,9 +1,10 @@
 package server
 
 import (
-	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/keygen-sh/keygen-relay/internal/logger"
 )
 
 func wrapResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
@@ -32,7 +33,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(wrappedResponse, r)
 
-		slog.Info("HTTP request",
+		logger.Info("HTTP request",
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", wrappedResponse.Status(),

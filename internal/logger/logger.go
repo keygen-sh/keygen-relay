@@ -4,6 +4,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"reflect"
 	"time"
 
 	"github.com/lmittmann/tint"
@@ -42,38 +43,56 @@ func Init(config *Config, output io.Writer) {
 	slog.SetDefault(logger)
 }
 
-// StringPtr creates an slog attribute for a nullable string pointer.
-// If the pointer is nil, it returns a null value, otherwise the dereferenced string.
-func StringPtr(key string, val *string) slog.Attr {
-	if val == nil {
-		return slog.String(key, "<nil>")
-	}
-	return slog.String(key, *val)
+// Debug logs at debug level with automatic nullable type handling
+func Debug(msg string, args ...any) {
+	slog.Debug(msg, processArgs(args...)...)
 }
 
-// Int64Ptr creates an slog attribute for a nullable int64 pointer.
-// If the pointer is nil, it returns a null value, otherwise the dereferenced int64.
-func Int64Ptr(key string, val *int64) slog.Attr {
-	if val == nil {
-		return slog.String(key, "<nil>")
-	}
-	return slog.Int64(key, *val)
+// Info logs at info level with automatic nullable type handling
+func Info(msg string, args ...any) {
+	slog.Info(msg, processArgs(args...)...)
 }
 
-// IntPtr creates an slog attribute for a nullable int pointer.
-// If the pointer is nil, it returns a null value, otherwise the dereferenced int.
-func IntPtr(key string, val *int) slog.Attr {
-	if val == nil {
-		return slog.String(key, "<nil>")
-	}
-	return slog.Int(key, *val)
+// Warn logs at warn level with automatic nullable type handling
+func Warn(msg string, args ...any) {
+	slog.Warn(msg, processArgs(args...)...)
 }
 
-// BoolPtr creates an slog attribute for a nullable bool pointer.
-// If the pointer is nil, it returns a null value, otherwise the dereferenced bool.
-func BoolPtr(key string, val *bool) slog.Attr {
-	if val == nil {
-		return slog.String(key, "<nil>")
+// Error logs at error level with automatic nullable type handling
+func Error(msg string, args ...any) {
+	slog.Error(msg, processArgs(args...)...)
+}
+
+// derefPointer returns "<nil>" for nil pointers, the pointed-to value for non-nil
+// pointers, and the original value for non-pointers.
+func derefPointer(v any) any {
+	rv := reflect.ValueOf(v)
+	if !rv.IsValid() { // nil interface
+		return v
 	}
-	return slog.Bool(key, *val)
+
+	if rv.Kind() != reflect.Ptr {
+		return v
+	}
+
+	if rv.IsNil() {
+		return "<nil>"
+	}
+
+	return rv.Elem().Interface()
+}
+
+// processArgs processes alternating key/value args, dereferencing *any pointer type.
+func processArgs(in ...any) []any {
+	out := make([]any, 0, len(in))
+
+	for i := 0; i < len(in); i += 2 {
+		out = append(out, in[i]) // key
+
+		if i+1 < len(in) { // value
+			out = append(out, derefPointer(in[i+1]))
+		}
+	}
+
+	return out
 }

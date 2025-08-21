@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -740,7 +741,7 @@ func TestReleasePooledLicense_Success(t *testing.T) {
 	// checking the free license - need to get pool first
 	pool, err := store.GetPoolByName(ctx, poolName)
 	assert.NoError(t, err)
-	claimedLicense, err := store.GetLicenseWithPoolByGUID(ctx, pool, result.License.Guid)
+	claimedLicense, err := store.GetLicenseByGUID(ctx, result.License.Guid, db.WithPool(pool))
 	assert.NoError(t, err)
 	assert.Nil(t, claimedLicense.NodeID)
 	assert.NotNil(t, claimedLicense.LastReleasedAt)

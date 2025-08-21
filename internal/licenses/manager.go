@@ -199,7 +199,7 @@ func (m *manager) ListLicenses(ctx context.Context, poolName *string) ([]db.Lice
 
 		licenses, err = m.store.GetLicenses(ctx, db.WithPool(pool))
 	} else {
-		licenses, err = m.store.GetLicenses(ctx)
+		licenses, err = m.store.GetLicenses(ctx) // list all licenses
 	}
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -235,7 +235,7 @@ func (m *manager) GetLicenseByGUID(ctx context.Context, poolName *string, guid s
 
 		license, err = m.store.GetLicenseByGUID(ctx, guid, db.WithPool(pool))
 	} else {
-		license, err = m.store.GetLicenseByGUID(ctx, guid)
+		license, err = m.store.GetLicenseByGUID(ctx, guid) // query across all licenses
 	}
 
 	if err != nil {
@@ -279,11 +279,7 @@ func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprin
 	}
 
 	var license *db.License
-	if pool != nil {
-		license, err = qtx.GetLicenseByNodeID(ctx, &node.ID, db.WithPool(pool))
-	} else {
-		license, err = qtx.GetLicenseByNodeID(ctx, &node.ID, db.WithoutPool())
-	}
+	license, err = qtx.GetLicenseByNodeID(ctx, &node.ID, db.WithPool(pool))
 
 	// extend the lease if the node already has a lease on a license
 	if err == nil {
@@ -319,11 +315,7 @@ func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprin
 	}
 
 	// claim a new lease on a license if node doesn't have a lease
-	if pool != nil {
-		license, err = qtx.ClaimLicenseByStrategy(ctx, m.config.Strategy, &node.ID, db.WithPool(pool))
-	} else {
-		license, err = qtx.ClaimLicenseByStrategy(ctx, m.config.Strategy, &node.ID, db.WithoutPool())
-	}
+	license, err = qtx.ClaimLicenseByStrategy(ctx, m.config.Strategy, &node.ID, db.WithPool(pool))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			slog.Warn("no licenses available in pool", "nodeId", node.ID, "nodeFingerprint", node.Fingerprint)
@@ -392,11 +384,9 @@ func (m *manager) ReleaseLicense(ctx context.Context, poolName *string, fingerpr
 
 			return nil, ErrBadPool
 		}
-
-		license, err = qtx.GetLicenseByNodeID(ctx, &node.ID, db.WithPool(pool))
-	} else {
-		license, err = qtx.GetLicenseByNodeID(ctx, &node.ID, db.WithoutPool())
 	}
+
+	license, err = qtx.GetLicenseByNodeID(ctx, &node.ID, db.WithPool(pool))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			slog.Warn("license release failed - claimed license not found", "nodeFingerprint", node.Fingerprint)
@@ -407,11 +397,7 @@ func (m *manager) ReleaseLicense(ctx context.Context, poolName *string, fingerpr
 		return nil, fmt.Errorf("failed to fetch claimed license: %w", err)
 	}
 
-	if pool != nil {
-		err = qtx.ReleaseLicenseByNodeID(ctx, &node.ID, db.WithPool(pool))
-	} else {
-		err = qtx.ReleaseLicenseByNodeID(ctx, &node.ID, db.WithoutPool())
-	}
+	err = qtx.ReleaseLicenseByNodeID(ctx, &node.ID, db.WithPool(pool))
 	if err != nil {
 		return nil, fmt.Errorf("failed to release license: %w", err)
 	}

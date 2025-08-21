@@ -1,30 +1,53 @@
 package db
 
-type QueryOption func(*queryOptions)
+// AnyPool is a sentinel value indicating queries should match licenses regardless of pool
+var AnyPool = &Pool{ID: 0, Name: "<any>"}
 
-type queryOptions struct {
-	pool        *Pool
-	withoutPool bool
+// LicenseOption is a functional option for license queries
+type LicenseOption func(*licenseOptions)
+
+type licenseOptions struct {
+	// pool can be:
+	// - nil: query licenses with null pool_id
+	// - *Pool: query licenses with specific pool_id
+	// - AnyPool: query all licenses regardless of pool_id
+	pool *Pool
 }
 
-func WithPool(pool *Pool) QueryOption {
-	return func(opts *queryOptions) {
+// WithPool queries licenses for a specific pool
+func WithPool(pool *Pool) LicenseOption {
+	return func(opts *licenseOptions) {
 		opts.pool = pool
-		opts.withoutPool = false
 	}
 }
 
-func WithoutPool() QueryOption {
-	return func(opts *queryOptions) {
+// WithoutPool queries licenses without a pool
+func WithoutPool() LicenseOption {
+	return func(opts *licenseOptions) {
 		opts.pool = nil
-		opts.withoutPool = true
 	}
 }
 
-func applyOptions(opts ...QueryOption) *queryOptions {
-	options := &queryOptions{}
+// WithAnyPool queries all licenses regardless of pool
+func WithAnyPool() LicenseOption {
+	return func(opts *licenseOptions) {
+		opts.pool = AnyPool
+	}
+}
+
+func applyLicenseOptions(opts ...LicenseOption) *licenseOptions {
+	options := &licenseOptions{
+		pool: AnyPool, // default to all licenses
+	}
+
 	for _, opt := range opts {
 		opt(options)
 	}
+
 	return options
+}
+
+// isAnyPool checks if the pool is the AnyPool sentinel
+func isAnyPool(pool *Pool) bool {
+	return pool != nil && pool.ID == 0 && pool.Name == "<any>"
 }

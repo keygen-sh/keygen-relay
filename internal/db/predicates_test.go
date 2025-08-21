@@ -57,31 +57,31 @@ func TestIsAnyPool(t *testing.T) {
 	}
 }
 
-func TestLicenseOptions(t *testing.T) {
-	t.Run("default options", func(t *testing.T) {
-		opts := applyLicenseOptions()
+func TestLicensePredicates(t *testing.T) {
+	t.Run("default predicates", func(t *testing.T) {
+		opts := applyLicensePredicates()
 		if !isAnyPool(opts.pool) {
-			t.Error("expected default options to use AnyPool")
+			t.Error("expected default predicates to use AnyPool")
 		}
 	})
 
 	t.Run("WithPool", func(t *testing.T) {
 		pool := &Pool{ID: 1, Name: "test"}
-		opts := applyLicenseOptions(WithPool(pool))
+		opts := applyLicensePredicates(WithPool(pool))
 		if opts.pool != pool {
 			t.Errorf("expected pool to be %v, got %v", pool, opts.pool)
 		}
 	})
 
 	t.Run("WithoutPool", func(t *testing.T) {
-		opts := applyLicenseOptions(WithoutPool())
+		opts := applyLicensePredicates(WithoutPool())
 		if opts.pool != nil {
 			t.Errorf("expected pool to be nil, got %v", opts.pool)
 		}
 	})
 
 	t.Run("WithAnyPool", func(t *testing.T) {
-		opts := applyLicenseOptions(WithAnyPool())
+		opts := applyLicensePredicates(WithAnyPool())
 		if !isAnyPool(opts.pool) {
 			t.Error("expected pool to be AnyPool")
 		}
@@ -89,7 +89,7 @@ func TestLicenseOptions(t *testing.T) {
 
 	t.Run("last option wins", func(t *testing.T) {
 		pool := &Pool{ID: 1, Name: "test"}
-		opts := applyLicenseOptions(WithPool(pool), WithoutPool())
+		opts := applyLicensePredicates(WithPool(pool), WithoutPool())
 		if opts.pool != nil {
 			t.Errorf("expected pool to be nil (last option), got %v", opts.pool)
 		}

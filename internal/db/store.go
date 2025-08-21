@@ -90,57 +90,59 @@ func (s *Store) DeleteLicenseByGUID(ctx context.Context, id string) (*License, e
 	return &license, nil
 }
 
-func (s *Store) GetLicenses(ctx context.Context) ([]License, error) {
-	licenses, err := s.queries.GetLicenses(ctx)
+func (s *Store) GetLicenses(ctx context.Context, opts ...QueryOption) ([]License, error) {
+	options := applyOptions(opts...)
+	
+	var licenses []License
+	var err error
+	
+	if options.withoutPool {
+		licenses, err = s.queries.GetLicensesWithoutPool(ctx)
+	} else if options.pool != nil {
+		licenses, err = s.queries.GetLicensesWithPool(ctx, &options.pool.ID)
+	} else {
+		licenses, err = s.queries.GetLicenses(ctx)
+	}
+	
 	if err != nil {
 		return nil, err
 	}
-
+	
 	return licenses, nil
 }
 
-func (s *Store) GetLicensesWithPool(ctx context.Context, pool *Pool) ([]License, error) {
-	licenses, err := s.queries.GetLicensesWithPool(ctx, &pool.ID)
+func (s *Store) GetLicenseByGUID(ctx context.Context, id string, opts ...QueryOption) (*License, error) {
+	options := applyOptions(opts...)
+	
+	var license License
+	var err error
+	
+	if options.withoutPool {
+		license, err = s.queries.GetLicenseWithoutPoolByGUID(ctx, id)
+	} else if options.pool != nil {
+		license, err = s.queries.GetLicenseWithPoolByGUID(ctx, GetLicenseWithPoolByGUIDParams{id, &options.pool.ID})
+	} else {
+		license, err = s.queries.GetLicenseByGUID(ctx, id)
+	}
+	
 	if err != nil {
 		return nil, err
 	}
-
-	return licenses, nil
-}
-
-func (s *Store) GetLicenseByGUID(ctx context.Context, id string) (*License, error) {
-	license, err := s.queries.GetLicenseByGUID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
+	
 	return &license, nil
 }
 
-func (s *Store) GetLicenseWithoutPoolByGUID(ctx context.Context, id string) (*License, error) {
-	license, err := s.queries.GetLicenseWithoutPoolByGUID(ctx, id)
-	if err != nil {
-		return nil, err
+func (s *Store) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64, opts ...QueryOption) error {
+	options := applyOptions(opts...)
+	
+	if options.withoutPool {
+		return s.queries.ReleaseLicenseWithoutPoolByNodeID(ctx, nodeID)
+	} else if options.pool != nil {
+		return s.queries.ReleaseLicenseWithPoolByNodeID(ctx, ReleaseLicenseWithPoolByNodeIDParams{nodeID, &options.pool.ID})
+	} else {
+		// For backwards compatibility, default to without pool if no option specified
+		return s.queries.ReleaseLicenseWithoutPoolByNodeID(ctx, nodeID)
 	}
-
-	return &license, nil
-}
-
-func (s *Store) GetLicenseWithPoolByGUID(ctx context.Context, pool *Pool, id string) (*License, error) {
-	license, err := s.queries.GetLicenseWithPoolByGUID(ctx, GetLicenseWithPoolByGUIDParams{id, &pool.ID})
-	if err != nil {
-		return nil, err
-	}
-
-	return &license, nil
-}
-
-func (s *Store) ReleaseLicenseWithPoolByNodeID(ctx context.Context, pool *Pool, nodeID *int64) error {
-	return s.queries.ReleaseLicenseWithPoolByNodeID(ctx, ReleaseLicenseWithPoolByNodeIDParams{nodeID, &pool.ID})
-}
-
-func (s *Store) ReleaseLicenseWithoutPoolByNodeID(ctx context.Context, nodeID *int64) error {
-	return s.queries.ReleaseLicenseWithoutPoolByNodeID(ctx, nodeID)
 }
 
 func (s *Store) ActivateNode(ctx context.Context, fingerprint string) (*Node, error) {
@@ -260,101 +262,74 @@ func (s *Store) BulkInsertAuditLogs(ctx context.Context, logs []BulkInsertAuditL
 	return nil
 }
 
-func (s *Store) ClaimLicenseWithoutPoolFIFO(ctx context.Context, nodeID *int64) (*License, error) {
-	license, err := s.queries.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
+func (s *Store) ClaimLicenseByStrategy(ctx context.Context, strategy string, nodeID *int64, opts ...QueryOption) (*License, error) {
+	options := applyOptions(opts...)
+	
+	var license License
+	var err error
+	
+	if options.withoutPool {
+		switch strategy {
+		case "fifo":
+			license, err = s.queries.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
+		case "lifo":
+			license, err = s.queries.ClaimLicenseWithoutPoolLIFO(ctx, nodeID)
+		case "rand":
+			license, err = s.queries.ClaimLicenseWithoutPoolRandom(ctx, nodeID)
+		default:
+			license, err = s.queries.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
+		}
+	} else if options.pool != nil {
+		switch strategy {
+		case "fifo":
+			license, err = s.queries.ClaimLicenseWithPoolFIFO(ctx, ClaimLicenseWithPoolFIFOParams{nodeID, &options.pool.ID})
+		case "lifo":
+			license, err = s.queries.ClaimLicenseWithPoolLIFO(ctx, ClaimLicenseWithPoolLIFOParams{nodeID, &options.pool.ID})
+		case "rand":
+			license, err = s.queries.ClaimLicenseWithPoolRandom(ctx, ClaimLicenseWithPoolRandomParams{nodeID, &options.pool.ID})
+		default:
+			license, err = s.queries.ClaimLicenseWithPoolFIFO(ctx, ClaimLicenseWithPoolFIFOParams{nodeID, &options.pool.ID})
+		}
+	} else {
+		// Default to without pool for backwards compatibility
+		switch strategy {
+		case "fifo":
+			license, err = s.queries.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
+		case "lifo":
+			license, err = s.queries.ClaimLicenseWithoutPoolLIFO(ctx, nodeID)
+		case "rand":
+			license, err = s.queries.ClaimLicenseWithoutPoolRandom(ctx, nodeID)
+		default:
+			license, err = s.queries.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
+		}
+	}
+	
 	if err != nil {
 		return nil, err
 	}
-
+	
 	return &license, nil
 }
 
-func (s *Store) ClaimLicenseWithoutPoolLIFO(ctx context.Context, nodeID *int64) (*License, error) {
-	license, err := s.queries.ClaimLicenseWithoutPoolLIFO(ctx, nodeID)
+func (s *Store) GetLicenseByNodeID(ctx context.Context, nodeID *int64, opts ...QueryOption) (*License, error) {
+	options := applyOptions(opts...)
+	
+	var license License
+	var err error
+	
+	if options.withoutPool {
+		license, err = s.queries.GetLicenseWithoutPoolByNodeID(ctx, nodeID)
+	} else if options.pool != nil {
+		license, err = s.queries.GetLicenseWithPoolByNodeID(ctx, GetLicenseWithPoolByNodeIDParams{nodeID, &options.pool.ID})
+	} else {
+		// Default to without pool for backwards compatibility
+		license, err = s.queries.GetLicenseWithoutPoolByNodeID(ctx, nodeID)
+	}
+	
 	if err != nil {
 		return nil, err
 	}
-
-	return &license, nil
-}
-
-func (s *Store) ClaimLicenseWithoutPoolRandom(ctx context.Context, nodeID *int64) (*License, error) {
-	license, err := s.queries.ClaimLicenseWithoutPoolRandom(ctx, nodeID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &license, nil
-}
-
-func (s *Store) ClaimLicenseWithoutPoolByStrategy(ctx context.Context, strategy string, nodeID *int64) (*License, error) {
-	switch strategy {
-	case "fifo":
-		return s.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
-	case "lifo":
-		return s.ClaimLicenseWithoutPoolLIFO(ctx, nodeID)
-	case "rand":
-		return s.ClaimLicenseWithoutPoolRandom(ctx, nodeID)
-	default:
-		return s.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
-	}
-}
-
-func (s *Store) ClaimLicenseWithPoolFIFO(ctx context.Context, pool *Pool, nodeID *int64) (*License, error) {
-	license, err := s.queries.ClaimLicenseWithPoolFIFO(ctx, ClaimLicenseWithPoolFIFOParams{nodeID, &pool.ID})
-	if err != nil {
-		return nil, err
-	}
-
-	return &license, nil
-}
-
-func (s *Store) ClaimLicenseWithPoolLIFO(ctx context.Context, pool *Pool, nodeID *int64) (*License, error) {
-	license, err := s.queries.ClaimLicenseWithPoolLIFO(ctx, ClaimLicenseWithPoolLIFOParams{nodeID, &pool.ID})
-	if err != nil {
-		return nil, err
-	}
-
-	return &license, nil
-}
-
-func (s *Store) ClaimLicenseWithPoolRandom(ctx context.Context, pool *Pool, nodeID *int64) (*License, error) {
-	license, err := s.queries.ClaimLicenseWithPoolRandom(ctx, ClaimLicenseWithPoolRandomParams{nodeID, &pool.ID})
-	if err != nil {
-		return nil, err
-	}
-
-	return &license, nil
-}
-
-func (s *Store) ClaimLicenseWithPoolByStrategy(ctx context.Context, pool *Pool, strategy string, nodeID *int64) (*License, error) {
-	switch strategy {
-	case "fifo":
-		return s.ClaimLicenseWithPoolFIFO(ctx, pool, nodeID)
-	case "lifo":
-		return s.ClaimLicenseWithPoolLIFO(ctx, pool, nodeID)
-	case "rand":
-		return s.ClaimLicenseWithPoolRandom(ctx, pool, nodeID)
-	default:
-		return s.ClaimLicenseWithPoolFIFO(ctx, pool, nodeID)
-	}
-}
-
-func (s *Store) GetLicenseWithoutPoolByNodeID(ctx context.Context, nodeID *int64) (*License, error) {
-	license, err := s.queries.GetLicenseWithoutPoolByNodeID(ctx, nodeID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &license, nil
-}
-
-func (s *Store) GetLicenseWithPoolByNodeID(ctx context.Context, pool *Pool, nodeID *int64) (*License, error) {
-	license, err := s.queries.GetLicenseWithPoolByNodeID(ctx, GetLicenseWithPoolByNodeIDParams{nodeID, &pool.ID})
-	if err != nil {
-		return nil, err
-	}
-
+	
 	return &license, nil
 }
 

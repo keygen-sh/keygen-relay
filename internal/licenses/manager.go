@@ -11,6 +11,7 @@ import (
 
 	"github.com/keygen-sh/keygen-go/v3"
 	"github.com/keygen-sh/keygen-relay/internal/db"
+	"github.com/keygen-sh/keygen-relay/internal/logger"
 	"github.com/mattn/go-sqlite3"
 )
 
@@ -70,7 +71,7 @@ func (m *manager) AttachStore(store db.Store) {
 }
 
 func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFilePath string, licenseKey string, publicKey string) (*db.License, error) {
-	slog.Debug("starting to add a new license", "pool", deref(poolName), "filePath", licenseFilePath)
+	slog.Debug("starting to add a new license", logger.StringPtr("pool", poolName), "filePath", licenseFilePath)
 
 	cert, err := m.dataReader(licenseFilePath)
 	if err != nil {
@@ -145,7 +146,7 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 }
 
 func (m *manager) RemoveLicense(ctx context.Context, poolName *string, guid string) error {
-	slog.Debug("starting to remove license", "pool", deref(poolName), "licenseGuid", guid)
+	slog.Debug("starting to remove license", logger.StringPtr("pool", poolName), "licenseGuid", guid)
 
 	pool, err := m.resolvePool(ctx, poolName)
 	if err != nil {
@@ -176,7 +177,7 @@ func (m *manager) RemoveLicense(ctx context.Context, poolName *string, guid stri
 }
 
 func (m *manager) ListLicenses(ctx context.Context, poolName *string) ([]db.License, error) {
-	slog.Debug("fetching licenses", "pool", deref(poolName))
+	slog.Debug("fetching licenses", logger.StringPtr("pool", poolName))
 
 	pool, err := m.resolvePool(ctx, poolName)
 	if err != nil {
@@ -550,12 +551,3 @@ func isUniqueConstraintError(err error) bool {
 	return false
 }
 
-func deref[T any](t *T) T {
-	var zero T
-
-	if t == nil {
-		return zero
-	}
-
-	return *t
-}

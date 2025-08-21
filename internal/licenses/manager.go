@@ -147,16 +147,9 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 func (m *manager) RemoveLicense(ctx context.Context, poolName *string, guid string) error {
 	slog.Debug("starting to remove license", "pool", deref(poolName), "licenseGuid", guid)
 
-	var pool *db.Pool
-	var err error
-
-	if poolName != nil {
-		pool, err = m.store.GetPoolByName(ctx, *poolName)
-		if err != nil {
-			slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
-
-			return ErrBadPool
-		}
+	pool, err := m.resolvePool(ctx, poolName)
+	if err != nil {
+		return err
 	}
 
 	license, err := m.store.DeleteLicenseByGUID(ctx, guid)
@@ -185,18 +178,13 @@ func (m *manager) RemoveLicense(ctx context.Context, poolName *string, guid stri
 func (m *manager) ListLicenses(ctx context.Context, poolName *string) ([]db.License, error) {
 	slog.Debug("fetching licenses", "pool", deref(poolName))
 
+	pool, err := m.resolvePool(ctx, poolName)
+	if err != nil {
+		return nil, err
+	}
+
 	var licenses []db.License
-	var pool *db.Pool
-	var err error
-
-	if poolName != nil {
-		pool, err = m.store.GetPoolByName(ctx, *poolName)
-		if err != nil {
-			slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
-
-			return nil, ErrBadPool
-		}
-
+	if pool != nil {
 		licenses, err = m.store.GetLicenses(ctx, db.WithPool(pool))
 	} else {
 		licenses, err = m.store.GetLicenses(ctx) // list all licenses
@@ -221,18 +209,13 @@ func (m *manager) ListLicenses(ctx context.Context, poolName *string) ([]db.Lice
 func (m *manager) GetLicenseByGUID(ctx context.Context, poolName *string, guid string) (*db.License, error) {
 	slog.Debug("fetching license", "licenseGuid", guid)
 
+	pool, err := m.resolvePool(ctx, poolName)
+	if err != nil {
+		return nil, err
+	}
+
 	var license *db.License
-	var pool *db.Pool
-	var err error
-
-	if poolName != nil {
-		pool, err = m.store.GetPoolByName(ctx, *poolName)
-		if err != nil {
-			slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
-
-			return nil, ErrBadPool
-		}
-
+	if pool != nil {
 		license, err = m.store.GetLicenseByGUID(ctx, guid, db.WithPool(pool))
 	} else {
 		license, err = m.store.GetLicenseByGUID(ctx, guid) // query across all licenses
@@ -263,14 +246,9 @@ func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprin
 	qtx := m.store.WithTx(tx)
 	defer tx.Rollback()
 
-	var pool *db.Pool
-	if poolName != nil {
-		pool, err = qtx.GetPoolByName(ctx, *poolName)
-		if err != nil {
-			slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
-
-			return nil, ErrBadPool
-		}
+	pool, err := m.resolvePoolWithTx(ctx, qtx, poolName)
+	if err != nil {
+		return nil, err
 	}
 
 	node, err := m.findOrActivateNode(ctx, *qtx, pool, fingerprint)
@@ -374,17 +352,12 @@ func (m *manager) ReleaseLicense(ctx context.Context, poolName *string, fingerpr
 		return nil, fmt.Errorf("failed to fetch node: %w", err)
 	}
 
-	var license *db.License
-	var pool *db.Pool
-
-	if poolName != nil {
-		pool, err = qtx.GetPoolByName(ctx, *poolName)
-		if err != nil {
-			slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
-
-			return nil, ErrBadPool
-		}
+	pool, err := m.resolvePoolWithTx(ctx, qtx, poolName)
+	if err != nil {
+		return nil, err
 	}
+
+	var license *db.License
 
 	license, err = qtx.GetLicenseByNodeID(ctx, &node.ID, db.WithPool(pool))
 	if err != nil {
@@ -533,6 +506,38 @@ func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.No
 	}
 
 	return nodes, nil
+}
+
+// resolvePool resolves a pool name to a Pool object, returning nil if poolName is nil
+func (m *manager) resolvePool(ctx context.Context, poolName *string) (*db.Pool, error) {
+	if poolName == nil {
+		return nil, nil
+	}
+
+	pool, err := m.store.GetPoolByName(ctx, *poolName)
+	if err != nil {
+		slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
+
+		return nil, ErrBadPool
+	}
+
+	return pool, nil
+}
+
+// resolvePoolWithTx resolves a pool name to a Pool object using a transaction store
+func (m *manager) resolvePoolWithTx(ctx context.Context, qtx *db.Store, poolName *string) (*db.Pool, error) {
+	if poolName == nil {
+		return nil, nil
+	}
+
+	pool, err := qtx.GetPoolByName(ctx, *poolName)
+	if err != nil {
+		slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
+
+		return nil, ErrBadPool
+	}
+
+	return pool, nil
 }
 
 func isUniqueConstraintError(err error) bool {

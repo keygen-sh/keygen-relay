@@ -49,9 +49,8 @@ func TestIsAnyPool(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := isAnyPool(tt.pool)
-			if result != tt.expected {
-				t.Errorf("isAnyPool(%v) = %v, expected %v", tt.pool, result, tt.expected)
+			if actual := tt.pool == AnyPool; actual != tt.expected {
+				t.Errorf("%v == AnyPool = %v, expected %v", tt.pool, actual, tt.expected)
 			}
 		})
 	}
@@ -60,16 +59,22 @@ func TestIsAnyPool(t *testing.T) {
 func TestLicensePredicates(t *testing.T) {
 	t.Run("default predicates", func(t *testing.T) {
 		opts := applyLicensePredicates()
-		if !isAnyPool(opts.pool) {
+		if opts.pool != AnyPool {
 			t.Error("expected default predicates to use AnyPool")
 		}
 	})
 
 	t.Run("WithPool", func(t *testing.T) {
 		pool := &Pool{ID: 1, Name: "test"}
+
 		opts := applyLicensePredicates(WithPool(pool))
 		if opts.pool != pool {
 			t.Errorf("expected pool to be %v, got %v", pool, opts.pool)
+		}
+
+		opts = applyLicensePredicates(WithPool(nil))
+		if opts.pool != nil {
+			t.Errorf("expected pool to be %v, got %v", nil, opts.pool)
 		}
 	})
 
@@ -82,13 +87,14 @@ func TestLicensePredicates(t *testing.T) {
 
 	t.Run("WithAnyPool", func(t *testing.T) {
 		opts := applyLicensePredicates(WithAnyPool())
-		if !isAnyPool(opts.pool) {
+		if opts.pool != AnyPool {
 			t.Error("expected pool to be AnyPool")
 		}
 	})
 
 	t.Run("last option wins", func(t *testing.T) {
 		pool := &Pool{ID: 1, Name: "test"}
+
 		opts := applyLicensePredicates(WithPool(pool), WithoutPool())
 		if opts.pool != nil {
 			t.Errorf("expected pool to be nil (last option), got %v", opts.pool)

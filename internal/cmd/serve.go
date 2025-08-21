@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"log/slog"
 	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/locker"
+	"github.com/keygen-sh/keygen-relay/internal/logger"
 	"github.com/keygen-sh/keygen-relay/internal/output"
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/keygen-sh/keygen-relay/internal/try"
@@ -25,7 +25,9 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 	router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 		path, _ := route.GetPathTemplate()
-		slog.Debug("route registered", "path", path)
+
+		logger.Debug("route registered", "path", path)
+
 		return nil
 	})
 
@@ -41,6 +43,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 			if ttl, err := cmd.Flags().GetDuration("ttl"); err == nil {
 				if err := validateTTL(ttl); err != nil {
 					output.PrintError(cmd.ErrOrStderr(), err.Error())
+
 					return err
 				}
 			}
@@ -63,6 +66,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 			if err := srv.Run(); err != nil {
 				output.PrintError(cmd.ErrOrStderr(), err.Error())
+
 				return nil
 			}
 

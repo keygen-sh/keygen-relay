@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log/slog"
 	"time"
+
+	"github.com/keygen-sh/keygen-relay/internal/logger"
 )
 
 type EventTypeId int
@@ -327,7 +328,7 @@ func (s *Store) ReleaseLicensesFromDeadNodes(ctx context.Context, ttl time.Durat
 
 	licenses, err := s.queries.ReleaseLicensesFromDeadNodes(ctx, t)
 	if err != nil {
-		slog.Error("failed to release licenses from dead nodes", "error", err)
+		logger.Error("failed to release licenses from dead nodes", "error", err)
 
 		return nil, err
 	}
@@ -340,7 +341,7 @@ func (s *Store) DeactivateDeadNodes(ctx context.Context, ttl time.Duration) ([]N
 
 	nodes, err := s.queries.DeactivateDeadNodes(ctx, t)
 	if err != nil {
-		slog.Error("failed to deactivate dead nodes", "error", err)
+		logger.Error("failed to deactivate dead nodes", "error", err)
 
 		return nil, err
 	}

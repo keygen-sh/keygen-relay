@@ -25,18 +25,18 @@ type QuerierInterface interface {
 
 // mockQueries implements the query interface for testing
 type mockQueries struct {
-	getLicensesFunc                    func(ctx context.Context) ([]License, error)
-	getLicensesWithPoolFunc            func(ctx context.Context, poolID *int64) ([]License, error)
-	getLicensesWithoutPoolFunc         func(ctx context.Context) ([]License, error)
-	getLicenseByGUIDFunc               func(ctx context.Context, guid string) (License, error)
-	getLicenseWithPoolByGUIDFunc       func(ctx context.Context, params GetLicenseWithPoolByGUIDParams) (License, error)
-	getLicenseWithoutPoolByGUIDFunc    func(ctx context.Context, guid string) (License, error)
-	releaseLicenseWithPoolByNodeIDFunc func(ctx context.Context, params ReleaseLicenseWithPoolByNodeIDParams) error
+	getLicensesFunc                       func(ctx context.Context) ([]License, error)
+	getLicensesWithPoolFunc               func(ctx context.Context, poolID *int64) ([]License, error)
+	getLicensesWithoutPoolFunc            func(ctx context.Context) ([]License, error)
+	getLicenseByGUIDFunc                  func(ctx context.Context, guid string) (License, error)
+	getLicenseWithPoolByGUIDFunc          func(ctx context.Context, params GetLicenseWithPoolByGUIDParams) (License, error)
+	getLicenseWithoutPoolByGUIDFunc       func(ctx context.Context, guid string) (License, error)
+	releaseLicenseWithPoolByNodeIDFunc    func(ctx context.Context, params ReleaseLicenseWithPoolByNodeIDParams) error
 	releaseLicenseWithoutPoolByNodeIDFunc func(ctx context.Context, nodeID *int64) error
-	claimLicenseWithPoolFIFOFunc       func(ctx context.Context, params ClaimLicenseWithPoolFIFOParams) (License, error)
-	claimLicenseWithoutPoolFIFOFunc    func(ctx context.Context, nodeID *int64) (License, error)
-	getLicenseWithPoolByNodeIDFunc     func(ctx context.Context, params GetLicenseWithPoolByNodeIDParams) (License, error)
-	getLicenseWithoutPoolByNodeIDFunc  func(ctx context.Context, nodeID *int64) (License, error)
+	claimLicenseWithPoolFIFOFunc          func(ctx context.Context, params ClaimLicenseWithPoolFIFOParams) (License, error)
+	claimLicenseWithoutPoolFIFOFunc       func(ctx context.Context, nodeID *int64) (License, error)
+	getLicenseWithPoolByNodeIDFunc        func(ctx context.Context, params GetLicenseWithPoolByNodeIDParams) (License, error)
+	getLicenseWithoutPoolByNodeIDFunc     func(ctx context.Context, nodeID *int64) (License, error)
 }
 
 func (m *mockQueries) GetLicenses(ctx context.Context) ([]License, error) {
@@ -319,7 +319,7 @@ func newMockStore() *mockStore {
 func TestStore_GetLicenses(t *testing.T) {
 	ctx := context.Background()
 	testPool := &Pool{ID: 1, Name: "test"}
-	
+
 	tests := []struct {
 		name        string
 		predicates  []LicensePredicateFunc
@@ -374,7 +374,7 @@ func TestStore_GetLicenses(t *testing.T) {
 			tt.setupMock(mock)
 
 			licenses, err := store.GetLicenses(ctx, tt.predicates...)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("expected error but got none")
 			}
@@ -392,7 +392,7 @@ func TestStore_GetLicenseByGUID(t *testing.T) {
 	ctx := context.Background()
 	testGUID := "test-guid-123"
 	testPool := &Pool{ID: 1, Name: "test"}
-	
+
 	tests := []struct {
 		name        string
 		predicates  []LicensePredicateFunc
@@ -456,7 +456,7 @@ func TestStore_GetLicenseByGUID(t *testing.T) {
 			tt.setupMock(mock)
 
 			license, err := store.GetLicenseByGUID(ctx, testGUID, tt.predicates...)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("expected error but got none")
 			}
@@ -476,7 +476,7 @@ func TestStore_GetLicenseByGUID(t *testing.T) {
 func TestStore_ReleaseLicenseByNodeID_RejectsAnyPool(t *testing.T) {
 	ctx := context.Background()
 	testNodeID := int64(123)
-	
+
 	tests := []struct {
 		name       string
 		predicates []LicensePredicateFunc
@@ -508,7 +508,7 @@ func TestStore_ReleaseLicenseByNodeID_RejectsAnyPool(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newMockStore()
 			mock := store.queries.(*mockQueries)
-			
+
 			mock.releaseLicenseWithPoolByNodeIDFunc = func(ctx context.Context, params ReleaseLicenseWithPoolByNodeIDParams) error {
 				return nil
 			}
@@ -517,7 +517,7 @@ func TestStore_ReleaseLicenseByNodeID_RejectsAnyPool(t *testing.T) {
 			}
 
 			err := store.ReleaseLicenseByNodeID(ctx, &testNodeID, tt.predicates...)
-			
+
 			if tt.expectErr != nil {
 				if err == nil {
 					t.Errorf("expected error %v but got none", tt.expectErr)
@@ -536,7 +536,7 @@ func TestStore_ReleaseLicenseByNodeID_RejectsAnyPool(t *testing.T) {
 func TestStore_ClaimLicenseByStrategy_RejectsAnyPool(t *testing.T) {
 	ctx := context.Background()
 	testNodeID := int64(123)
-	
+
 	tests := []struct {
 		name       string
 		predicates []LicensePredicateFunc
@@ -568,7 +568,7 @@ func TestStore_ClaimLicenseByStrategy_RejectsAnyPool(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newMockStore()
 			mock := store.queries.(*mockQueries)
-			
+
 			mock.claimLicenseWithPoolFIFOFunc = func(ctx context.Context, params ClaimLicenseWithPoolFIFOParams) (License, error) {
 				return License{ID: 1}, nil
 			}
@@ -577,7 +577,7 @@ func TestStore_ClaimLicenseByStrategy_RejectsAnyPool(t *testing.T) {
 			}
 
 			_, err := store.ClaimLicenseByStrategy(ctx, "fifo", &testNodeID, tt.predicates...)
-			
+
 			if tt.expectErr != nil {
 				if err == nil {
 					t.Errorf("expected error %v but got none", tt.expectErr)
@@ -596,7 +596,7 @@ func TestStore_ClaimLicenseByStrategy_RejectsAnyPool(t *testing.T) {
 func TestStore_GetLicenseByNodeID_RejectsAnyPool(t *testing.T) {
 	ctx := context.Background()
 	testNodeID := int64(123)
-	
+
 	tests := []struct {
 		name       string
 		predicates []LicensePredicateFunc
@@ -628,7 +628,7 @@ func TestStore_GetLicenseByNodeID_RejectsAnyPool(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newMockStore()
 			mock := store.queries.(*mockQueries)
-			
+
 			mock.getLicenseWithPoolByNodeIDFunc = func(ctx context.Context, params GetLicenseWithPoolByNodeIDParams) (License, error) {
 				return License{ID: 1}, nil
 			}
@@ -637,7 +637,7 @@ func TestStore_GetLicenseByNodeID_RejectsAnyPool(t *testing.T) {
 			}
 
 			_, err := store.GetLicenseByNodeID(ctx, &testNodeID, tt.predicates...)
-			
+
 			if tt.expectErr != nil {
 				if err == nil {
 					t.Errorf("expected error %v but got none", tt.expectErr)

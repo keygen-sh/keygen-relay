@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 	"time"
 
@@ -71,22 +70,22 @@ func (m *manager) AttachStore(store db.Store) {
 }
 
 func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFilePath string, licenseKey string, publicKey string) (*db.License, error) {
-	slog.Debug("starting to add a new license", logger.StringPtr("pool", poolName), "filePath", licenseFilePath)
+	logger.Debug("starting to add a new license", "pool", poolName, "filePath", licenseFilePath)
 
 	cert, err := m.dataReader(licenseFilePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			slog.Warn("license file not found", "filePath", licenseFilePath)
+			logger.Warn("license file not found", "filePath", licenseFilePath)
 
 			return nil, fmt.Errorf("license file not found at '%s'", licenseFilePath)
 		}
 
-		slog.Error("failed to read license file", "filePath", licenseFilePath, "error", err)
+		logger.Error("failed to read license file", "filePath", licenseFilePath, "error", err)
 
 		return nil, fmt.Errorf("failed to read license file: %w", err)
 	}
 
-	slog.Debug("successfully read the license file", "filePath", licenseFilePath)
+	logger.Debug("successfully read the license file", "filePath", licenseFilePath)
 
 	lic := m.verifier(cert)
 	keygen.PublicKey = publicKey
@@ -120,7 +119,7 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 
 	license, err := qtx.InsertLicense(ctx, pool, guid, cert, key)
 	if err != nil {
-		slog.Debug("failed to insert license", "licenseGuid", guid, "error", err)
+		logger.Debug("failed to insert license", "licenseGuid", guid, "error", err)
 
 		if isUniqueConstraintError(err) {
 			return nil, fmt.Errorf("license with the provided key already exists")
@@ -136,17 +135,17 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
 		if err := m.store.InsertAuditLog(ctx, pool, db.EventTypeLicenseAdded, db.EntityTypeLicense, license.ID); err != nil {
-			slog.Debug("failed to insert audit log", "licenseGuid", guid, "error", err)
+			logger.Debug("failed to insert audit log", "licenseGuid", guid, "error", err)
 		}
 	}
 
-	slog.Debug("added license successfully", "licenseGuid", guid)
+	logger.Debug("added license successfully", "licenseGuid", guid)
 
 	return license, nil
 }
 
 func (m *manager) RemoveLicense(ctx context.Context, poolName *string, guid string) error {
-	slog.Debug("starting to remove license", logger.StringPtr("pool", poolName), "licenseGuid", guid)
+	logger.Debug("starting to remove license", "pool", poolName, "licenseGuid", guid)
 
 	pool, err := m.resolvePool(ctx, poolName)
 	if err != nil {
@@ -159,7 +158,7 @@ func (m *manager) RemoveLicense(ctx context.Context, poolName *string, guid stri
 			return fmt.Errorf("license %s not found", guid)
 		}
 
-		slog.Debug("failed to delete license", "licenseGuid", guid, "error", err)
+		logger.Debug("failed to delete license", "licenseGuid", guid, "error", err)
 
 		return fmt.Errorf("failed to delete license: %w", err)
 	}
@@ -167,17 +166,17 @@ func (m *manager) RemoveLicense(ctx context.Context, poolName *string, guid stri
 	// Log audit, but do not fail the operation if it fails
 	if m.config.EnabledAudit {
 		if err := m.store.InsertAuditLog(ctx, pool, db.EventTypeLicenseRemoved, db.EntityTypeLicense, license.ID); err != nil {
-			slog.Debug("failed to insert audit log", "licenseGuid", guid, "error", err)
+			logger.Debug("failed to insert audit log", "licenseGuid", guid, "error", err)
 		}
 	}
 
-	slog.Debug("removed license successfully", "licenseGuid", guid)
+	logger.Debug("removed license successfully", "licenseGuid", guid)
 
 	return nil
 }
 
 func (m *manager) ListLicenses(ctx context.Context, poolName *string) ([]db.License, error) {
-	slog.Debug("fetching licenses", logger.StringPtr("pool", poolName))
+	logger.Debug("fetching licenses", "pool", poolName)
 
 	pool, err := m.resolvePool(ctx, poolName)
 	if err != nil {
@@ -192,23 +191,23 @@ func (m *manager) ListLicenses(ctx context.Context, poolName *string) ([]db.Lice
 	}
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Debug("license pool is empty")
+			logger.Debug("license pool is empty")
 
 			return nil, ErrNoLicenses
 		}
 
-		slog.Debug("failed to fetch licenses", "error", err)
+		logger.Debug("failed to fetch licenses", "error", err)
 
 		return nil, err
 	}
 
-	slog.Debug("fetched licenses successfully", "count", len(licenses))
+	logger.Debug("fetched licenses successfully", "count", len(licenses))
 
 	return licenses, nil
 }
 
 func (m *manager) GetLicenseByGUID(ctx context.Context, poolName *string, guid string) (*db.License, error) {
-	slog.Debug("fetching license", "licenseGuid", guid)
+	logger.Debug("fetching license", "licenseGuid", guid)
 
 	pool, err := m.resolvePool(ctx, poolName)
 	if err != nil {
@@ -224,17 +223,17 @@ func (m *manager) GetLicenseByGUID(ctx context.Context, poolName *string, guid s
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Debug("license not found", "licenseGuid", guid)
+			logger.Debug("license not found", "licenseGuid", guid)
 
 			return nil, fmt.Errorf("license %s: %w", guid, ErrLicenseNotFound)
 		}
 
-		slog.Debug("failed to fetch license by ID", "licenseGuid", guid, "error", err)
+		logger.Debug("failed to fetch license by ID", "licenseGuid", guid, "error", err)
 
 		return nil, err
 	}
 
-	slog.Debug("fetched license successfully", "licenseGuid", guid)
+	logger.Debug("fetched license successfully", "licenseGuid", guid)
 
 	return license, nil
 }
@@ -263,7 +262,7 @@ func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprin
 	// extend the lease if the node already has a lease on a license
 	if err == nil {
 		if !m.config.ExtendOnHeartbeat { // if heartbeat is disabled, we can't extend the claimed license
-			slog.Warn("failed to claim license due to conflict due to heartbeat disabled", "nodeID", node.ID, "nodeFingerprint", node.Fingerprint)
+			logger.Warn("failed to claim license due to conflict due to heartbeat disabled", "nodeID", node.ID, "nodeFingerprint", node.Fingerprint)
 
 			return &LicenseOperationResult{Status: OperationStatusConflict}, nil
 		}
@@ -281,11 +280,11 @@ func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprin
 				{EventTypeID: db.EventTypeLicenseLeaseExtended, EntityTypeID: db.EntityTypeLicense, EntityID: license.ID, Pool: pool},
 				{EventTypeID: db.EventTypeNodeHeartbeatPing, EntityTypeID: db.EntityTypeNode, EntityID: node.ID, Pool: pool},
 			}); err != nil {
-				slog.Warn("failed to insert audit logs", "error", err)
+				logger.Warn("failed to insert audit logs", "error", err)
 			}
 		}
 
-		slog.Info("lease extended successfully", "licenseGuid", license.Guid)
+		logger.Info("lease extended successfully", "licenseGuid", license.Guid)
 
 		return &LicenseOperationResult{
 			License: license,
@@ -297,7 +296,7 @@ func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprin
 	license, err = qtx.ClaimLicenseByStrategy(ctx, m.config.Strategy, &node.ID, db.WithPool(pool))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Warn("no licenses available in pool", "nodeId", node.ID, "nodeFingerprint", node.Fingerprint)
+			logger.Warn("no licenses available in pool", "nodeId", node.ID, "nodeFingerprint", node.Fingerprint)
 
 			return &LicenseOperationResult{Status: OperationStatusNoLicensesAvailable}, nil
 		}
@@ -322,11 +321,11 @@ func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprin
 			{Pool: pool, EventTypeID: db.EventTypeLicenseLeased, EntityTypeID: db.EntityTypeLicense, EntityID: license.ID},
 			{Pool: pool, EventTypeID: db.EventTypeNodeHeartbeatPing, EntityTypeID: db.EntityTypeNode, EntityID: node.ID},
 		}); err != nil {
-			slog.Warn("failed to insert audit logs", "error", err)
+			logger.Warn("failed to insert audit logs", "error", err)
 		}
 	}
 
-	slog.Info("new lease claimed successfully", "licenseGuid", license.Guid)
+	logger.Info("new lease claimed successfully", "licenseGuid", license.Guid)
 
 	return &LicenseOperationResult{
 		License: license,
@@ -345,7 +344,7 @@ func (m *manager) ReleaseLicense(ctx context.Context, poolName *string, fingerpr
 	node, err := qtx.GetNodeByFingerprint(ctx, fingerprint)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Warn("license release failed - node not found", "fingerprint", fingerprint)
+			logger.Warn("license release failed - node not found", "fingerprint", fingerprint)
 
 			return &LicenseOperationResult{Status: OperationStatusNotFound}, nil
 		}
@@ -363,7 +362,7 @@ func (m *manager) ReleaseLicense(ctx context.Context, poolName *string, fingerpr
 	license, err = qtx.GetLicenseByNodeID(ctx, &node.ID, db.WithPool(pool))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Warn("license release failed - claimed license not found", "nodeFingerprint", node.Fingerprint)
+			logger.Warn("license release failed - claimed license not found", "nodeFingerprint", node.Fingerprint)
 
 			return &LicenseOperationResult{Status: OperationStatusNotFound}, nil
 		}
@@ -389,11 +388,11 @@ func (m *manager) ReleaseLicense(ctx context.Context, poolName *string, fingerpr
 			{Pool: pool, EventTypeID: db.EventTypeLicenseReleased, EntityTypeID: db.EntityTypeLicense, EntityID: license.ID},
 			{Pool: pool, EventTypeID: db.EventTypeNodeDeactivated, EntityTypeID: db.EntityTypeNode, EntityID: node.ID},
 		}); err != nil {
-			slog.Warn("failed to insert audit logs", "error", err)
+			logger.Warn("failed to insert audit logs", "error", err)
 		}
 	}
 
-	slog.Info("license released successfully", "licenseGuid", license.Guid)
+	logger.Info("license released successfully", "licenseGuid", license.Guid)
 
 	return &LicenseOperationResult{Status: OperationStatusSuccess}, nil
 }
@@ -408,18 +407,18 @@ func (m *manager) findOrCreatePool(ctx context.Context, store db.Store, name str
 		if errors.Is(err, sql.ErrNoRows) {
 			pool, err = store.CreatePool(ctx, name)
 			if err != nil {
-				slog.Error("failed to insert pool", "poolName", name, "error", err)
+				logger.Error("failed to insert pool", "poolName", name, "error", err)
 
 				return nil, fmt.Errorf("failed to insert pool: %w", err)
 			}
 
 			if m.config.EnabledAudit {
 				if err := store.InsertAuditLog(ctx, nil, db.EventTypePoolAdded, db.EntityTypePool, pool.ID); err != nil {
-					slog.Warn("failed to insert audit log", "poolID", pool.ID, "poolName", pool.Name, "error", err)
+					logger.Warn("failed to insert audit log", "poolID", pool.ID, "poolName", pool.Name, "error", err)
 				}
 			}
 		} else {
-			slog.Error("failed to find pool", "poolName", name, "error", err)
+			logger.Error("failed to find pool", "poolName", name, "error", err)
 
 			return nil, fmt.Errorf("failed to fetch pool: %w", err)
 		}
@@ -434,18 +433,18 @@ func (m *manager) findOrActivateNode(ctx context.Context, store db.Store, pool *
 		if errors.Is(err, sql.ErrNoRows) {
 			node, err = store.ActivateNode(ctx, fingerprint)
 			if err != nil {
-				slog.Error("failed to insert node", "nodeFingerprint", fingerprint, "error", err)
+				logger.Error("failed to insert node", "nodeFingerprint", fingerprint, "error", err)
 
 				return nil, fmt.Errorf("failed to insert node: %w", err)
 			}
 
 			if m.config.EnabledAudit {
 				if err := store.InsertAuditLog(ctx, pool, db.EventTypeNodeActivated, db.EntityTypeNode, node.ID); err != nil {
-					slog.Warn("failed to insert audit log", "nodeID", node.ID, "nodeFingerprint", node.Fingerprint, "error", err)
+					logger.Warn("failed to insert audit log", "nodeID", node.ID, "nodeFingerprint", node.Fingerprint, "error", err)
 				}
 			}
 		} else {
-			slog.Error("failed to find node", "nodeFingerprint", fingerprint, "error", err)
+			logger.Error("failed to find node", "nodeFingerprint", fingerprint, "error", err)
 
 			return nil, fmt.Errorf("failed to fetch node: %w", err)
 		}
@@ -464,20 +463,20 @@ func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.No
 
 	licenses, err := qtx.ReleaseLicensesFromDeadNodes(ctx, ttl)
 	if err != nil {
-		slog.Error("failed to release licenses from dead nodes", "error", err)
+		logger.Error("failed to release licenses from dead nodes", "error", err)
 
 		return nil, err
 	}
 
 	nodes, err := qtx.DeactivateDeadNodes(ctx, ttl)
 	if err != nil {
-		slog.Error("failed to deactivate dead nodes", "error", err)
+		logger.Error("failed to deactivate dead nodes", "error", err)
 
 		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		slog.Error("failed to commit transaction", "error", err)
+		logger.Error("failed to commit transaction", "error", err)
 
 		return nil, err
 	}
@@ -502,7 +501,7 @@ func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.No
 		}
 
 		if err := m.store.BulkInsertAuditLogs(ctx, logs); err != nil {
-			slog.Warn("failed to insert audit logs", "error", err)
+			logger.Warn("failed to insert audit logs", "error", err)
 		}
 	}
 
@@ -517,7 +516,7 @@ func (m *manager) resolvePool(ctx context.Context, poolName *string) (*db.Pool, 
 
 	pool, err := m.store.GetPoolByName(ctx, *poolName)
 	if err != nil {
-		slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
+		logger.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
 
 		return nil, ErrBadPool
 	}
@@ -533,7 +532,7 @@ func (m *manager) resolvePoolWithTx(ctx context.Context, qtx *db.Store, poolName
 
 	pool, err := qtx.GetPoolByName(ctx, *poolName)
 	if err != nil {
-		slog.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
+		logger.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
 
 		return nil, ErrBadPool
 	}
@@ -550,4 +549,3 @@ func isUniqueConstraintError(err error) bool {
 
 	return false
 }
-

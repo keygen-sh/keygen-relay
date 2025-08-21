@@ -3,11 +3,11 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/logger"
 )
 
 type RequestBodyPayload struct {
@@ -64,7 +64,7 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.manager.ClaimLicense(r.Context(), pool, fingerprint)
 	if err != nil {
-		slog.Error("failed to claim license", "error", err)
+		logger.Error("failed to claim license", "error", err)
 
 		if errors.Is(err, licenses.ErrBadPool) {
 			w.Header().Set("Content-Type", "application/json")
@@ -125,7 +125,7 @@ func (h *handler) ReleaseLicense(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.manager.ReleaseLicense(r.Context(), pool, fingerprint)
 	if err != nil {
-		slog.Error("failed to release license", "error", err)
+		logger.Error("failed to release license", "error", err)
 
 		if errors.Is(err, licenses.ErrBadPool) {
 			w.Header().Set("Content-Type", "application/json")

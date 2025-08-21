@@ -132,7 +132,7 @@ func (s *Store) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64, predi
 
 	if preds.pool != nil {
 		if preds.pool == AnyPool {
-			return fmt.Errorf("ReleaseLicenseByNodeID requires specific pool or null pool, not AnyPool")
+			return ErrAnyPoolNotSupported
 		}
 
 		return s.queries.ReleaseLicenseWithPoolByNodeID(ctx, ReleaseLicenseWithPoolByNodeIDParams{nodeID, &preds.pool.ID})
@@ -266,7 +266,7 @@ func (s *Store) ClaimLicenseByStrategy(ctx context.Context, strategy string, nod
 
 	if preds.pool != nil {
 		if preds.pool == AnyPool {
-			return nil, fmt.Errorf("ClaimLicenseByStrategy requires specific pool or null pool, not AnyPool")
+			return nil, ErrAnyPoolNotSupported
 		}
 
 		switch strategy {
@@ -307,7 +307,7 @@ func (s *Store) GetLicenseByNodeID(ctx context.Context, nodeID *int64, predicate
 
 	if preds.pool != nil {
 		if preds.pool == AnyPool {
-			return nil, fmt.Errorf("GetLicenseByNodeID requires specific pool or null pool, not AnyPool")
+			return nil, ErrAnyPoolNotSupported
 		}
 
 		license, err = s.queries.GetLicenseWithPoolByNodeID(ctx, GetLicenseWithPoolByNodeIDParams{nodeID, &preds.pool.ID})

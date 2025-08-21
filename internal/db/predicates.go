@@ -1,5 +1,13 @@
 package db
 
+import "errors"
+
+type PredicateError error
+
+var (
+	ErrAnyPoolNotSupported PredicateError = errors.New("must provide a pool predicate for query (expected *Pool or nil, got AnyPool)")
+)
+
 // AnyPool is a sentinel value indicating queries should match licenses regardless of pool
 var AnyPool = &Pool{ID: 0, Name: "<any>"}
 

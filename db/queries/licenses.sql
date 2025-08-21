@@ -8,32 +8,38 @@ SELECT *
 FROM licenses
 WHERE guid = ?;
 
--- name: GetUnpooledLicenseByGUID :one
+-- name: GetLicenseWithoutPoolByGUID :one
 SELECT *
 FROM licenses
 WHERE guid = ? and pool_id IS NULL;
 
--- name: GetPooledLicenseByGUID :one
+-- name: GetLicenseWithPoolByGUID :one
 SELECT *
 FROM licenses
 WHERE guid = ? AND pool_id = ?;
 
--- name: GetLicenseByNodeID :one
+-- name: GetLicenseWithoutPoolByNodeID :one
 SELECT *
 FROM licenses
 WHERE node_id = ? and pool_id IS NULL;
 
--- name: GetPooledLicenseByNodeID :one
+-- name: GetLicenseWithPoolByNodeID :one
 SELECT *
 FROM licenses
 WHERE node_id = ? AND pool_id = ?;
 
--- name: GetAllLicenses :many
+-- name: GetLicenses :many
 SELECT *
 FROM licenses
 ORDER BY id;
 
--- name: GetPooledLicenses :many
+-- name: GetLicensesWithoutPool :many
+SELECT *
+FROM licenses
+WHERE pool_id IS NULL
+ORDER BY id;
+
+-- name: GetLicensesWithPool :many
 SELECT *
 FROM licenses
 WHERE pool_id = ?
@@ -44,17 +50,17 @@ DELETE FROM licenses
 WHERE guid = ?
 RETURNING *;
 
--- name: ReleaseLicenseByNodeID :exec
+-- name: ReleaseLicenseWithoutPoolByNodeID :exec
 UPDATE licenses
 SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id = ? AND pool_id IS NULL;
 
--- name: ReleasePooledLicenseByNodeID :exec
+-- name: ReleaseLicenseWithPoolByNodeID :exec
 UPDATE licenses
 SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id = ? AND pool_id = ?;
 
--- name: ClaimLicenseFIFO :one
+-- name: ClaimLicenseWithoutPoolFIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -66,7 +72,7 @@ WHERE id = (
 )
 RETURNING *;
 
--- name: ClaimPooledLicenseFIFO :one
+-- name: ClaimLicenseWithPoolFIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -78,7 +84,7 @@ WHERE id = (
 )
 RETURNING *;
 
--- name: ClaimLicenseLIFO :one
+-- name: ClaimLicenseWithoutPoolLIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -90,7 +96,7 @@ WHERE id = (
 )
 RETURNING *;
 
--- name: ClaimPooledLicenseLIFO :one
+-- name: ClaimLicenseWithPoolLIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -102,7 +108,7 @@ WHERE id = (
 )
 RETURNING *;
 
--- name: ClaimLicenseRandom :one
+-- name: ClaimLicenseWithoutPoolRandom :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -114,7 +120,7 @@ WHERE id = (
 )
 RETURNING *;
 
--- name: ClaimPooledLicenseRandom :one
+-- name: ClaimLicenseWithPoolRandom :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (

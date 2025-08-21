@@ -740,7 +740,7 @@ func TestReleasePooledLicense_Success(t *testing.T) {
 	// checking the free license - need to get pool first
 	pool, err := store.GetPoolByName(ctx, poolName)
 	assert.NoError(t, err)
-	claimedLicense, err := store.GetPooledLicenseByGUID(ctx, pool, result.License.Guid)
+	claimedLicense, err := store.GetLicenseWithPoolByGUID(ctx, pool, result.License.Guid)
 	assert.NoError(t, err)
 	assert.Nil(t, claimedLicense.NodeID)
 	assert.NotNil(t, claimedLicense.LastReleasedAt)

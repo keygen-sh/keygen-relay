@@ -9,100 +9,7 @@ import (
 	"context"
 )
 
-const claimLicenseFIFO = `-- name: ClaimLicenseFIFO :one
-UPDATE licenses
-SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
-WHERE id = (
-    SELECT l.id
-    FROM licenses l
-    WHERE l.node_id IS NULL AND l.pool_id IS NULL
-    ORDER BY l.created_at ASC
-    LIMIT 1
-)
-RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
-`
-
-func (q *Queries) ClaimLicenseFIFO(ctx context.Context, nodeID *int64) (License, error) {
-	row := q.db.QueryRowContext(ctx, claimLicenseFIFO, nodeID)
-	var i License
-	err := row.Scan(
-		&i.ID,
-		&i.Guid,
-		&i.File,
-		&i.Key,
-		&i.Claims,
-		&i.LastClaimedAt,
-		&i.LastReleasedAt,
-		&i.NodeID,
-		&i.PoolID,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const claimLicenseLIFO = `-- name: ClaimLicenseLIFO :one
-UPDATE licenses
-SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
-WHERE id = (
-    SELECT l.id
-    FROM licenses l
-    WHERE l.node_id IS NULL AND l.pool_id IS NULL
-    ORDER BY l.created_at DESC
-    LIMIT 1
-)
-RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
-`
-
-func (q *Queries) ClaimLicenseLIFO(ctx context.Context, nodeID *int64) (License, error) {
-	row := q.db.QueryRowContext(ctx, claimLicenseLIFO, nodeID)
-	var i License
-	err := row.Scan(
-		&i.ID,
-		&i.Guid,
-		&i.File,
-		&i.Key,
-		&i.Claims,
-		&i.LastClaimedAt,
-		&i.LastReleasedAt,
-		&i.NodeID,
-		&i.PoolID,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const claimLicenseRandom = `-- name: ClaimLicenseRandom :one
-UPDATE licenses
-SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
-WHERE id = (
-    SELECT l.id
-    FROM licenses l
-    WHERE l.node_id IS NULL AND l.pool_id IS NULL
-    ORDER BY RANDOM()
-    LIMIT 1
-)
-RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
-`
-
-func (q *Queries) ClaimLicenseRandom(ctx context.Context, nodeID *int64) (License, error) {
-	row := q.db.QueryRowContext(ctx, claimLicenseRandom, nodeID)
-	var i License
-	err := row.Scan(
-		&i.ID,
-		&i.Guid,
-		&i.File,
-		&i.Key,
-		&i.Claims,
-		&i.LastClaimedAt,
-		&i.LastReleasedAt,
-		&i.NodeID,
-		&i.PoolID,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const claimPooledLicenseFIFO = `-- name: ClaimPooledLicenseFIFO :one
+const claimLicenseWithPoolFIFO = `-- name: ClaimLicenseWithPoolFIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -115,13 +22,13 @@ WHERE id = (
 RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 `
 
-type ClaimPooledLicenseFIFOParams struct {
+type ClaimLicenseWithPoolFIFOParams struct {
 	NodeID *int64
 	PoolID *int64
 }
 
-func (q *Queries) ClaimPooledLicenseFIFO(ctx context.Context, arg ClaimPooledLicenseFIFOParams) (License, error) {
-	row := q.db.QueryRowContext(ctx, claimPooledLicenseFIFO, arg.NodeID, arg.PoolID)
+func (q *Queries) ClaimLicenseWithPoolFIFO(ctx context.Context, arg ClaimLicenseWithPoolFIFOParams) (License, error) {
+	row := q.db.QueryRowContext(ctx, claimLicenseWithPoolFIFO, arg.NodeID, arg.PoolID)
 	var i License
 	err := row.Scan(
 		&i.ID,
@@ -138,7 +45,7 @@ func (q *Queries) ClaimPooledLicenseFIFO(ctx context.Context, arg ClaimPooledLic
 	return i, err
 }
 
-const claimPooledLicenseLIFO = `-- name: ClaimPooledLicenseLIFO :one
+const claimLicenseWithPoolLIFO = `-- name: ClaimLicenseWithPoolLIFO :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -151,13 +58,13 @@ WHERE id = (
 RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 `
 
-type ClaimPooledLicenseLIFOParams struct {
+type ClaimLicenseWithPoolLIFOParams struct {
 	NodeID *int64
 	PoolID *int64
 }
 
-func (q *Queries) ClaimPooledLicenseLIFO(ctx context.Context, arg ClaimPooledLicenseLIFOParams) (License, error) {
-	row := q.db.QueryRowContext(ctx, claimPooledLicenseLIFO, arg.NodeID, arg.PoolID)
+func (q *Queries) ClaimLicenseWithPoolLIFO(ctx context.Context, arg ClaimLicenseWithPoolLIFOParams) (License, error) {
+	row := q.db.QueryRowContext(ctx, claimLicenseWithPoolLIFO, arg.NodeID, arg.PoolID)
 	var i License
 	err := row.Scan(
 		&i.ID,
@@ -174,7 +81,7 @@ func (q *Queries) ClaimPooledLicenseLIFO(ctx context.Context, arg ClaimPooledLic
 	return i, err
 }
 
-const claimPooledLicenseRandom = `-- name: ClaimPooledLicenseRandom :one
+const claimLicenseWithPoolRandom = `-- name: ClaimLicenseWithPoolRandom :one
 UPDATE licenses
 SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
 WHERE id = (
@@ -187,13 +94,106 @@ WHERE id = (
 RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 `
 
-type ClaimPooledLicenseRandomParams struct {
+type ClaimLicenseWithPoolRandomParams struct {
 	NodeID *int64
 	PoolID *int64
 }
 
-func (q *Queries) ClaimPooledLicenseRandom(ctx context.Context, arg ClaimPooledLicenseRandomParams) (License, error) {
-	row := q.db.QueryRowContext(ctx, claimPooledLicenseRandom, arg.NodeID, arg.PoolID)
+func (q *Queries) ClaimLicenseWithPoolRandom(ctx context.Context, arg ClaimLicenseWithPoolRandomParams) (License, error) {
+	row := q.db.QueryRowContext(ctx, claimLicenseWithPoolRandom, arg.NodeID, arg.PoolID)
+	var i License
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.File,
+		&i.Key,
+		&i.Claims,
+		&i.LastClaimedAt,
+		&i.LastReleasedAt,
+		&i.NodeID,
+		&i.PoolID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const claimLicenseWithoutPoolFIFO = `-- name: ClaimLicenseWithoutPoolFIFO :one
+UPDATE licenses
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
+WHERE id = (
+    SELECT l.id
+    FROM licenses l
+    WHERE l.node_id IS NULL AND l.pool_id IS NULL
+    ORDER BY l.created_at ASC
+    LIMIT 1
+)
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
+`
+
+func (q *Queries) ClaimLicenseWithoutPoolFIFO(ctx context.Context, nodeID *int64) (License, error) {
+	row := q.db.QueryRowContext(ctx, claimLicenseWithoutPoolFIFO, nodeID)
+	var i License
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.File,
+		&i.Key,
+		&i.Claims,
+		&i.LastClaimedAt,
+		&i.LastReleasedAt,
+		&i.NodeID,
+		&i.PoolID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const claimLicenseWithoutPoolLIFO = `-- name: ClaimLicenseWithoutPoolLIFO :one
+UPDATE licenses
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
+WHERE id = (
+    SELECT l.id
+    FROM licenses l
+    WHERE l.node_id IS NULL AND l.pool_id IS NULL
+    ORDER BY l.created_at DESC
+    LIMIT 1
+)
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
+`
+
+func (q *Queries) ClaimLicenseWithoutPoolLIFO(ctx context.Context, nodeID *int64) (License, error) {
+	row := q.db.QueryRowContext(ctx, claimLicenseWithoutPoolLIFO, nodeID)
+	var i License
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.File,
+		&i.Key,
+		&i.Claims,
+		&i.LastClaimedAt,
+		&i.LastReleasedAt,
+		&i.NodeID,
+		&i.PoolID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const claimLicenseWithoutPoolRandom = `-- name: ClaimLicenseWithoutPoolRandom :one
+UPDATE licenses
+SET node_id = ?, last_claimed_at = unixepoch(), claims = claims + 1
+WHERE id = (
+    SELECT l.id
+    FROM licenses l
+    WHERE l.node_id IS NULL AND l.pool_id IS NULL
+    ORDER BY RANDOM()
+    LIMIT 1
+)
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
+`
+
+func (q *Queries) ClaimLicenseWithoutPoolRandom(ctx context.Context, nodeID *int64) (License, error) {
+	row := q.db.QueryRowContext(ctx, claimLicenseWithoutPoolRandom, nodeID)
 	var i License
 	err := row.Scan(
 		&i.ID,
@@ -234,46 +234,6 @@ func (q *Queries) DeleteLicenseByGUID(ctx context.Context, guid string) (License
 	return i, err
 }
 
-const getAllLicenses = `-- name: GetAllLicenses :many
-SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
-FROM licenses
-ORDER BY id
-`
-
-func (q *Queries) GetAllLicenses(ctx context.Context) ([]License, error) {
-	rows, err := q.db.QueryContext(ctx, getAllLicenses)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []License
-	for rows.Next() {
-		var i License
-		if err := rows.Scan(
-			&i.ID,
-			&i.Guid,
-			&i.File,
-			&i.Key,
-			&i.Claims,
-			&i.LastClaimedAt,
-			&i.LastReleasedAt,
-			&i.NodeID,
-			&i.PoolID,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getLicenseByGUID = `-- name: GetLicenseByGUID :one
 SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 FROM licenses
@@ -298,43 +258,19 @@ func (q *Queries) GetLicenseByGUID(ctx context.Context, guid string) (License, e
 	return i, err
 }
 
-const getLicenseByNodeID = `-- name: GetLicenseByNodeID :one
-SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
-FROM licenses
-WHERE node_id = ? and pool_id IS NULL
-`
-
-func (q *Queries) GetLicenseByNodeID(ctx context.Context, nodeID *int64) (License, error) {
-	row := q.db.QueryRowContext(ctx, getLicenseByNodeID, nodeID)
-	var i License
-	err := row.Scan(
-		&i.ID,
-		&i.Guid,
-		&i.File,
-		&i.Key,
-		&i.Claims,
-		&i.LastClaimedAt,
-		&i.LastReleasedAt,
-		&i.NodeID,
-		&i.PoolID,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const getPooledLicenseByGUID = `-- name: GetPooledLicenseByGUID :one
+const getLicenseWithPoolByGUID = `-- name: GetLicenseWithPoolByGUID :one
 SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 FROM licenses
 WHERE guid = ? AND pool_id = ?
 `
 
-type GetPooledLicenseByGUIDParams struct {
+type GetLicenseWithPoolByGUIDParams struct {
 	Guid   string
 	PoolID *int64
 }
 
-func (q *Queries) GetPooledLicenseByGUID(ctx context.Context, arg GetPooledLicenseByGUIDParams) (License, error) {
-	row := q.db.QueryRowContext(ctx, getPooledLicenseByGUID, arg.Guid, arg.PoolID)
+func (q *Queries) GetLicenseWithPoolByGUID(ctx context.Context, arg GetLicenseWithPoolByGUIDParams) (License, error) {
+	row := q.db.QueryRowContext(ctx, getLicenseWithPoolByGUID, arg.Guid, arg.PoolID)
 	var i License
 	err := row.Scan(
 		&i.ID,
@@ -351,19 +287,19 @@ func (q *Queries) GetPooledLicenseByGUID(ctx context.Context, arg GetPooledLicen
 	return i, err
 }
 
-const getPooledLicenseByNodeID = `-- name: GetPooledLicenseByNodeID :one
+const getLicenseWithPoolByNodeID = `-- name: GetLicenseWithPoolByNodeID :one
 SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 FROM licenses
 WHERE node_id = ? AND pool_id = ?
 `
 
-type GetPooledLicenseByNodeIDParams struct {
+type GetLicenseWithPoolByNodeIDParams struct {
 	NodeID *int64
 	PoolID *int64
 }
 
-func (q *Queries) GetPooledLicenseByNodeID(ctx context.Context, arg GetPooledLicenseByNodeIDParams) (License, error) {
-	row := q.db.QueryRowContext(ctx, getPooledLicenseByNodeID, arg.NodeID, arg.PoolID)
+func (q *Queries) GetLicenseWithPoolByNodeID(ctx context.Context, arg GetLicenseWithPoolByNodeIDParams) (License, error) {
+	row := q.db.QueryRowContext(ctx, getLicenseWithPoolByNodeID, arg.NodeID, arg.PoolID)
 	var i License
 	err := row.Scan(
 		&i.ID,
@@ -380,15 +316,62 @@ func (q *Queries) GetPooledLicenseByNodeID(ctx context.Context, arg GetPooledLic
 	return i, err
 }
 
-const getPooledLicenses = `-- name: GetPooledLicenses :many
+const getLicenseWithoutPoolByGUID = `-- name: GetLicenseWithoutPoolByGUID :one
 SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 FROM licenses
-WHERE pool_id = ?
+WHERE guid = ? and pool_id IS NULL
+`
+
+func (q *Queries) GetLicenseWithoutPoolByGUID(ctx context.Context, guid string) (License, error) {
+	row := q.db.QueryRowContext(ctx, getLicenseWithoutPoolByGUID, guid)
+	var i License
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.File,
+		&i.Key,
+		&i.Claims,
+		&i.LastClaimedAt,
+		&i.LastReleasedAt,
+		&i.NodeID,
+		&i.PoolID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getLicenseWithoutPoolByNodeID = `-- name: GetLicenseWithoutPoolByNodeID :one
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
+FROM licenses
+WHERE node_id = ? and pool_id IS NULL
+`
+
+func (q *Queries) GetLicenseWithoutPoolByNodeID(ctx context.Context, nodeID *int64) (License, error) {
+	row := q.db.QueryRowContext(ctx, getLicenseWithoutPoolByNodeID, nodeID)
+	var i License
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.File,
+		&i.Key,
+		&i.Claims,
+		&i.LastClaimedAt,
+		&i.LastReleasedAt,
+		&i.NodeID,
+		&i.PoolID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getLicenses = `-- name: GetLicenses :many
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
+FROM licenses
 ORDER BY id
 `
 
-func (q *Queries) GetPooledLicenses(ctx context.Context, poolID *int64) ([]License, error) {
-	rows, err := q.db.QueryContext(ctx, getPooledLicenses, poolID)
+func (q *Queries) GetLicenses(ctx context.Context) ([]License, error) {
+	rows, err := q.db.QueryContext(ctx, getLicenses)
 	if err != nil {
 		return nil, err
 	}
@@ -421,28 +404,86 @@ func (q *Queries) GetPooledLicenses(ctx context.Context, poolID *int64) ([]Licen
 	return items, nil
 }
 
-const getUnpooledLicenseByGUID = `-- name: GetUnpooledLicenseByGUID :one
+const getLicensesWithPool = `-- name: GetLicensesWithPool :many
 SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 FROM licenses
-WHERE guid = ? and pool_id IS NULL
+WHERE pool_id = ?
+ORDER BY id
 `
 
-func (q *Queries) GetUnpooledLicenseByGUID(ctx context.Context, guid string) (License, error) {
-	row := q.db.QueryRowContext(ctx, getUnpooledLicenseByGUID, guid)
-	var i License
-	err := row.Scan(
-		&i.ID,
-		&i.Guid,
-		&i.File,
-		&i.Key,
-		&i.Claims,
-		&i.LastClaimedAt,
-		&i.LastReleasedAt,
-		&i.NodeID,
-		&i.PoolID,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) GetLicensesWithPool(ctx context.Context, poolID *int64) ([]License, error) {
+	rows, err := q.db.QueryContext(ctx, getLicensesWithPool, poolID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []License
+	for rows.Next() {
+		var i License
+		if err := rows.Scan(
+			&i.ID,
+			&i.Guid,
+			&i.File,
+			&i.Key,
+			&i.Claims,
+			&i.LastClaimedAt,
+			&i.LastReleasedAt,
+			&i.NodeID,
+			&i.PoolID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getLicensesWithoutPool = `-- name: GetLicensesWithoutPool :many
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
+FROM licenses
+WHERE pool_id IS NULL
+ORDER BY id
+`
+
+func (q *Queries) GetLicensesWithoutPool(ctx context.Context) ([]License, error) {
+	rows, err := q.db.QueryContext(ctx, getLicensesWithoutPool)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []License
+	for rows.Next() {
+		var i License
+		if err := rows.Scan(
+			&i.ID,
+			&i.Guid,
+			&i.File,
+			&i.Key,
+			&i.Claims,
+			&i.LastClaimedAt,
+			&i.LastReleasedAt,
+			&i.NodeID,
+			&i.PoolID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const insertLicense = `-- name: InsertLicense :one
@@ -481,14 +522,30 @@ func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) (L
 	return i, err
 }
 
-const releaseLicenseByNodeID = `-- name: ReleaseLicenseByNodeID :exec
+const releaseLicenseWithPoolByNodeID = `-- name: ReleaseLicenseWithPoolByNodeID :exec
+UPDATE licenses
+SET node_id = NULL, last_released_at = unixepoch()
+WHERE node_id = ? AND pool_id = ?
+`
+
+type ReleaseLicenseWithPoolByNodeIDParams struct {
+	NodeID *int64
+	PoolID *int64
+}
+
+func (q *Queries) ReleaseLicenseWithPoolByNodeID(ctx context.Context, arg ReleaseLicenseWithPoolByNodeIDParams) error {
+	_, err := q.db.ExecContext(ctx, releaseLicenseWithPoolByNodeID, arg.NodeID, arg.PoolID)
+	return err
+}
+
+const releaseLicenseWithoutPoolByNodeID = `-- name: ReleaseLicenseWithoutPoolByNodeID :exec
 UPDATE licenses
 SET node_id = NULL, last_released_at = unixepoch()
 WHERE node_id = ? AND pool_id IS NULL
 `
 
-func (q *Queries) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64) error {
-	_, err := q.db.ExecContext(ctx, releaseLicenseByNodeID, nodeID)
+func (q *Queries) ReleaseLicenseWithoutPoolByNodeID(ctx context.Context, nodeID *int64) error {
+	_, err := q.db.ExecContext(ctx, releaseLicenseWithoutPoolByNodeID, nodeID)
 	return err
 }
 
@@ -534,20 +591,4 @@ func (q *Queries) ReleaseLicensesFromDeadNodes(ctx context.Context, strftime int
 		return nil, err
 	}
 	return items, nil
-}
-
-const releasePooledLicenseByNodeID = `-- name: ReleasePooledLicenseByNodeID :exec
-UPDATE licenses
-SET node_id = NULL, last_released_at = unixepoch()
-WHERE node_id = ? AND pool_id = ?
-`
-
-type ReleasePooledLicenseByNodeIDParams struct {
-	NodeID *int64
-	PoolID *int64
-}
-
-func (q *Queries) ReleasePooledLicenseByNodeID(ctx context.Context, arg ReleasePooledLicenseByNodeIDParams) error {
-	_, err := q.db.ExecContext(ctx, releasePooledLicenseByNodeID, arg.NodeID, arg.PoolID)
-	return err
 }

@@ -60,3 +60,32 @@ func (q *Queries) GetPoolByName(ctx context.Context, name string) (Pool, error) 
 	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
 	return i, err
 }
+
+const getPools = `-- name: GetPools :many
+SELECT id, name, created_at
+FROM pools
+ORDER BY id
+`
+
+func (q *Queries) GetPools(ctx context.Context) ([]Pool, error) {
+	rows, err := q.db.QueryContext(ctx, getPools)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Pool
+	for rows.Next() {
+		var i Pool
+		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

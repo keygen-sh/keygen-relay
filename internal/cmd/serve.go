@@ -117,12 +117,3 @@ func validateTTL(ttl time.Duration) error {
 	}
 	return nil
 }
-
-func strategyTypeCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return []string{"fifo", "lifo", "rand"}, cobra.ShellCompDirectiveDefault
-}
-
-func poolTypeCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	// TODO(ezekg) query pools
-	return []string{}, cobra.ShellCompDirectiveDefault
-}

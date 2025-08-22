@@ -13,6 +13,11 @@ SELECT *
 FROM pools
 WHERE name = ?;
 
+-- name: GetPools :many
+SELECT *
+FROM pools
+ORDER BY id;
+
 -- name: DeletePoolByID :one
 DELETE FROM pools
 WHERE id = ?

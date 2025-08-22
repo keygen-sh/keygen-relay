@@ -96,6 +96,8 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 	cmd.Flags().BoolVar(&plain, "plain", try.Try(try.EnvBool("RELAY_PLAIN"), try.EnvBool("NO_COLOR"), try.EnvBool("CI"), try.Static(false)), "display the table in plain text format [$RELAY_PLAIN=1]")
 	cmd.Flags().String("pool", try.Try(try.Env("RELAY_POOL"), try.Static("")), "pool to list licenses from [$RELAY_POOL=prod]")
 
+	_ = cmd.RegisterFlagCompletionFunc("pool", poolTypeCompletion)
+
 	return cmd
 }
 

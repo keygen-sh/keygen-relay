@@ -99,6 +99,13 @@ The `add` command supports multiple `--file` and `--key` pairs.
 
 ##### Recipe to bulk add licenses
 
+Import a directory of license files and keys into Relay.
+
+> [!TIP]
+> Note that both `lic` and `key` files will be imported in lexicographical sort
+> order, so their filenames must match up exactly in order for the import to
+> succeed, i.e. `1.lic` to `1.key`, `2.lic` to `2.key`, etc.
+
 ```bash
 pubkey=$(cat /etc/relay/keygen.pub)
 files=$(ls /etc/relay/*.lic | xargs | sed  's/ /,/g')

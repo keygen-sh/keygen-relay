@@ -97,6 +97,16 @@ The `add` command supports the following flags:
 
 The `add` command supports multiple `--file` and `--key` pairs.
 
+##### Recipe to bulk add licenses
+
+```bash
+pubkey=$(cat /etc/relay/keygen.pub)
+files=$(ls /etc/relay/*.lic | xargs | sed  's/ /,/g')
+keys=$(cat /etc/relay/*.key | xargs | sed  's/ /,/g')
+
+relay add --file "$files" --key "$keys" --public-key "$pubkey"
+```
+
 #### Delete license
 
 To delete a license from the pool, use the `del` command:

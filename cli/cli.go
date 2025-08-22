@@ -1,19 +1,12 @@
 package cli
 
 import (
-	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"os"
 	"runtime"
 	"strings"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
-	schema "github.com/keygen-sh/keygen-relay/db"
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
 	"github.com/keygen-sh/keygen-relay/internal/config"
 	"github.com/keygen-sh/keygen-relay/internal/db"
@@ -22,7 +15,6 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/logger"
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/keygen-sh/keygen-relay/internal/try"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 )
 
@@ -109,7 +101,7 @@ Version:
 				err   error
 			)
 
-			store, conn, err = initStore(ctx, cfg)
+			store, conn, err = db.Connect(ctx, cfg.DB)
 			if err != nil {
 				logger.Error("failed to initialize store", "error", err)
 
@@ -157,58 +149,4 @@ Version:
 	}
 
 	return 0
-}
-
-func initStore(_ context.Context, cfg *config.Config) (*db.Store, *sql.DB, error) {
-	dsn := fmt.Sprintf("file:%s?_txlock=immediate", cfg.DB.DatabaseFilePath)
-	conn, err := sql.Open("sqlite3", dsn)
-	if err != nil {
-		logger.Error("failed to open database", "error", err)
-
-		return nil, nil, err
-	}
-
-	if err := conn.Ping(); err != nil {
-		logger.Error("failed to connect to database", "error", err)
-
-		return nil, nil, err
-	}
-
-	logger.Info("applying database pragmas", "path", cfg.DB.DatabaseFilePath)
-
-	for key, value := range cfg.DB.DatabasePragmas {
-		if _, err := conn.Exec(fmt.Sprintf("PRAGMA %s = %s", key, value)); err != nil {
-			logger.Error("failed to set pragma", "key", key, "value", value, "error", err)
-
-			return nil, nil, err
-		}
-	}
-
-	// apply migrations e.g. initial schema, etc.
-	logger.Info("applying database migrations", "path", cfg.DB.DatabaseFilePath)
-
-	migrations, err := iofs.New(schema.Migrations, "migrations")
-	if err != nil {
-		logger.Error("failed to initialize migrations fs", "error", err)
-
-		return nil, nil, err
-	}
-
-	migrator, err := db.NewMigrator(conn, migrations)
-	if err != nil {
-		logger.Error("failed to initialize migrations", "error", err)
-
-		return nil, nil, err
-	}
-
-	if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		logger.Error("failed to apply migrations", "error", err)
-
-		return nil, nil, err
-	}
-
-	queries := db.New(conn)
-	store := db.NewStore(queries, conn)
-
-	return store, conn, nil
 }

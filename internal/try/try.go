@@ -4,6 +4,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 type Accessor[T comparable] func() T
@@ -67,6 +69,26 @@ func EnvDuration(key string) func() time.Duration {
 			return 0
 		}
 	})
+}
+
+func CmdPersistentFlag(cmd *cobra.Command, flag string) func() string {
+	return func() string {
+		if s, err := cmd.Root().PersistentFlags().GetString(flag); err == nil {
+			return s
+		} else {
+			return ""
+		}
+	}
+}
+
+func CmdFlag(cmd *cobra.Command, flag string) func() string {
+	return func() string {
+		if s, err := cmd.Root().Flags().GetString(flag); err == nil {
+			return s
+		} else {
+			return ""
+		}
+	}
 }
 
 func Static[T comparable](value T) Accessor[T] {

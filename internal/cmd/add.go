@@ -80,5 +80,7 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 	_ = cmd.MarkFlagRequired("key")
 	_ = cmd.MarkFlagRequired("public-key")
 
+	_ = cmd.RegisterFlagCompletionFunc("pool", poolTypeCompletion)
+
 	return cmd
 }

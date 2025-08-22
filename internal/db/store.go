@@ -195,6 +195,10 @@ func (s *Store) GetPoolByName(ctx context.Context, name string) (*Pool, error) {
 	return &pool, nil
 }
 
+func (s *Store) GetPools(ctx context.Context) ([]Pool, error) {
+	return s.queries.GetPools(ctx)
+}
+
 func (s *Store) DeletePoolByID(ctx context.Context, id int64) (*Pool, error) {
 	pool, err := s.queries.DeletePoolByID(ctx, id)
 	if err != nil {

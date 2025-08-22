@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -33,6 +34,12 @@ const (
 	EntityTypeLicense
 	EntityTypeNode
 	EntityTypePool
+)
+
+type StoreError error
+
+var (
+	ErrBadStrategy StoreError = errors.New("invalid strategy")
 )
 
 type Store struct {
@@ -282,7 +289,7 @@ func (s *Store) ClaimLicenseByStrategy(ctx context.Context, strategy string, nod
 		case "rand":
 			license, err = s.queries.ClaimLicenseWithPoolRandom(ctx, ClaimLicenseWithPoolRandomParams{nodeID, &preds.pool.ID})
 		default:
-			license, err = s.queries.ClaimLicenseWithPoolFIFO(ctx, ClaimLicenseWithPoolFIFOParams{nodeID, &preds.pool.ID})
+			return nil, ErrBadStrategy
 		}
 	} else {
 		switch strategy {
@@ -293,7 +300,7 @@ func (s *Store) ClaimLicenseByStrategy(ctx context.Context, strategy string, nod
 		case "rand":
 			license, err = s.queries.ClaimLicenseWithoutPoolRandom(ctx, nodeID)
 		default:
-			license, err = s.queries.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
+			return nil, ErrBadStrategy
 		}
 	}
 

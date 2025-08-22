@@ -846,7 +846,7 @@ func TestCullDeadNodes(t *testing.T) {
 	defer testutils.CloseMemoryStore(dbConn)
 
 	manager := licenses.NewManager(
-		&licenses.Config{},
+		licenses.NewConfig(),
 		func(filename string) ([]byte, error) {
 			if filename == "license1.lic" {
 				return []byte("mock_certificate_1"), nil

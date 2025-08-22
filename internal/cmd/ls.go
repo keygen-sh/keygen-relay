@@ -30,6 +30,16 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 				}
 			}
 
+			poolList, err := manager.GetPools(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			pools := make(map[int64]string)
+			for _, p := range poolList {
+				pools[p.ID] = p.Name
+			}
+
 			licensesList, err := manager.ListLicenses(cmd.Context(), pool)
 			if err != nil {
 				output.PrintError(cmd.ErrOrStderr(), err.Error())
@@ -52,9 +62,9 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 
 			columns := []table.Column{
 				{Title: "id", Width: 36},
+				{Title: "pool", Width: 12},
 				{Title: "claims", Width: 8},
 				{Title: "node_id", Width: 8},
-				{Title: "pool_id", Width: 8},
 				{Title: "last_claimed_at", Width: 20},
 				{Title: "last_released_at", Width: 20},
 			}
@@ -70,17 +80,21 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 					nodeIDStr = "-"
 				}
 
-				var poolIDStr string
+				var poolStr string
 				if lic.PoolID != nil {
-					poolIDStr = strconv.FormatInt(*lic.PoolID, 10)
+					if name, ok := pools[*lic.PoolID]; ok {
+						poolStr = name
+					} else {
+						poolStr = "<n/a>" // should never happen
+					}
 				} else {
-					poolIDStr = "-"
+					poolStr = "-"
 				}
 
 				lastClaimedAtStr := formatTime(lic.LastClaimedAt)
 				lastReleasedAtStr := formatTime(lic.LastReleasedAt)
 
-				tableRows = append(tableRows, table.Row{lic.Guid, claimsStr, nodeIDStr, poolIDStr, lastClaimedAtStr, lastReleasedAtStr})
+				tableRows = append(tableRows, table.Row{lic.Guid, poolStr, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr})
 			}
 
 			if err := renderer.Render(tableRows, columns); err != nil {

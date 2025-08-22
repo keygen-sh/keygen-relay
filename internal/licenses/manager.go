@@ -48,6 +48,8 @@ type Manager interface {
 	ReleaseLicense(ctx context.Context, pool *string, fingerprint string) (*LicenseOperationResult, error)
 	Config() *Config
 	CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.Node, error)
+	GetPools(ctx context.Context) ([]db.Pool, error)
+	GetPoolByID(ctx context.Context, id int64) (*db.Pool, error)
 }
 
 type manager struct {
@@ -535,6 +537,28 @@ func (m *manager) resolvePoolWithTx(ctx context.Context, qtx *db.Store, poolName
 		logger.Debug("failed to fetch pool", "poolName", *poolName, "error", err)
 
 		return nil, ErrBadPool
+	}
+
+	return pool, nil
+}
+
+func (m *manager) GetPools(ctx context.Context) ([]db.Pool, error) {
+	pools, err := m.store.GetPools(ctx)
+	if err != nil {
+		logger.Error("failed to get pools", "error", err)
+
+		return nil, err
+	}
+
+	return pools, nil
+}
+
+func (m *manager) GetPoolByID(ctx context.Context, id int64) (*db.Pool, error) {
+	pool, err := m.store.GetPoolByID(ctx, id)
+	if err != nil {
+		logger.Debug("failed to get pool by ID", "id", id, "error", err)
+
+		return nil, err
 	}
 
 	return pool, nil

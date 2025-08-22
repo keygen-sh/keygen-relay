@@ -32,11 +32,23 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 
 			columns := []table.Column{
 				{Title: "id", Width: 36},
+				{Title: "pool", Width: 12},
 				{Title: "claims", Width: 8},
 				{Title: "node_id", Width: 8},
-				{Title: "pool_id", Width: 8},
 				{Title: "last_claimed_at", Width: 20},
 				{Title: "last_released_at", Width: 20},
+			}
+
+			var poolStr string
+			if license.PoolID != nil {
+				pool, err := manager.GetPoolByID(cmd.Context(), *license.PoolID)
+				if err != nil {
+					return err
+				}
+
+				poolStr = pool.Name
+			} else {
+				poolStr = "-"
 			}
 
 			claimsStr := fmt.Sprintf("%d", license.Claims)
@@ -48,18 +60,11 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 				nodeIDStr = "-"
 			}
 
-			var poolIDStr string
-			if license.PoolID != nil {
-				poolIDStr = strconv.FormatInt(*license.PoolID, 10)
-			} else {
-				poolIDStr = "-"
-			}
-
 			lastClaimedAtStr := formatTime(license.LastClaimedAt)
 			lastReleasedAtStr := formatTime(license.LastReleasedAt)
 
 			tableRows := []table.Row{
-				{license.Guid, claimsStr, nodeIDStr, poolIDStr, lastClaimedAtStr, lastReleasedAtStr},
+				{license.Guid, poolStr, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
 			}
 
 			var renderer ui.TableRenderer

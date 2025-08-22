@@ -18,6 +18,8 @@ type FakeManager struct {
 	ReleaseLicenseFn   func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error)
 	CullDeadNodesFn    func(ctx context.Context, ttl time.Duration) ([]db.Node, error)
 	ConfigFn           func() *licenses.Config
+	GetPoolsFn         func(ctx context.Context) ([]db.Pool, error)
+	GetPoolByIDFn      func(ctx context.Context, id int64) (*db.Pool, error)
 }
 
 func (f *FakeManager) AddLicense(ctx context.Context, pool *string, filePath, key, publicKey string) (*db.License, error) {
@@ -82,4 +84,20 @@ func (f *FakeManager) Config() *licenses.Config {
 	}
 
 	return &licenses.Config{}
+}
+
+func (f *FakeManager) GetPools(ctx context.Context) ([]db.Pool, error) {
+	if f.GetPoolsFn != nil {
+		return f.GetPoolsFn(ctx)
+	}
+
+	return []db.Pool{}, nil
+}
+
+func (f *FakeManager) GetPoolByID(ctx context.Context, id int64) (*db.Pool, error) {
+	if f.GetPoolByIDFn != nil {
+		return f.GetPoolByIDFn(ctx, id)
+	}
+
+	return &db.Pool{}, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"testing"
 
@@ -289,38 +290,44 @@ func TestStore_ClaimLicenseByStrategy(t *testing.T) {
 		assert.NotNil(t, license.LastClaimedAt)
 	})
 
-	t.Run("test different strategies", func(t *testing.T) {
+	t.Run("strategies", func(t *testing.T) {
 		// create more licenses and test different strategies
 		node3, err := store.ActivateNode(ctx, "test-fingerprint-3")
 		require.NoError(t, err)
 
-		_, err = store.InsertLicense(ctx, testPool, "strategy-test-1", []byte("file1"), "key1")
+		for i := range 5 {
+			_, err = store.InsertLicense(ctx, testPool, fmt.Sprintf("strategy-test-%d", i), []byte(fmt.Sprintf("file-%d", i)), fmt.Sprintf("key-%d", i))
+			require.NoError(t, err)
+		}
+
+		// test FIFO
+		license, err := store.ClaimLicenseByStrategy(ctx, "fifo", &node3.ID, WithPool(testPool))
 		require.NoError(t, err)
-		_, err = store.InsertLicense(ctx, testPool, "strategy-test-2", []byte("file2"), "key2")
-		require.NoError(t, err)
+		assert.NotNil(t, license)
 
 		// test LIFO
-		license, err := store.ClaimLicenseByStrategy(ctx, "lifo", &node3.ID, WithPool(testPool))
+		node4, err := store.ActivateNode(ctx, "test-fingerprint-4")
+		require.NoError(t, err)
+
+		license, err = store.ClaimLicenseByStrategy(ctx, "lifo", &node4.ID, WithPool(testPool))
 		require.NoError(t, err)
 		assert.NotNil(t, license)
 
 		// test random
-		node4, err := store.ActivateNode(ctx, "test-fingerprint-4")
-		require.NoError(t, err)
-
-		license, err = store.ClaimLicenseByStrategy(ctx, "rand", &node4.ID, WithPool(testPool))
-		require.NoError(t, err)
-		assert.NotNil(t, license)
-
-		// test default (should be FIFO)
 		node5, err := store.ActivateNode(ctx, "test-fingerprint-5")
 		require.NoError(t, err)
-		_, err = store.InsertLicense(ctx, testPool, "default-strategy", []byte("file3"), "key3")
-		require.NoError(t, err)
 
-		license, err = store.ClaimLicenseByStrategy(ctx, "invalid-strategy", &node5.ID, WithPool(testPool))
+		license, err = store.ClaimLicenseByStrategy(ctx, "rand", &node5.ID, WithPool(testPool))
 		require.NoError(t, err)
 		assert.NotNil(t, license)
+
+		// invalid
+		node6, err := store.ActivateNode(ctx, "test-fingerprint-6")
+		require.NoError(t, err)
+
+		license, err = store.ClaimLicenseByStrategy(ctx, "invalid-strategy", &node6.ID, WithPool(testPool))
+		require.Error(t, err)
+		assert.Nil(t, license)
 	})
 }
 

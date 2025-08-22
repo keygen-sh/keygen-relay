@@ -3,652 +3,483 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"log"
 	"testing"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
+	schema "github.com/keygen-sh/keygen-relay/db"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// QuerierInterface defines the methods we need from Queries for testing
-type QuerierInterface interface {
-	GetLicenses(ctx context.Context) ([]License, error)
-	GetLicensesWithPool(ctx context.Context, poolID *int64) ([]License, error)
-	GetLicensesWithoutPool(ctx context.Context) ([]License, error)
-	GetLicenseByGUID(ctx context.Context, guid string) (License, error)
-	GetLicenseWithPoolByGUID(ctx context.Context, params GetLicenseWithPoolByGUIDParams) (License, error)
-	GetLicenseWithoutPoolByGUID(ctx context.Context, guid string) (License, error)
-	ReleaseLicenseWithPoolByNodeID(ctx context.Context, params ReleaseLicenseWithPoolByNodeIDParams) error
-	ReleaseLicenseWithoutPoolByNodeID(ctx context.Context, nodeID *int64) error
-	ClaimLicenseWithPoolFIFO(ctx context.Context, params ClaimLicenseWithPoolFIFOParams) (License, error)
-	ClaimLicenseWithoutPoolFIFO(ctx context.Context, nodeID *int64) (License, error)
-	GetLicenseWithPoolByNodeID(ctx context.Context, params GetLicenseWithPoolByNodeIDParams) (License, error)
-	GetLicenseWithoutPoolByNodeID(ctx context.Context, nodeID *int64) (License, error)
-	WithTx(tx *sql.Tx) *Queries
-}
-
-// mockQueries implements the query interface for testing
-type mockQueries struct {
-	getLicensesFunc                       func(ctx context.Context) ([]License, error)
-	getLicensesWithPoolFunc               func(ctx context.Context, poolID *int64) ([]License, error)
-	getLicensesWithoutPoolFunc            func(ctx context.Context) ([]License, error)
-	getLicenseByGUIDFunc                  func(ctx context.Context, guid string) (License, error)
-	getLicenseWithPoolByGUIDFunc          func(ctx context.Context, params GetLicenseWithPoolByGUIDParams) (License, error)
-	getLicenseWithoutPoolByGUIDFunc       func(ctx context.Context, guid string) (License, error)
-	releaseLicenseWithPoolByNodeIDFunc    func(ctx context.Context, params ReleaseLicenseWithPoolByNodeIDParams) error
-	releaseLicenseWithoutPoolByNodeIDFunc func(ctx context.Context, nodeID *int64) error
-	claimLicenseWithPoolFIFOFunc          func(ctx context.Context, params ClaimLicenseWithPoolFIFOParams) (License, error)
-	claimLicenseWithoutPoolFIFOFunc       func(ctx context.Context, nodeID *int64) (License, error)
-	getLicenseWithPoolByNodeIDFunc        func(ctx context.Context, params GetLicenseWithPoolByNodeIDParams) (License, error)
-	getLicenseWithoutPoolByNodeIDFunc     func(ctx context.Context, nodeID *int64) (License, error)
-}
-
-func (m *mockQueries) GetLicenses(ctx context.Context) ([]License, error) {
-	if m.getLicensesFunc != nil {
-		return m.getLicensesFunc(ctx)
-	}
-	return []License{}, nil
-}
-
-func (m *mockQueries) GetLicensesWithPool(ctx context.Context, poolID *int64) ([]License, error) {
-	if m.getLicensesWithPoolFunc != nil {
-		return m.getLicensesWithPoolFunc(ctx, poolID)
-	}
-	return []License{}, nil
-}
-
-func (m *mockQueries) GetLicensesWithoutPool(ctx context.Context) ([]License, error) {
-	if m.getLicensesWithoutPoolFunc != nil {
-		return m.getLicensesWithoutPoolFunc(ctx)
-	}
-	return []License{}, nil
-}
-
-func (m *mockQueries) GetLicenseByGUID(ctx context.Context, guid string) (License, error) {
-	if m.getLicenseByGUIDFunc != nil {
-		return m.getLicenseByGUIDFunc(ctx, guid)
-	}
-	return License{}, nil
-}
-
-func (m *mockQueries) GetLicenseWithPoolByGUID(ctx context.Context, params GetLicenseWithPoolByGUIDParams) (License, error) {
-	if m.getLicenseWithPoolByGUIDFunc != nil {
-		return m.getLicenseWithPoolByGUIDFunc(ctx, params)
-	}
-	return License{}, nil
-}
-
-func (m *mockQueries) GetLicenseWithoutPoolByGUID(ctx context.Context, guid string) (License, error) {
-	if m.getLicenseWithoutPoolByGUIDFunc != nil {
-		return m.getLicenseWithoutPoolByGUIDFunc(ctx, guid)
-	}
-	return License{}, nil
-}
-
-func (m *mockQueries) ReleaseLicenseWithPoolByNodeID(ctx context.Context, params ReleaseLicenseWithPoolByNodeIDParams) error {
-	if m.releaseLicenseWithPoolByNodeIDFunc != nil {
-		return m.releaseLicenseWithPoolByNodeIDFunc(ctx, params)
-	}
-	return nil
-}
-
-func (m *mockQueries) ReleaseLicenseWithoutPoolByNodeID(ctx context.Context, nodeID *int64) error {
-	if m.releaseLicenseWithoutPoolByNodeIDFunc != nil {
-		return m.releaseLicenseWithoutPoolByNodeIDFunc(ctx, nodeID)
-	}
-	return nil
-}
-
-func (m *mockQueries) ClaimLicenseWithPoolFIFO(ctx context.Context, params ClaimLicenseWithPoolFIFOParams) (License, error) {
-	if m.claimLicenseWithPoolFIFOFunc != nil {
-		return m.claimLicenseWithPoolFIFOFunc(ctx, params)
-	}
-	return License{}, nil
-}
-
-func (m *mockQueries) ClaimLicenseWithoutPoolFIFO(ctx context.Context, nodeID *int64) (License, error) {
-	if m.claimLicenseWithoutPoolFIFOFunc != nil {
-		return m.claimLicenseWithoutPoolFIFOFunc(ctx, nodeID)
-	}
-	return License{}, nil
-}
-
-func (m *mockQueries) GetLicenseWithPoolByNodeID(ctx context.Context, params GetLicenseWithPoolByNodeIDParams) (License, error) {
-	if m.getLicenseWithPoolByNodeIDFunc != nil {
-		return m.getLicenseWithPoolByNodeIDFunc(ctx, params)
-	}
-	return License{}, nil
-}
-
-func (m *mockQueries) GetLicenseWithoutPoolByNodeID(ctx context.Context, nodeID *int64) (License, error) {
-	if m.getLicenseWithoutPoolByNodeIDFunc != nil {
-		return m.getLicenseWithoutPoolByNodeIDFunc(ctx, nodeID)
-	}
-	return License{}, nil
-}
-
-func (m *mockQueries) WithTx(tx *sql.Tx) *Queries {
-	return &Queries{}
-}
-
-// Add other required methods to satisfy the interface
-func (m *mockQueries) InsertLicense(ctx context.Context, params InsertLicenseParams) (License, error) {
-	return License{}, nil
-}
-
-func (m *mockQueries) DeleteLicenseByGUID(ctx context.Context, guid string) (License, error) {
-	return License{}, nil
-}
-
-func (m *mockQueries) ActivateNode(ctx context.Context, fingerprint string) (Node, error) {
-	return Node{}, nil
-}
-
-func (m *mockQueries) DeactivateNodeByFingerprint(ctx context.Context, fingerprint string) error {
-	return nil
-}
-
-func (m *mockQueries) GetNodeByFingerprint(ctx context.Context, fingerprint string) (Node, error) {
-	return Node{}, nil
-}
-
-func (m *mockQueries) PingNodeHeartbeatByFingerprint(ctx context.Context, fingerprint string) error {
-	return nil
-}
-
-func (m *mockQueries) CreatePool(ctx context.Context, name string) (Pool, error) {
-	return Pool{}, nil
-}
-
-func (m *mockQueries) GetPoolByID(ctx context.Context, id int64) (Pool, error) {
-	return Pool{}, nil
-}
-
-func (m *mockQueries) GetPoolByName(ctx context.Context, name string) (Pool, error) {
-	return Pool{}, nil
-}
-
-func (m *mockQueries) DeletePoolByID(ctx context.Context, id int64) (Pool, error) {
-	return Pool{}, nil
-}
-
-func (m *mockQueries) InsertAuditLog(ctx context.Context, params InsertAuditLogParams) error {
-	return nil
-}
-
-func (m *mockQueries) ClaimLicenseWithPoolLIFO(ctx context.Context, params ClaimLicenseWithPoolLIFOParams) (License, error) {
-	return License{}, nil
-}
-
-func (m *mockQueries) ClaimLicenseWithPoolRandom(ctx context.Context, params ClaimLicenseWithPoolRandomParams) (License, error) {
-	return License{}, nil
-}
-
-func (m *mockQueries) ClaimLicenseWithoutPoolLIFO(ctx context.Context, nodeID *int64) (License, error) {
-	return License{}, nil
-}
-
-func (m *mockQueries) ClaimLicenseWithoutPoolRandom(ctx context.Context, nodeID *int64) (License, error) {
-	return License{}, nil
-}
-
-func (m *mockQueries) ReleaseLicensesFromDeadNodes(ctx context.Context, ttl string) ([]License, error) {
-	return []License{}, nil
-}
-
-func (m *mockQueries) DeactivateDeadNodes(ctx context.Context, ttl string) ([]Node, error) {
-	return []Node{}, nil
-}
-
-// mockStore is a testable version of Store that uses the interface
-type mockStore struct {
-	queries    QuerierInterface
-	connection *sql.DB
-}
-
-func (s *mockStore) GetLicenses(ctx context.Context, predicates ...LicensePredicateFunc) ([]License, error) {
-	preds := applyLicensePredicates(predicates...)
-
-	if preds.pool != nil {
-		if preds.pool == AnyPool {
-			return s.queries.GetLicenses(ctx)
-		}
-
-		return s.queries.GetLicensesWithPool(ctx, &preds.pool.ID)
-	}
-
-	return s.queries.GetLicensesWithoutPool(ctx)
-}
-
-func (s *mockStore) GetLicenseByGUID(ctx context.Context, id string, predicates ...LicensePredicateFunc) (*License, error) {
-	preds := applyLicensePredicates(predicates...)
-
-	var license License
-	var err error
-
-	if preds.pool != nil {
-		if preds.pool == AnyPool {
-			license, err = s.queries.GetLicenseByGUID(ctx, id)
-		} else {
-			license, err = s.queries.GetLicenseWithPoolByGUID(ctx, GetLicenseWithPoolByGUIDParams{id, &preds.pool.ID})
-		}
-	} else {
-		license, err = s.queries.GetLicenseWithoutPoolByGUID(ctx, id)
-	}
-
+// FIXME(ezekg) dup of internal/testutils/memory_store to prevent import cycle
+func newMemoryStore(t *testing.T) (*Store, *sql.DB) {
+	conn, err := sql.Open("sqlite3", ":memory:?_pragma=foreign_keys(on)")
 	if err != nil {
-		return nil, err
+		t.Fatalf("failed to open in-memory database: %v", err)
 	}
 
-	return &license, nil
-}
-
-func (s *mockStore) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64, predicates ...LicensePredicateFunc) error {
-	preds := applyLicensePredicates(predicates...)
-
-	if preds.pool != nil {
-		if preds.pool == AnyPool {
-			return ErrAnyPoolNotSupported
-		}
-
-		return s.queries.ReleaseLicenseWithPoolByNodeID(ctx, ReleaseLicenseWithPoolByNodeIDParams{nodeID, &preds.pool.ID})
-	}
-
-	return s.queries.ReleaseLicenseWithoutPoolByNodeID(ctx, nodeID)
-}
-
-func (s *mockStore) ClaimLicenseByStrategy(ctx context.Context, strategy string, nodeID *int64, predicates ...LicensePredicateFunc) (*License, error) {
-	preds := applyLicensePredicates(predicates...)
-
-	var license License
-	var err error
-
-	if preds.pool != nil {
-		if preds.pool == AnyPool {
-			return nil, ErrAnyPoolNotSupported
-		}
-
-		switch strategy {
-		case "fifo":
-			license, err = s.queries.ClaimLicenseWithPoolFIFO(ctx, ClaimLicenseWithPoolFIFOParams{nodeID, &preds.pool.ID})
-		default:
-			license, err = s.queries.ClaimLicenseWithPoolFIFO(ctx, ClaimLicenseWithPoolFIFOParams{nodeID, &preds.pool.ID})
-		}
-	} else {
-		switch strategy {
-		case "fifo":
-			license, err = s.queries.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
-		default:
-			license, err = s.queries.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
-		}
-	}
-
+	_, err = conn.Exec("PRAGMA foreign_keys = ON")
 	if err != nil {
-		return nil, err
+		t.Fatalf("failed to enable foreign keys: %v", err)
 	}
 
-	return &license, nil
-}
-
-func (s *mockStore) GetLicenseByNodeID(ctx context.Context, nodeID *int64, predicates ...LicensePredicateFunc) (*License, error) {
-	preds := applyLicensePredicates(predicates...)
-
-	var license License
-	var err error
-
-	if preds.pool != nil {
-		if preds.pool == AnyPool {
-			return nil, ErrAnyPoolNotSupported
-		}
-
-		license, err = s.queries.GetLicenseWithPoolByNodeID(ctx, GetLicenseWithPoolByNodeIDParams{nodeID, &preds.pool.ID})
-	} else {
-		license, err = s.queries.GetLicenseWithoutPoolByNodeID(ctx, nodeID)
-	}
-
+	migrations, err := iofs.New(schema.Migrations, "migrations")
 	if err != nil {
-		return nil, err
+		t.Fatalf("failed to initialize migrations fs: %v", err)
 	}
 
-	return &license, nil
+	migrator, err := NewMigrator(conn, migrations)
+	if err != nil {
+		t.Fatalf("failed to initialize migrations: %v", err)
+	}
+
+	if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		t.Fatalf("failed to apply migrations: %v", err)
+	}
+
+	store := NewStore(New(conn), conn)
+
+	return store, conn
 }
 
-func newMockStore() *mockStore {
-	return &mockStore{
-		queries:    &mockQueries{},
-		connection: nil,
+func closeMemoryStore(conn *sql.DB) {
+	if err := conn.Close(); err != nil {
+		log.Printf("failed to close in-memory database connection: %v", err)
 	}
 }
 
 func TestStore_GetLicenses(t *testing.T) {
+	store, conn := newMemoryStore(t)
+	defer closeMemoryStore(conn)
 	ctx := context.Background()
-	testPool := &Pool{ID: 1, Name: "test"}
 
-	tests := []struct {
-		name        string
-		predicates  []LicensePredicateFunc
-		setupMock   func(*mockQueries)
-		expectError bool
-	}{
-		{
-			name:       "no predicates - defaults to AnyPool",
-			predicates: []LicensePredicateFunc{},
-			setupMock: func(m *mockQueries) {
-				m.getLicensesFunc = func(ctx context.Context) ([]License, error) {
-					return []License{{ID: 1}, {ID: 2}}, nil
-				}
-			},
-		},
-		{
-			name:       "WithAnyPool predicate",
-			predicates: []LicensePredicateFunc{WithAnyPool()},
-			setupMock: func(m *mockQueries) {
-				m.getLicensesFunc = func(ctx context.Context) ([]License, error) {
-					return []License{{ID: 1}, {ID: 2}}, nil
-				}
-			},
-		},
-		{
-			name:       "WithPool predicate",
-			predicates: []LicensePredicateFunc{WithPool(testPool)},
-			setupMock: func(m *mockQueries) {
-				m.getLicensesWithPoolFunc = func(ctx context.Context, poolID *int64) ([]License, error) {
-					if *poolID != testPool.ID {
-						t.Errorf("expected poolID %d, got %d", testPool.ID, *poolID)
-					}
-					return []License{{ID: 1, PoolID: poolID}}, nil
-				}
-			},
-		},
-		{
-			name:       "WithoutPool predicate",
-			predicates: []LicensePredicateFunc{WithoutPool()},
-			setupMock: func(m *mockQueries) {
-				m.getLicensesWithoutPoolFunc = func(ctx context.Context) ([]License, error) {
-					return []License{{ID: 1, PoolID: nil}}, nil
-				}
-			},
-		},
-	}
+	// create test pool
+	testPool, err := store.CreatePool(ctx, "test-pool")
+	require.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			store := newMockStore()
-			mock := store.queries.(*mockQueries)
-			tt.setupMock(mock)
+	// insert test licenses (some with pool, some without)
+	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key")
+	require.NoError(t, err)
 
-			licenses, err := store.GetLicenses(ctx, tt.predicates...)
+	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key")
+	require.NoError(t, err)
 
-			if tt.expectError && err == nil {
-				t.Error("expected error but got none")
-			}
-			if !tt.expectError && err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			if !tt.expectError && len(licenses) == 0 {
-				t.Error("expected licenses but got none")
-			}
-		})
-	}
+	t.Run("without any predicates", func(t *testing.T) {
+		licenses, err := store.GetLicenses(ctx)
+		require.NoError(t, err)
+		assert.Len(t, licenses, 2)
+	})
+
+	t.Run("with any pool predicate", func(t *testing.T) {
+		licenses, err := store.GetLicenses(ctx, WithAnyPool())
+		require.NoError(t, err)
+		assert.Len(t, licenses, 2)
+	})
+
+	t.Run("with named pool predicate", func(t *testing.T) {
+		licenses, err := store.GetLicenses(ctx, WithPool(testPool))
+		require.NoError(t, err)
+		assert.Len(t, licenses, 1)
+		assert.Equal(t, pooledLicense.ID, licenses[0].ID)
+		assert.Equal(t, &testPool.ID, licenses[0].PoolID)
+	})
+
+	t.Run("with nil pool predicate", func(t *testing.T) {
+		licenses, err := store.GetLicenses(ctx, WithPool(nil))
+		require.NoError(t, err)
+		assert.Len(t, licenses, 1)
+		assert.Equal(t, unpooledLicense.ID, licenses[0].ID)
+		assert.Nil(t, licenses[0].PoolID)
+	})
+
+	t.Run("without pool predicate", func(t *testing.T) {
+		licenses, err := store.GetLicenses(ctx, WithoutPool())
+		require.NoError(t, err)
+		assert.Len(t, licenses, 1)
+		assert.Equal(t, unpooledLicense.ID, licenses[0].ID)
+		assert.Nil(t, licenses[0].PoolID)
+	})
 }
 
 func TestStore_GetLicenseByGUID(t *testing.T) {
+	store, conn := newMemoryStore(t)
+	defer closeMemoryStore(conn)
 	ctx := context.Background()
-	testGUID := "test-guid-123"
-	testPool := &Pool{ID: 1, Name: "test"}
 
-	tests := []struct {
-		name        string
-		predicates  []LicensePredicateFunc
-		setupMock   func(*mockQueries)
-		expectError bool
-	}{
-		{
-			name:       "no predicates - defaults to AnyPool",
-			predicates: []LicensePredicateFunc{},
-			setupMock: func(m *mockQueries) {
-				m.getLicenseByGUIDFunc = func(ctx context.Context, guid string) (License, error) {
-					if guid != testGUID {
-						t.Errorf("expected guid %s, got %s", testGUID, guid)
-					}
-					return License{ID: 1, Guid: testGUID}, nil
-				}
-			},
-		},
-		{
-			name:       "WithAnyPool predicate",
-			predicates: []LicensePredicateFunc{WithAnyPool()},
-			setupMock: func(m *mockQueries) {
-				m.getLicenseByGUIDFunc = func(ctx context.Context, guid string) (License, error) {
-					return License{ID: 1, Guid: testGUID}, nil
-				}
-			},
-		},
-		{
-			name:       "WithPool predicate",
-			predicates: []LicensePredicateFunc{WithPool(testPool)},
-			setupMock: func(m *mockQueries) {
-				m.getLicenseWithPoolByGUIDFunc = func(ctx context.Context, params GetLicenseWithPoolByGUIDParams) (License, error) {
-					if params.Guid != testGUID {
-						t.Errorf("expected guid %s, got %s", testGUID, params.Guid)
-					}
-					if *params.PoolID != testPool.ID {
-						t.Errorf("expected poolID %d, got %d", testPool.ID, *params.PoolID)
-					}
-					return License{ID: 1, Guid: testGUID, PoolID: &testPool.ID}, nil
-				}
-			},
-		},
-		{
-			name:       "WithoutPool predicate",
-			predicates: []LicensePredicateFunc{WithoutPool()},
-			setupMock: func(m *mockQueries) {
-				m.getLicenseWithoutPoolByGUIDFunc = func(ctx context.Context, guid string) (License, error) {
-					if guid != testGUID {
-						t.Errorf("expected guid %s, got %s", testGUID, guid)
-					}
-					return License{ID: 1, Guid: testGUID, PoolID: nil}, nil
-				}
-			},
-		},
-	}
+	testPool, err := store.CreatePool(ctx, "test-pool")
+	require.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			store := newMockStore()
-			mock := store.queries.(*mockQueries)
-			tt.setupMock(mock)
+	// create licenses
+	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key")
+	require.NoError(t, err)
 
-			license, err := store.GetLicenseByGUID(ctx, testGUID, tt.predicates...)
+	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key")
+	require.NoError(t, err)
 
-			if tt.expectError && err == nil {
-				t.Error("expected error but got none")
-			}
-			if !tt.expectError && err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			if !tt.expectError && license == nil {
-				t.Error("expected license but got nil")
-			}
-			if !tt.expectError && license.Guid != testGUID {
-				t.Errorf("expected license GUID %s, got %s", testGUID, license.Guid)
-			}
-		})
-	}
+	t.Run("without any predicates", func(t *testing.T) {
+		license, err := store.GetLicenseByGUID(ctx, pooledLicense.Guid)
+		require.NoError(t, err)
+		assert.Equal(t, pooledLicense.ID, license.ID)
+		assert.Equal(t, pooledLicense.Guid, license.Guid)
+
+		license, err = store.GetLicenseByGUID(ctx, unpooledLicense.Guid)
+		require.NoError(t, err)
+		assert.Equal(t, unpooledLicense.ID, license.ID)
+		assert.Equal(t, unpooledLicense.Guid, license.Guid)
+	})
+
+	t.Run("with any pool predicate", func(t *testing.T) {
+		license, err := store.GetLicenseByGUID(ctx, pooledLicense.Guid, WithAnyPool())
+		require.NoError(t, err)
+		assert.Equal(t, pooledLicense.ID, license.ID)
+	})
+
+	t.Run("with named pool predicate", func(t *testing.T) {
+		license, err := store.GetLicenseByGUID(ctx, pooledLicense.Guid, WithPool(testPool))
+		require.NoError(t, err)
+		assert.Equal(t, pooledLicense.ID, license.ID)
+		assert.Equal(t, &testPool.ID, license.PoolID)
+
+		// should not find unpooled license with pool predicate
+		_, err = store.GetLicenseByGUID(ctx, unpooledLicense.Guid, WithPool(testPool))
+		assert.Error(t, err)
+	})
+
+	t.Run("with nil pool predicate", func(t *testing.T) {
+		license, err := store.GetLicenseByGUID(ctx, unpooledLicense.Guid, WithPool(nil))
+		require.NoError(t, err)
+		assert.Equal(t, unpooledLicense.ID, license.ID)
+		assert.Nil(t, license.PoolID)
+
+		// should not find pooled license with WithoutPool predicate
+		_, err = store.GetLicenseByGUID(ctx, pooledLicense.Guid, WithoutPool())
+		assert.Error(t, err)
+	})
+
+	t.Run("without pool predicate", func(t *testing.T) {
+		license, err := store.GetLicenseByGUID(ctx, unpooledLicense.Guid, WithoutPool())
+		require.NoError(t, err)
+		assert.Equal(t, unpooledLicense.ID, license.ID)
+		assert.Nil(t, license.PoolID)
+
+		// should not find pooled license with WithoutPool predicate
+		_, err = store.GetLicenseByGUID(ctx, pooledLicense.Guid, WithoutPool())
+		assert.Error(t, err)
+	})
+
+	t.Run("license not found", func(t *testing.T) {
+		_, err := store.GetLicenseByGUID(ctx, "nonexistent-guid")
+		assert.Error(t, err)
+	})
 }
 
-func TestStore_ReleaseLicenseByNodeID_RejectsAnyPool(t *testing.T) {
+func TestStore_ReleaseLicenseByNodeID(t *testing.T) {
+	store, conn := newMemoryStore(t)
+	defer closeMemoryStore(conn)
 	ctx := context.Background()
-	testNodeID := int64(123)
 
-	tests := []struct {
-		name       string
-		predicates []LicensePredicateFunc
-		expectErr  error
-	}{
-		{
-			name:       "WithAnyPool should return error",
-			predicates: []LicensePredicateFunc{WithAnyPool()},
-			expectErr:  ErrAnyPoolNotSupported,
-		},
-		{
-			name:       "no predicates defaults to AnyPool - should return error",
-			predicates: []LicensePredicateFunc{},
-			expectErr:  ErrAnyPoolNotSupported,
-		},
-		{
-			name:       "WithPool should work",
-			predicates: []LicensePredicateFunc{WithPool(&Pool{ID: 1, Name: "test"})},
-			expectErr:  nil,
-		},
-		{
-			name:       "WithoutPool should work",
-			predicates: []LicensePredicateFunc{WithoutPool()},
-			expectErr:  nil,
-		},
-	}
+	testPool, err := store.CreatePool(ctx, "test-pool")
+	require.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			store := newMockStore()
-			mock := store.queries.(*mockQueries)
+	// create separate nodes since each node can only have one license
+	pooledNode, err := store.ActivateNode(ctx, "pooled-test-fingerprint")
+	require.NoError(t, err)
 
-			mock.releaseLicenseWithPoolByNodeIDFunc = func(ctx context.Context, params ReleaseLicenseWithPoolByNodeIDParams) error {
-				return nil
-			}
-			mock.releaseLicenseWithoutPoolByNodeIDFunc = func(ctx context.Context, nodeID *int64) error {
-				return nil
-			}
+	unpooledNode, err := store.ActivateNode(ctx, "unpooled-test-fingerprint")
+	require.NoError(t, err)
 
-			err := store.ReleaseLicenseByNodeID(ctx, &testNodeID, tt.predicates...)
+	// create licenses and claim them
+	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key")
+	require.NoError(t, err)
 
-			if tt.expectErr != nil {
-				if err == nil {
-					t.Errorf("expected error %v but got none", tt.expectErr)
-				} else if err != tt.expectErr {
-					t.Errorf("expected error %v, got %v", tt.expectErr, err)
-				}
-			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-			}
-		})
-	}
+	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key")
+	require.NoError(t, err)
+
+	// claim licenses for specific nodes
+	_, err = conn.ExecContext(ctx, "UPDATE licenses SET node_id = ?, last_claimed_at = strftime('%s', 'now') WHERE id = ?", pooledNode.ID, pooledLicense.ID)
+	require.NoError(t, err)
+
+	_, err = conn.ExecContext(ctx, "UPDATE licenses SET node_id = ?, last_claimed_at = strftime('%s', 'now') WHERE id = ?", unpooledNode.ID, unpooledLicense.ID)
+	require.NoError(t, err)
+
+	t.Run("with any pool predicate", func(t *testing.T) {
+		err := store.ReleaseLicenseByNodeID(ctx, &pooledNode.ID, WithAnyPool())
+		assert.ErrorIs(t, err, ErrAnyPoolNotSupported)
+	})
+
+	t.Run("without any predicates", func(t *testing.T) {
+		err := store.ReleaseLicenseByNodeID(ctx, &pooledNode.ID)
+		assert.ErrorIs(t, err, ErrAnyPoolNotSupported)
+	})
+
+	t.Run("with named pool predicate", func(t *testing.T) {
+		err := store.ReleaseLicenseByNodeID(ctx, &pooledNode.ID, WithPool(testPool))
+		require.NoError(t, err)
+
+		// verify the pooled license was released
+		license, err := store.GetLicenseByGUID(ctx, pooledLicense.Guid, WithPool(testPool))
+		require.NoError(t, err)
+		assert.Nil(t, license.NodeID)
+		assert.NotNil(t, license.LastReleasedAt)
+	})
+
+	t.Run("without pool predicate", func(t *testing.T) {
+		err := store.ReleaseLicenseByNodeID(ctx, &unpooledNode.ID, WithoutPool())
+		require.NoError(t, err)
+
+		// verify the unpooled license was released
+		license, err := store.GetLicenseByGUID(ctx, unpooledLicense.Guid, WithoutPool())
+		require.NoError(t, err)
+		assert.Nil(t, license.NodeID)
+		assert.NotNil(t, license.LastReleasedAt)
+	})
 }
 
-func TestStore_ClaimLicenseByStrategy_RejectsAnyPool(t *testing.T) {
+func TestStore_ClaimLicenseByStrategy(t *testing.T) {
+	store, conn := newMemoryStore(t)
+	defer closeMemoryStore(conn)
 	ctx := context.Background()
-	testNodeID := int64(123)
 
-	tests := []struct {
-		name       string
-		predicates []LicensePredicateFunc
-		expectErr  error
-	}{
-		{
-			name:       "WithAnyPool should return error",
-			predicates: []LicensePredicateFunc{WithAnyPool()},
-			expectErr:  ErrAnyPoolNotSupported,
-		},
-		{
-			name:       "no predicates defaults to AnyPool - should return error",
-			predicates: []LicensePredicateFunc{},
-			expectErr:  ErrAnyPoolNotSupported,
-		},
-		{
-			name:       "WithPool should work",
-			predicates: []LicensePredicateFunc{WithPool(&Pool{ID: 1, Name: "test"})},
-			expectErr:  nil,
-		},
-		{
-			name:       "WithoutPool should work",
-			predicates: []LicensePredicateFunc{WithoutPool()},
-			expectErr:  nil,
-		},
-	}
+	testPool, err := store.CreatePool(ctx, "test-pool")
+	require.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			store := newMockStore()
-			mock := store.queries.(*mockQueries)
+	node, err := store.ActivateNode(ctx, "test-fingerprint")
+	require.NoError(t, err)
 
-			mock.claimLicenseWithPoolFIFOFunc = func(ctx context.Context, params ClaimLicenseWithPoolFIFOParams) (License, error) {
-				return License{ID: 1}, nil
-			}
-			mock.claimLicenseWithoutPoolFIFOFunc = func(ctx context.Context, nodeID *int64) (License, error) {
-				return License{ID: 1}, nil
-			}
+	// create available licenses
+	_, err = store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key")
+	require.NoError(t, err)
 
-			_, err := store.ClaimLicenseByStrategy(ctx, "fifo", &testNodeID, tt.predicates...)
+	_, err = store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key")
+	require.NoError(t, err)
 
-			if tt.expectErr != nil {
-				if err == nil {
-					t.Errorf("expected error %v but got none", tt.expectErr)
-				} else if err != tt.expectErr {
-					t.Errorf("expected error %v, got %v", tt.expectErr, err)
-				}
-			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-			}
-		})
-	}
+	t.Run("with any pool predicate", func(t *testing.T) {
+		_, err := store.ClaimLicenseByStrategy(ctx, "fifo", &node.ID, WithAnyPool())
+		assert.ErrorIs(t, err, ErrAnyPoolNotSupported)
+	})
+
+	t.Run("without any predicates", func(t *testing.T) {
+		_, err := store.ClaimLicenseByStrategy(ctx, "fifo", &node.ID)
+		assert.ErrorIs(t, err, ErrAnyPoolNotSupported)
+	})
+
+	t.Run("with named pool predicate", func(t *testing.T) {
+		license, err := store.ClaimLicenseByStrategy(ctx, "fifo", &node.ID, WithPool(testPool))
+		require.NoError(t, err)
+		assert.NotNil(t, license)
+		assert.Equal(t, "pooled-guid", license.Guid)
+		assert.Equal(t, &node.ID, license.NodeID)
+		assert.NotNil(t, license.LastClaimedAt)
+	})
+
+	t.Run("without pool predicate", func(t *testing.T) {
+		// create another node for this test
+		node2, err := store.ActivateNode(ctx, "test-fingerprint-2")
+		require.NoError(t, err)
+
+		license, err := store.ClaimLicenseByStrategy(ctx, "fifo", &node2.ID, WithoutPool())
+		require.NoError(t, err)
+		assert.NotNil(t, license)
+		assert.Equal(t, "unpooled-guid", license.Guid)
+		assert.Equal(t, &node2.ID, license.NodeID)
+		assert.NotNil(t, license.LastClaimedAt)
+	})
+
+	t.Run("test different strategies", func(t *testing.T) {
+		// create more licenses and test different strategies
+		node3, err := store.ActivateNode(ctx, "test-fingerprint-3")
+		require.NoError(t, err)
+
+		_, err = store.InsertLicense(ctx, testPool, "strategy-test-1", []byte("file1"), "key1")
+		require.NoError(t, err)
+		_, err = store.InsertLicense(ctx, testPool, "strategy-test-2", []byte("file2"), "key2")
+		require.NoError(t, err)
+
+		// test LIFO
+		license, err := store.ClaimLicenseByStrategy(ctx, "lifo", &node3.ID, WithPool(testPool))
+		require.NoError(t, err)
+		assert.NotNil(t, license)
+
+		// test random
+		node4, err := store.ActivateNode(ctx, "test-fingerprint-4")
+		require.NoError(t, err)
+
+		license, err = store.ClaimLicenseByStrategy(ctx, "rand", &node4.ID, WithPool(testPool))
+		require.NoError(t, err)
+		assert.NotNil(t, license)
+
+		// test default (should be FIFO)
+		node5, err := store.ActivateNode(ctx, "test-fingerprint-5")
+		require.NoError(t, err)
+		_, err = store.InsertLicense(ctx, testPool, "default-strategy", []byte("file3"), "key3")
+		require.NoError(t, err)
+
+		license, err = store.ClaimLicenseByStrategy(ctx, "invalid-strategy", &node5.ID, WithPool(testPool))
+		require.NoError(t, err)
+		assert.NotNil(t, license)
+	})
 }
 
-func TestStore_GetLicenseByNodeID_RejectsAnyPool(t *testing.T) {
+func TestStore_GetLicenseByNodeID(t *testing.T) {
+	store, conn := newMemoryStore(t)
+	defer closeMemoryStore(conn)
 	ctx := context.Background()
-	testNodeID := int64(123)
 
-	tests := []struct {
-		name       string
-		predicates []LicensePredicateFunc
-		expectErr  error
-	}{
-		{
-			name:       "WithAnyPool should return error",
-			predicates: []LicensePredicateFunc{WithAnyPool()},
-			expectErr:  ErrAnyPoolNotSupported,
-		},
-		{
-			name:       "no predicates defaults to AnyPool - should return error",
-			predicates: []LicensePredicateFunc{},
-			expectErr:  ErrAnyPoolNotSupported,
-		},
-		{
-			name:       "WithPool should work",
-			predicates: []LicensePredicateFunc{WithPool(&Pool{ID: 1, Name: "test"})},
-			expectErr:  nil,
-		},
-		{
-			name:       "WithoutPool should work",
-			predicates: []LicensePredicateFunc{WithoutPool()},
-			expectErr:  nil,
-		},
-	}
+	testPool, err := store.CreatePool(ctx, "test-pool")
+	require.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			store := newMockStore()
-			mock := store.queries.(*mockQueries)
+	// create separate nodes since each node can only have one license
+	pooledNode, err := store.ActivateNode(ctx, "pooled-node-fingerprint")
+	require.NoError(t, err)
 
-			mock.getLicenseWithPoolByNodeIDFunc = func(ctx context.Context, params GetLicenseWithPoolByNodeIDParams) (License, error) {
-				return License{ID: 1}, nil
-			}
-			mock.getLicenseWithoutPoolByNodeIDFunc = func(ctx context.Context, nodeID *int64) (License, error) {
-				return License{ID: 1}, nil
-			}
+	unpooledNode, err := store.ActivateNode(ctx, "unpooled-node-fingerprint")
+	require.NoError(t, err)
 
-			_, err := store.GetLicenseByNodeID(ctx, &testNodeID, tt.predicates...)
+	// create and claim licenses
+	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key")
+	require.NoError(t, err)
 
-			if tt.expectErr != nil {
-				if err == nil {
-					t.Errorf("expected error %v but got none", tt.expectErr)
-				} else if err != tt.expectErr {
-					t.Errorf("expected error %v, got %v", tt.expectErr, err)
-				}
-			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-			}
-		})
-	}
+	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key")
+	require.NoError(t, err)
+
+	// claim licenses for specific nodes
+	_, err = conn.ExecContext(ctx, "UPDATE licenses SET node_id = ?, last_claimed_at = strftime('%s', 'now') WHERE id = ?", pooledNode.ID, pooledLicense.ID)
+	require.NoError(t, err)
+
+	_, err = conn.ExecContext(ctx, "UPDATE licenses SET node_id = ?, last_claimed_at = strftime('%s', 'now') WHERE id = ?", unpooledNode.ID, unpooledLicense.ID)
+	require.NoError(t, err)
+
+	t.Run("with any pool predicate", func(t *testing.T) {
+		_, err := store.GetLicenseByNodeID(ctx, &pooledNode.ID, WithAnyPool())
+		assert.ErrorIs(t, err, ErrAnyPoolNotSupported)
+	})
+
+	t.Run("without any predicates", func(t *testing.T) {
+		_, err := store.GetLicenseByNodeID(ctx, &pooledNode.ID)
+		assert.ErrorIs(t, err, ErrAnyPoolNotSupported)
+	})
+
+	t.Run("with named pool predicate", func(t *testing.T) {
+		license, err := store.GetLicenseByNodeID(ctx, &pooledNode.ID, WithPool(testPool))
+		require.NoError(t, err)
+		assert.NotNil(t, license)
+		assert.Equal(t, pooledLicense.ID, license.ID)
+		assert.Equal(t, "pooled-guid", license.Guid)
+		assert.Equal(t, &pooledNode.ID, license.NodeID)
+	})
+
+	t.Run("without pool predicate", func(t *testing.T) {
+		license, err := store.GetLicenseByNodeID(ctx, &unpooledNode.ID, WithoutPool())
+		require.NoError(t, err)
+		assert.NotNil(t, license)
+		assert.Equal(t, unpooledLicense.ID, license.ID)
+		assert.Equal(t, "unpooled-guid", license.Guid)
+		assert.Equal(t, &unpooledNode.ID, license.NodeID)
+	})
+
+	t.Run("node has no license in specific pool", func(t *testing.T) {
+		emptyPool, err := store.CreatePool(ctx, "empty-pool")
+		require.NoError(t, err)
+
+		_, err = store.GetLicenseByNodeID(ctx, &pooledNode.ID, WithPool(emptyPool))
+		assert.Error(t, err)
+	})
+}
+
+func TestStore_AdditionalMethods(t *testing.T) {
+	store, conn := newMemoryStore(t)
+	defer closeMemoryStore(conn)
+	ctx := context.Background()
+
+	t.Run("InsertLicense", func(t *testing.T) {
+		testPool, err := store.CreatePool(ctx, "insert-test-pool")
+		require.NoError(t, err)
+
+		// test with pool
+		license, err := store.InsertLicense(ctx, testPool, "insert-test-guid", []byte("test-file"), "test-key")
+		require.NoError(t, err)
+		assert.Equal(t, "insert-test-guid", license.Guid)
+		assert.Equal(t, "test-key", license.Key)
+		assert.Equal(t, &testPool.ID, license.PoolID)
+
+		// test without pool
+		license2, err := store.InsertLicense(ctx, nil, "insert-test-guid-2", []byte("test-file-2"), "test-key-2")
+		require.NoError(t, err)
+		assert.Equal(t, "insert-test-guid-2", license2.Guid)
+		assert.Nil(t, license2.PoolID)
+	})
+
+	t.Run("DeleteLicenseByGUID", func(t *testing.T) {
+		// insert a license to delete
+		license, err := store.InsertLicense(ctx, nil, "delete-test-guid", []byte("delete-file"), "delete-key")
+		require.NoError(t, err)
+
+		// delete it
+		deleted, err := store.DeleteLicenseByGUID(ctx, license.Guid)
+		require.NoError(t, err)
+		assert.Equal(t, license.ID, deleted.ID)
+
+		// verify it's gone
+		_, err = store.GetLicenseByGUID(ctx, license.Guid)
+		assert.Error(t, err)
+	})
+
+	t.Run("Nodes", func(t *testing.T) {
+		// activate node
+		node, err := store.ActivateNode(ctx, "node-test-fingerprint")
+		require.NoError(t, err)
+		assert.Equal(t, "node-test-fingerprint", node.Fingerprint)
+
+		// get node
+		retrievedNode, err := store.GetNodeByFingerprint(ctx, "node-test-fingerprint")
+		require.NoError(t, err)
+		assert.Equal(t, node.ID, retrievedNode.ID)
+
+		// ping heartbeat
+		err = store.PingNodeHeartbeatByFingerprint(ctx, "node-test-fingerprint")
+		require.NoError(t, err)
+
+		// deactivate node
+		err = store.DeactivateNodeByFingerprint(ctx, "node-test-fingerprint")
+		require.NoError(t, err)
+
+		// should not be able to get it now
+		_, err = store.GetNodeByFingerprint(ctx, "node-test-fingerprint")
+		assert.Error(t, err)
+	})
+
+	t.Run("Pools", func(t *testing.T) {
+		// create pool
+		pool, err := store.CreatePool(ctx, "pool-operations-test")
+		require.NoError(t, err)
+		assert.Equal(t, "pool-operations-test", pool.Name)
+
+		// get by ID
+		retrievedPool, err := store.GetPoolByID(ctx, pool.ID)
+		require.NoError(t, err)
+		assert.Equal(t, pool.Name, retrievedPool.Name)
+
+		// get by name
+		retrievedPool2, err := store.GetPoolByName(ctx, "pool-operations-test")
+		require.NoError(t, err)
+		assert.Equal(t, pool.ID, retrievedPool2.ID)
+
+		// get all pools
+		pools, err := store.GetPools(ctx)
+		require.NoError(t, err)
+		assert.Greater(t, len(pools), 0)
+
+		// delete pool
+		deleted, err := store.DeletePoolByID(ctx, pool.ID)
+		require.NoError(t, err)
+		assert.Equal(t, pool.ID, deleted.ID)
+
+		// should not be able to get it now
+		_, err = store.GetPoolByID(ctx, pool.ID)
+		assert.Error(t, err)
+	})
 }

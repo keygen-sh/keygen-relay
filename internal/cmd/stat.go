@@ -32,7 +32,7 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 
 			columns := []table.Column{
 				{Title: "id", Width: 36},
-				{Title: "pool", Width: 12},
+				{Title: "pool", Width: 8}, // start with min width
 				{Title: "claims", Width: 8},
 				{Title: "node_id", Width: 8},
 				{Title: "last_claimed_at", Width: 20},
@@ -49,6 +49,13 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 				poolStr = pool.Name
 			} else {
 				poolStr = "-"
+			}
+
+			// update pool column width dynamically
+			if poolWidth := len(poolStr); poolWidth > columns[1].Width && poolWidth <= 32 {
+				columns[1].Width = poolWidth
+			} else if poolWidth > 32 {
+				columns[1].Width = 32
 			}
 
 			claimsStr := fmt.Sprintf("%d", license.Claims)

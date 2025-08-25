@@ -47,6 +47,12 @@ type Store struct {
 	connection *sql.DB
 }
 
+// TxStore represents a Store within a transaction context
+type TxStore struct {
+	*Store
+	tx *sql.Tx
+}
+
 func NewStore(queries *Queries, connection *sql.DB) *Store {
 	return &Store{
 		queries:    queries,
@@ -54,19 +60,30 @@ func NewStore(queries *Queries, connection *sql.DB) *Store {
 	}
 }
 
-// BeginTx begins a transaction and returns a new Store that uses the transaction
-func (s *Store) BeginTx(ctx context.Context) (*sql.Tx, *Store, error) {
+// BeginTx begins a transaction and returns a TxStore that encapsulates transaction operations
+func (s *Store) BeginTx(ctx context.Context) (*TxStore, error) {
 	tx, err := s.connection.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, err
 	}
 
-	txStore := &Store{
-		queries:    s.queries.WithTx(tx),
-		connection: s.connection,
-	}
+	return &TxStore{
+		Store: &Store{
+			queries:    s.queries.WithTx(tx),
+			connection: s.connection,
+		},
+		tx: tx,
+	}, nil
+}
 
-	return tx, txStore, nil
+// Commit commits the transaction
+func (ts *TxStore) Commit() error {
+	return ts.tx.Commit()
+}
+
+// Rollback rolls back the transaction
+func (ts *TxStore) Rollback() error {
+	return ts.tx.Rollback()
 }
 
 func (s *Store) InsertLicense(ctx context.Context, pool *Pool, guid string, file []byte, key string) (*License, error) {
@@ -239,7 +256,7 @@ type BulkInsertAuditLogParams struct {
 }
 
 func (s *Store) BulkInsertAuditLogs(ctx context.Context, logs []BulkInsertAuditLogParams) error {
-	tx, qtx, err := s.BeginTx(ctx)
+	tx, err := s.BeginTx(ctx)
 	if err != nil {
 		return err
 	}
@@ -256,7 +273,7 @@ func (s *Store) BulkInsertAuditLogs(ctx context.Context, logs []BulkInsertAuditL
 			params.PoolID = &log.Pool.ID
 		}
 
-		if err := qtx.queries.InsertAuditLog(ctx, params); err != nil {
+		if err := tx.queries.InsertAuditLog(ctx, params); err != nil {
 			return fmt.Errorf("failed to insert audit log: %w", err)
 		}
 	}

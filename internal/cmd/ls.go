@@ -35,7 +35,7 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 				return err
 			}
 
-			pools := make(map[int64]string)
+			pools := make(map[int64]string, len(poolList))
 			for _, p := range poolList {
 				pools[p.ID] = p.Name
 			}

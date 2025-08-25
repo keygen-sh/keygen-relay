@@ -260,7 +260,7 @@ relay serve --pool "prod" -vvvv
 Consumers of Relay can specify a pool using the `Relay-Pool` header:
 
 ```bash
-fingerprint=$(cat /etc/machine-id | openssl dgst -sha256 -hmac "prod" -binary | xxd -p -c 256)
+fingerprint=$(echo -n "prod" | openssl dgst -sha256 -hmac "$(cat /etc/machine-id)" -binary | xxd -p -c 256)
 
 curl -v -X PUT -H "Relay-Pool: prod" "http://localhost:6349/v1/nodes/$fingerprint"
 ```

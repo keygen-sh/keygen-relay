@@ -319,7 +319,7 @@ func (q *Queries) GetLicenseWithPoolByNodeID(ctx context.Context, arg GetLicense
 const getLicenseWithoutPoolByGUID = `-- name: GetLicenseWithoutPoolByGUID :one
 SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 FROM licenses
-WHERE guid = ? and pool_id IS NULL
+WHERE guid = ? AND pool_id IS NULL
 `
 
 func (q *Queries) GetLicenseWithoutPoolByGUID(ctx context.Context, guid string) (License, error) {
@@ -343,7 +343,7 @@ func (q *Queries) GetLicenseWithoutPoolByGUID(ctx context.Context, guid string) 
 const getLicenseWithoutPoolByNodeID = `-- name: GetLicenseWithoutPoolByNodeID :one
 SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, node_id, pool_id, created_at
 FROM licenses
-WHERE node_id = ? and pool_id IS NULL
+WHERE node_id = ? AND pool_id IS NULL
 `
 
 func (q *Queries) GetLicenseWithoutPoolByNodeID(ctx context.Context, nodeID *int64) (License, error) {

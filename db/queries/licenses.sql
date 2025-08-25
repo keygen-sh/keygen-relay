@@ -11,7 +11,7 @@ WHERE guid = ?;
 -- name: GetLicenseWithoutPoolByGUID :one
 SELECT *
 FROM licenses
-WHERE guid = ? and pool_id IS NULL;
+WHERE guid = ? AND pool_id IS NULL;
 
 -- name: GetLicenseWithPoolByGUID :one
 SELECT *
@@ -21,7 +21,7 @@ WHERE guid = ? AND pool_id = ?;
 -- name: GetLicenseWithoutPoolByNodeID :one
 SELECT *
 FROM licenses
-WHERE node_id = ? and pool_id IS NULL;
+WHERE node_id = ? AND pool_id IS NULL;
 
 -- name: GetLicenseWithPoolByNodeID :one
 SELECT *

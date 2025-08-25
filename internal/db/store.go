@@ -54,20 +54,19 @@ func NewStore(queries *Queries, connection *sql.DB) *Store {
 	}
 }
 
-func (s *Store) BeginTx(ctx context.Context) (*sql.Tx, error) {
+// BeginTx begins a transaction and returns a new Store that uses the transaction
+func (s *Store) BeginTx(ctx context.Context) (*sql.Tx, *Store, error) {
 	tx, err := s.connection.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	return tx, nil
-}
 
-// WithTx returns a new Store that uses the transaction queries
-func (s *Store) WithTx(tx *sql.Tx) *Store {
-	return &Store{
+	txStore := &Store{
 		queries:    s.queries.WithTx(tx),
 		connection: s.connection,
 	}
+
+	return tx, txStore, nil
 }
 
 func (s *Store) InsertLicense(ctx context.Context, pool *Pool, guid string, file []byte, key string) (*License, error) {
@@ -240,11 +239,10 @@ type BulkInsertAuditLogParams struct {
 }
 
 func (s *Store) BulkInsertAuditLogs(ctx context.Context, logs []BulkInsertAuditLogParams) error {
-	tx, err := s.BeginTx(ctx)
+	tx, qtx, err := s.BeginTx(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return err
 	}
-	qtx := s.WithTx(tx)
 	defer tx.Rollback()
 
 	for _, log := range logs {

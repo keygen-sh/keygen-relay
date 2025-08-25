@@ -105,15 +105,14 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 	key := dec.License.Key
 	var pool *db.Pool
 
-	tx, err := m.store.BeginTx(ctx)
+	tx, qtx, err := m.store.BeginTx(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, err
 	}
-	qtx := m.store.WithTx(tx)
 	defer tx.Rollback()
 
 	if poolName != nil {
-		pool, err = m.findOrCreatePool(ctx, *qtx, *poolName)
+		pool, err = m.findOrCreatePool(ctx, qtx, *poolName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find or create pool: %w", err)
 		}
@@ -241,11 +240,10 @@ func (m *manager) GetLicenseByGUID(ctx context.Context, poolName *string, guid s
 }
 
 func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprint string) (*LicenseOperationResult, error) {
-	tx, err := m.store.BeginTx(ctx)
+	tx, qtx, err := m.store.BeginTx(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, err
 	}
-	qtx := m.store.WithTx(tx)
 	defer tx.Rollback()
 
 	pool, err := m.resolvePoolWithTx(ctx, qtx, poolName)
@@ -253,7 +251,7 @@ func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprin
 		return nil, err
 	}
 
-	node, err := m.findOrActivateNode(ctx, *qtx, pool, fingerprint)
+	node, err := m.findOrActivateNode(ctx, qtx, pool, fingerprint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find or activate node: %w", err)
 	}
@@ -336,11 +334,10 @@ func (m *manager) ClaimLicense(ctx context.Context, poolName *string, fingerprin
 }
 
 func (m *manager) ReleaseLicense(ctx context.Context, poolName *string, fingerprint string) (*LicenseOperationResult, error) {
-	tx, err := m.store.BeginTx(ctx)
+	tx, qtx, err := m.store.BeginTx(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, err
 	}
-	qtx := m.store.WithTx(tx)
 	defer tx.Rollback()
 
 	node, err := qtx.GetNodeByFingerprint(ctx, fingerprint)
@@ -403,7 +400,7 @@ func (m *manager) Config() *Config {
 	return m.config
 }
 
-func (m *manager) findOrCreatePool(ctx context.Context, store db.Store, name string) (*db.Pool, error) {
+func (m *manager) findOrCreatePool(ctx context.Context, store *db.Store, name string) (*db.Pool, error) {
 	pool, err := store.GetPoolByName(ctx, name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -429,7 +426,7 @@ func (m *manager) findOrCreatePool(ctx context.Context, store db.Store, name str
 	return pool, nil
 }
 
-func (m *manager) findOrActivateNode(ctx context.Context, store db.Store, pool *db.Pool, fingerprint string) (*db.Node, error) {
+func (m *manager) findOrActivateNode(ctx context.Context, store *db.Store, pool *db.Pool, fingerprint string) (*db.Node, error) {
 	node, err := store.GetNodeByFingerprint(ctx, fingerprint)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -456,11 +453,10 @@ func (m *manager) findOrActivateNode(ctx context.Context, store db.Store, pool *
 }
 
 func (m *manager) CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.Node, error) {
-	tx, err := m.store.BeginTx(ctx)
+	tx, qtx, err := m.store.BeginTx(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, err
 	}
-	qtx := m.store.WithTx(tx)
 	defer tx.Rollback()
 
 	licenses, err := qtx.ReleaseLicensesFromDeadNodes(ctx, ttl)

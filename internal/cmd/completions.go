@@ -22,7 +22,7 @@ func poolTypeCompletion(cmd *cobra.Command, args []string, toComplete string) ([
 func getPoolNamesForCompletion(cmd *cobra.Command) ([]string, error) {
 	ctx := cmd.Context()
 	path := try.Try(
-		try.CmdPersistentFlag(cmd, "database"),
+		try.CmdPersistentFlag(cmd.Root(), "database"),
 		try.Env("RELAY_DATABASE"),
 		try.Static("./relay.sqlite"),
 	)

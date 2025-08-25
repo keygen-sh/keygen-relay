@@ -20,8 +20,10 @@ func (e *StrategyType) String() string {
 func (e *StrategyType) Set(v string) error {
 	if isValidStrategy(v) {
 		*e = StrategyType(v)
+
 		return nil
 	}
+
 	return errors.New(`must be one of "lifo", "fifo", or "rand"`)
 }
 
@@ -45,6 +47,7 @@ type Config struct {
 	TTL              time.Duration
 	Strategy         StrategyType
 	CullInterval     time.Duration
+	Pool             *string
 }
 
 func NewConfig() *Config {

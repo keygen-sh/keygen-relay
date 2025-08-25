@@ -2,10 +2,10 @@ package server
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/logger"
 )
 
 type Reaper interface {
@@ -23,14 +23,14 @@ func (r *reaper) Start(ctx context.Context) error {
 	ticker := time.NewTicker(r.config.CullInterval)
 	defer ticker.Stop()
 
-	slog.Debug("starting reaper", "ttl", r.config.TTL, "interval", r.config.CullInterval)
+	logger.Debug("starting reaper", "ttl", r.config.TTL, "interval", r.config.CullInterval)
 
 	for {
 		select {
 		case <-ticker.C:
 			r.cull(ctx)
 		case <-ctx.Done():
-			slog.Debug("stopping reaper")
+			logger.Debug("stopping reaper")
 			return nil
 		}
 	}
@@ -47,15 +47,15 @@ func (r *reaper) Config() *Config {
 func (r *reaper) cull(ctx context.Context) {
 	nodes, err := r.manager.CullDeadNodes(ctx, r.config.TTL)
 	if err != nil {
-		slog.Error("reaper failed to cull dead nodes", "error", err)
+		logger.Error("reaper failed to cull dead nodes", "error", err)
 
 		return
 	}
 
 	if len(nodes) > 0 {
-		slog.Debug("reaper successfully culled dead nodes", "count", len(nodes))
+		logger.Debug("reaper successfully culled dead nodes", "count", len(nodes))
 	} else {
-		slog.Debug("reaper has nothing to cull")
+		logger.Debug("reaper has nothing to cull")
 	}
 }
 

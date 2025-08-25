@@ -13,15 +13,17 @@ import (
 )
 
 func StatCmd(manager licenses.Manager) *cobra.Command {
-	var licenseID string
-	var plain bool
+	var (
+		licenseID string
+		plain     bool
+	)
 
 	cmd := &cobra.Command{
 		Use:          "stat",
 		Short:        "print stats for a license in the local relay server's pool",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			license, err := manager.GetLicenseByGUID(cmd.Context(), licenseID)
+			license, err := manager.GetLicenseByGUID(cmd.Context(), nil, licenseID)
 			if err != nil {
 				output.PrintError(cmd.ErrOrStderr(), err.Error())
 
@@ -30,10 +32,30 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 
 			columns := []table.Column{
 				{Title: "id", Width: 36},
+				{Title: "pool", Width: 8}, // start with min width
 				{Title: "claims", Width: 8},
 				{Title: "node_id", Width: 8},
 				{Title: "last_claimed_at", Width: 20},
 				{Title: "last_released_at", Width: 20},
+			}
+
+			var poolStr string
+			if license.PoolID != nil {
+				pool, err := manager.GetPoolByID(cmd.Context(), *license.PoolID)
+				if err != nil {
+					return err
+				}
+
+				poolStr = pool.Name
+			} else {
+				poolStr = "-"
+			}
+
+			// update pool column width dynamically
+			if poolWidth := len(poolStr); poolWidth > columns[1].Width && poolWidth <= 32 {
+				columns[1].Width = poolWidth
+			} else if poolWidth > 32 {
+				columns[1].Width = 32
 			}
 
 			claimsStr := fmt.Sprintf("%d", license.Claims)
@@ -49,7 +71,7 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 			lastReleasedAtStr := formatTime(license.LastReleasedAt)
 
 			tableRows := []table.Row{
-				{license.Guid, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
+				{license.Guid, poolStr, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
 			}
 
 			var renderer ui.TableRenderer

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keygen-sh/keygen-relay/internal/db"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
 	"github.com/keygen-sh/keygen-relay/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -31,10 +32,10 @@ func TestAddLicense_Success(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	_, err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(context.Background(), nil, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
-	license, err := manager.GetLicenseByGUID(context.Background(), "license_test_key")
+	license, err := manager.GetLicenseByGUID(context.Background(), nil, "license_test_key")
 	assert.NoError(t, err)
 	assert.Equal(t, "test_key", license.Key)
 }
@@ -57,10 +58,10 @@ func TestAddLicense_Failure(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	_, err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(context.Background(), nil, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
-	_, err = manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
+	_, err = manager.AddLicense(context.Background(), nil, "test_license.lic", "test_key", "test_public_key")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "license with the provided key already exists")
 }
@@ -83,10 +84,38 @@ func TestAddLicense_FileNotFound(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	_, err := manager.AddLicense(context.Background(), "non_existent.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(context.Background(), nil, "non_existent.lic", "test_key", "test_public_key")
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "license file not found at 'non_existent.lic'")
+}
+
+func TestAddPooledLicense_Success(t *testing.T) {
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			EnabledAudit: true,
+		},
+		func(filename string) ([]byte, error) {
+			return []byte("mock_certificate"), nil
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+
+	manager.AttachStore(*store)
+
+	poolName := "test-pool"
+	_, err := manager.AddLicense(context.Background(), &poolName, "test_license.lic", "test_key", "test_public_key")
+	assert.NoError(t, err)
+
+	license, err := manager.GetLicenseByGUID(context.Background(), &poolName, "license_test_key")
+	assert.NoError(t, err)
+	assert.Equal(t, "test_key", license.Key)
+	assert.NotNil(t, license.PoolID)
 }
 
 func TestRemoveLicense_Success(t *testing.T) {
@@ -109,19 +138,58 @@ func TestRemoveLicense_Success(t *testing.T) {
 	manager.AttachStore(*store)
 
 	// add a license that to be deleted
-	_, err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, nil, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err, "failed to add license")
 
 	// check that the license was created
-	_, err = manager.GetLicenseByGUID(ctx, "license_test_key")
+	_, err = manager.GetLicenseByGUID(ctx, nil, "license_test_key")
 	assert.NoError(t, err, "license should exist")
 
 	// remove the license
-	err = manager.RemoveLicense(ctx, "license_test_key")
+	err = manager.RemoveLicense(ctx, nil, "license_test_key")
 	assert.NoError(t, err, "failed to remove license")
 
 	// check that the license is removed
-	_, err = manager.GetLicenseByGUID(context.Background(), "license_test_key")
+	_, err = manager.GetLicenseByGUID(context.Background(), nil, "license_test_key")
+	assert.Error(t, err, "license should not exist after deletion")
+	assert.Contains(t, err.Error(), "license license_test_key: license not found")
+}
+
+func TestRemovePooledLicense_Success(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			EnabledAudit: true,
+		},
+		func(filename string) ([]byte, error) {
+			return []byte("mock_certificate"), nil
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+
+	manager.AttachStore(*store)
+
+	poolName := "test-pool"
+
+	// add a license that to be deleted
+	_, err := manager.AddLicense(ctx, &poolName, "test_license.lic", "test_key", "test_public_key")
+	assert.NoError(t, err, "failed to add license")
+
+	// check that the license was created
+	_, err = manager.GetLicenseByGUID(ctx, &poolName, "license_test_key")
+	assert.NoError(t, err, "license should exist")
+
+	// remove the license
+	err = manager.RemoveLicense(ctx, &poolName, "license_test_key")
+	assert.NoError(t, err, "failed to remove license")
+
+	// check that the license is removed
+	_, err = manager.GetLicenseByGUID(context.Background(), &poolName, "license_test_key")
 	assert.Error(t, err, "license should not exist after deletion")
 	assert.Contains(t, err.Error(), "license license_test_key: license not found")
 }
@@ -144,7 +212,7 @@ func TestRemoveLicense_Failure(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	err := manager.RemoveLicense(context.Background(), "invalid_id")
+	err := manager.RemoveLicense(context.Background(), nil, "invalid_id")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "license invalid_id not found")
 }
@@ -170,16 +238,95 @@ func TestListLicenses_Success(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	_, err := manager.AddLicense(context.Background(), "test_license_1.lic", "test_key_1", "test_public_key_1")
+	_, err := manager.AddLicense(context.Background(), nil, "test_license_1.lic", "test_key_1", "test_public_key_1")
 	assert.NoError(t, err)
-	_, err = manager.AddLicense(context.Background(), "test_license_2.lic", "test_key_2", "test_public_key_2")
+	_, err = manager.AddLicense(context.Background(), nil, "test_license_2.lic", "test_key_2", "test_public_key_2")
 	assert.NoError(t, err)
 
-	licenseList, err := manager.ListLicenses(context.Background())
+	licenseList, err := manager.ListLicenses(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.Len(t, licenseList, 2)
 	assert.Equal(t, "test_key_1", licenseList[0].Key)
 	assert.Equal(t, "test_key_2", licenseList[1].Key)
+}
+
+func TestListPooledLicenses_Isolation(t *testing.T) {
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			EnabledAudit: true,
+		},
+		func(filename string) ([]byte, error) {
+			switch filename {
+			case "license_pool1_1.lic":
+				return []byte("mock_certificate_pool1_1"), nil
+			case "license_pool1_2.lic":
+				return []byte("mock_certificate_pool1_2"), nil
+			case "license_pool2_1.lic":
+				return []byte("mock_certificate_pool2_1"), nil
+			case "license_default_1.lic":
+				return []byte("mock_certificate_default_1"), nil
+			case "license_default_2.lic":
+				return []byte("mock_certificate_default_2"), nil
+			default:
+				return []byte("mock_certificate"), nil
+			}
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+
+	manager.AttachStore(*store)
+
+	pool1 := "pool-1"
+	pool2 := "pool-2"
+
+	// Add licenses to pool-1
+	_, err := manager.AddLicense(context.Background(), &pool1, "license_pool1_1.lic", "key_pool1_1", "test_public_key")
+	assert.NoError(t, err)
+	_, err = manager.AddLicense(context.Background(), &pool1, "license_pool1_2.lic", "key_pool1_2", "test_public_key")
+	assert.NoError(t, err)
+
+	// Add license to pool-2
+	_, err = manager.AddLicense(context.Background(), &pool2, "license_pool2_1.lic", "key_pool2_1", "test_public_key")
+	assert.NoError(t, err)
+
+	// Add licenses to default pool (nil)
+	_, err = manager.AddLicense(context.Background(), nil, "license_default_1.lic", "key_default_1", "test_public_key")
+	assert.NoError(t, err)
+	_, err = manager.AddLicense(context.Background(), nil, "license_default_2.lic", "key_default_2", "test_public_key")
+	assert.NoError(t, err)
+
+	// List pool-1 licenses - should have 2
+	licenseList, err := manager.ListLicenses(context.Background(), &pool1)
+	assert.NoError(t, err)
+	assert.Len(t, licenseList, 2)
+	assert.Equal(t, "key_pool1_1", licenseList[0].Key)
+	assert.Equal(t, "key_pool1_2", licenseList[1].Key)
+
+	// List pool-2 licenses - should have 1
+	licenseList, err = manager.ListLicenses(context.Background(), &pool2)
+	assert.NoError(t, err)
+	assert.Len(t, licenseList, 1)
+	assert.Equal(t, "key_pool2_1", licenseList[0].Key)
+
+	// List ALL licenses (nil pool) - should have 5 total
+	licenseList, err = manager.ListLicenses(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.Len(t, licenseList, 5)
+	// Verify all licenses are present
+	keys := make(map[string]bool)
+	for _, lic := range licenseList {
+		keys[lic.Key] = true
+	}
+	assert.True(t, keys["key_pool1_1"])
+	assert.True(t, keys["key_pool1_2"])
+	assert.True(t, keys["key_pool2_1"])
+	assert.True(t, keys["key_default_1"])
+	assert.True(t, keys["key_default_2"])
 }
 
 func TestGetLicenseByGUID_Success(t *testing.T) {
@@ -200,10 +347,10 @@ func TestGetLicenseByGUID_Success(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	_, err := manager.AddLicense(context.Background(), "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(context.Background(), nil, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
-	license, err := manager.GetLicenseByGUID(context.Background(), "license_test_key")
+	license, err := manager.GetLicenseByGUID(context.Background(), nil, "license_test_key")
 	assert.NoError(t, err)
 	assert.Equal(t, "test_key", license.Key)
 }
@@ -226,7 +373,7 @@ func TestGetLicenseByGUID_Failure(t *testing.T) {
 
 	manager.AttachStore(*store)
 
-	_, err := manager.GetLicenseByGUID(context.Background(), "invalid_id")
+	_, err := manager.GetLicenseByGUID(context.Background(), nil, "invalid_id")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "license invalid_id: license not found")
 }
@@ -251,10 +398,43 @@ func TestClaimLicense_Success(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	_, err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, nil, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
-	result, err := manager.ClaimLicense(ctx, "test_fingerprint")
+	result, err := manager.ClaimLicense(ctx, nil, "test_fingerprint")
+	assert.NoError(t, err)
+	assert.Equal(t, result.Status, licenses.OperationStatusCreated)
+	assert.NotNil(t, result.License)
+	assert.NotNil(t, result.License.LastClaimedAt)
+	assert.NotNil(t, result.License.CreatedAt)
+	assert.Equal(t, "test_key", result.License.Key)
+}
+
+func TestClaimPooledLicense_Success(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			Strategy:          "fifo",
+			EnabledAudit:      true,
+			ExtendOnHeartbeat: true,
+		},
+		func(filename string) ([]byte, error) {
+			return []byte("mock_certificate"), nil
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+	manager.AttachStore(*store)
+
+	poolName := "test-pool"
+	_, err := manager.AddLicense(ctx, &poolName, "test_license.lic", "test_key", "test_public_key")
+	assert.NoError(t, err)
+
+	result, err := manager.ClaimLicense(ctx, &poolName, "test_fingerprint")
 	assert.NoError(t, err)
 	assert.Equal(t, result.Status, licenses.OperationStatusCreated)
 	assert.NotNil(t, result.License)
@@ -283,7 +463,7 @@ func TestClaimLicense_NoLicensesAvailable(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	result, err := manager.ClaimLicense(ctx, "test_fingerprint")
+	result, err := manager.ClaimLicense(ctx, nil, "test_fingerprint")
 	assert.NoError(t, err)
 	assert.Equal(t, result.Status, licenses.OperationStatusNoLicensesAvailable)
 	assert.Nil(t, result.License)
@@ -309,17 +489,17 @@ func TestClaimLicense_AlreadyClaimed_WithHeartbeatEnabled(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	_, err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, nil, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
 	// First getting the license
-	result1, err1 := manager.ClaimLicense(ctx, "test_fingerprint")
+	result1, err1 := manager.ClaimLicense(ctx, nil, "test_fingerprint")
 	assert.NoError(t, err1)
 	assert.Equal(t, result1.Status, licenses.OperationStatusCreated)
 	assert.NotNil(t, result1.License)
 
 	// The second getting the license with the same node.fingerprint
-	result2, err2 := manager.ClaimLicense(ctx, "test_fingerprint")
+	result2, err2 := manager.ClaimLicense(ctx, nil, "test_fingerprint")
 	assert.NoError(t, err2)
 	assert.Equal(t, result2.Status, licenses.OperationStatusExtended)
 	assert.NotNil(t, result2.License)
@@ -346,17 +526,17 @@ func TestClaimLicense_AlreadyClaimed_WithHeartbeatDisabled(t *testing.T) {
 	manager.AttachStore(*store)
 
 	// add the license
-	_, err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, nil, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
 	// first getting the license
-	result1, err1 := manager.ClaimLicense(ctx, "test_fingerprint")
+	result1, err1 := manager.ClaimLicense(ctx, nil, "test_fingerprint")
 	assert.NoError(t, err1)
 	assert.Equal(t, result1.Status, licenses.OperationStatusCreated)
 	assert.NotNil(t, result1.License)
 
 	// the second getting the license with the same node.fingerprint
-	result2, err2 := manager.ClaimLicense(ctx, "test_fingerprint")
+	result2, err2 := manager.ClaimLicense(ctx, nil, "test_fingerprint")
 	assert.NoError(t, err2)
 	assert.Equal(t, result2.Status, licenses.OperationStatusConflict)
 	assert.Nil(t, result2.License)
@@ -390,11 +570,11 @@ func TestClaimLicense_FIFO_Strategy(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	_, err := manager.AddLicense(ctx, "license1.lic", "key1", "public_key")
+	_, err := manager.AddLicense(ctx, nil, "license1.lic", "key1", "public_key")
 	assert.NoError(t, err)
-	_, err = manager.AddLicense(ctx, "license2.lic", "key2", "public_key")
+	_, err = manager.AddLicense(ctx, nil, "license2.lic", "key2", "public_key")
 	assert.NoError(t, err)
-	_, err = manager.AddLicense(ctx, "license3.lic", "key3", "public_key")
+	_, err = manager.AddLicense(ctx, nil, "license3.lic", "key3", "public_key")
 	assert.NoError(t, err)
 
 	// we need to update created_at manually, because in tests the records are created very quickly in the same time
@@ -410,7 +590,7 @@ func TestClaimLicense_FIFO_Strategy(t *testing.T) {
 	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-1 seconds') WHERE guid = 'license_key3'`)
 	assert.NoError(t, err)
 
-	result, err := manager.ClaimLicense(ctx, "test_fingerprint")
+	result, err := manager.ClaimLicense(ctx, nil, "test_fingerprint")
 	assert.NoError(t, err)
 	assert.Equal(t, licenses.OperationStatusCreated, result.Status)
 	assert.NotNil(t, result.License)
@@ -446,13 +626,13 @@ func TestClaimLicense_LIFO_Strategy(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	_, err := manager.AddLicense(ctx, "license1.lic", "key1", "public_key")
+	_, err := manager.AddLicense(ctx, nil, "license1.lic", "key1", "public_key")
 	assert.NoError(t, err)
 
-	_, err = manager.AddLicense(ctx, "license2.lic", "key2", "public_key")
+	_, err = manager.AddLicense(ctx, nil, "license2.lic", "key2", "public_key")
 	assert.NoError(t, err)
 
-	_, err = manager.AddLicense(ctx, "license3.lic", "key3", "public_key")
+	_, err = manager.AddLicense(ctx, nil, "license3.lic", "key3", "public_key")
 	assert.NoError(t, err)
 
 	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET created_at = strftime('%s', 'now', '-3 seconds') WHERE guid = 'license_key1'`)
@@ -465,7 +645,7 @@ func TestClaimLicense_LIFO_Strategy(t *testing.T) {
 	assert.NoError(t, err)
 
 	// claim license with LIFO strategy
-	result, err := manager.ClaimLicense(ctx, "test_fingerprint")
+	result, err := manager.ClaimLicense(ctx, nil, "test_fingerprint")
 	assert.NoError(t, err)
 	assert.Equal(t, licenses.OperationStatusCreated, result.Status)
 	assert.NotNil(t, result.License)
@@ -493,16 +673,16 @@ func TestReleaseLicense_Success(t *testing.T) {
 	manager.AttachStore(*store)
 
 	// adding the license and then getting it
-	_, err := manager.AddLicense(ctx, "test_license.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, nil, "test_license.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
 
-	result, err := manager.ClaimLicense(ctx, "test_fingerprint")
+	result, err := manager.ClaimLicense(ctx, nil, "test_fingerprint")
 	assert.NoError(t, err)
 	assert.Equal(t, result.Status, licenses.OperationStatusCreated)
 	assert.NotNil(t, result.License)
 
 	// Release the license
-	releaseResult, err := manager.ReleaseLicense(ctx, "test_fingerprint")
+	releaseResult, err := manager.ReleaseLicense(ctx, nil, "test_fingerprint")
 	assert.NoError(t, err)
 	assert.Equal(t, releaseResult.Status, licenses.OperationStatusSuccess)
 
@@ -513,6 +693,55 @@ func TestReleaseLicense_Success(t *testing.T) {
 
 	// checking the free license
 	claimedLicense, err := store.GetLicenseByGUID(ctx, result.License.Guid)
+	assert.NoError(t, err)
+	assert.Nil(t, claimedLicense.NodeID)
+	assert.NotNil(t, claimedLicense.LastReleasedAt)
+}
+
+func TestReleasePooledLicense_Success(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{
+			Strategy:     "fifo",
+			EnabledAudit: true,
+		},
+		func(filename string) ([]byte, error) {
+			return []byte("mock_certificate"), nil
+		},
+		func(cert []byte) licenses.LicenseVerifier {
+			return &testutils.FakeLicenseVerifier{}
+		},
+	)
+	manager.AttachStore(*store)
+
+	poolName := "test-pool"
+
+	// adding the license and then getting it
+	_, err := manager.AddLicense(ctx, &poolName, "test_license.lic", "test_key", "test_public_key")
+	assert.NoError(t, err)
+
+	result, err := manager.ClaimLicense(ctx, &poolName, "test_fingerprint")
+	assert.NoError(t, err)
+	assert.Equal(t, result.Status, licenses.OperationStatusCreated)
+	assert.NotNil(t, result.License)
+
+	// Release the license
+	releaseResult, err := manager.ReleaseLicense(ctx, &poolName, "test_fingerprint")
+	assert.NoError(t, err)
+	assert.Equal(t, releaseResult.Status, licenses.OperationStatusSuccess)
+
+	// checking the empty node
+	_, err = store.GetNodeByFingerprint(ctx, "test_fingerprint")
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, sql.ErrNoRows))
+
+	// checking the free license - need to get pool first
+	pool, err := store.GetPoolByName(ctx, poolName)
+	assert.NoError(t, err)
+	claimedLicense, err := store.GetLicenseByGUID(ctx, result.License.Guid, db.WithPool(pool))
 	assert.NoError(t, err)
 	assert.Nil(t, claimedLicense.NodeID)
 	assert.NotNil(t, claimedLicense.LastReleasedAt)
@@ -538,7 +767,7 @@ func TestReleaseLicense_NodeNotFound(t *testing.T) {
 	manager.AttachStore(*store)
 
 	// release the license for non existent node
-	result, err := manager.ReleaseLicense(ctx, "non_existent_fingerprint")
+	result, err := manager.ReleaseLicense(ctx, nil, "non_existent_fingerprint")
 	assert.Nil(t, err)
 	assert.Equal(t, result.Status, licenses.OperationStatusNotFound)
 }
@@ -562,7 +791,7 @@ func TestReleaseLicense_LicenseNotFound(t *testing.T) {
 	_, err := store.ActivateNode(ctx, "test_fingerprint")
 	assert.NoError(t, err)
 
-	result, err := manager.ReleaseLicense(ctx, "test_fingerprint")
+	result, err := manager.ReleaseLicense(ctx, nil, "test_fingerprint")
 	assert.Nil(t, err)
 	assert.Equal(t, result.Status, licenses.OperationStatusNotFound)
 }
@@ -617,7 +846,7 @@ func TestCullDeadNodes(t *testing.T) {
 	defer testutils.CloseMemoryStore(dbConn)
 
 	manager := licenses.NewManager(
-		&licenses.Config{},
+		licenses.NewConfig(),
 		func(filename string) ([]byte, error) {
 			if filename == "license1.lic" {
 				return []byte("mock_certificate_1"), nil
@@ -630,19 +859,19 @@ func TestCullDeadNodes(t *testing.T) {
 	)
 	manager.AttachStore(*store)
 
-	_, err := manager.AddLicense(ctx, "license1.lic", "test_key", "test_public_key")
+	_, err := manager.AddLicense(ctx, nil, "license1.lic", "test_key", "test_public_key")
 	assert.NoError(t, err)
-	_, err = manager.AddLicense(ctx, "license2.lic", "test_key_2", "test_public_key")
+	_, err = manager.AddLicense(ctx, nil, "license2.lic", "test_key_2", "test_public_key")
 	assert.NoError(t, err)
 
 	// сlaim the first license
-	result1, err := manager.ClaimLicense(ctx, "test_fingerprint")
+	result1, err := manager.ClaimLicense(ctx, nil, "test_fingerprint")
 	assert.NoError(t, err)
 	assert.Equal(t, licenses.OperationStatusCreated, result1.Status)
 	assert.NotNil(t, result1.License)
 
 	// claim the second license
-	result2, err := manager.ClaimLicense(ctx, "test_fingerprint_2")
+	result2, err := manager.ClaimLicense(ctx, nil, "test_fingerprint_2")
 	assert.NoError(t, err)
 	assert.Equal(t, licenses.OperationStatusCreated, result2.Status)
 	assert.NotNil(t, result2.License)
@@ -658,12 +887,12 @@ func TestCullDeadNodes(t *testing.T) {
 	assert.Equal(t, len(nodes), 1)
 	assert.Equal(t, nodes[0].Fingerprint, "test_fingerprint")
 
-	license, err := manager.GetLicenseByGUID(ctx, result1.License.Guid)
+	license, err := manager.GetLicenseByGUID(ctx, nil, result1.License.Guid)
 	assert.NoError(t, err)
 	assert.Nil(t, license.NodeID)
 	assert.NotNil(t, license.ID)
 
-	license2, err := manager.GetLicenseByGUID(ctx, result2.License.Guid)
+	license2, err := manager.GetLicenseByGUID(ctx, nil, result2.License.Guid)
 	assert.NoError(t, err)
 	assert.NotNil(t, license2.NodeID)
 

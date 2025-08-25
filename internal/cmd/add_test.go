@@ -14,7 +14,7 @@ import (
 
 func TestAddCmd_Success(t *testing.T) {
 	manager := &testutils.FakeManager{
-		AddLicenseFn: func(ctx context.Context, filePath, key, publicKey string) (*db.License, error) {
+		AddLicenseFn: func(ctx context.Context, pool *string, filePath, key, publicKey string) (*db.License, error) {
 			return &db.License{Guid: "test" + key}, nil
 		},
 	}
@@ -36,7 +36,7 @@ func TestAddCmd_Success(t *testing.T) {
 
 func TestAddCmd_Error(t *testing.T) {
 	manager := &testutils.FakeManager{
-		AddLicenseFn: func(ctx context.Context, filePath, key, publicKey string) (*db.License, error) {
+		AddLicenseFn: func(ctx context.Context, pool *string, filePath, key, publicKey string) (*db.License, error) {
 			return nil, errors.New("failed to add license")
 		},
 	}
@@ -58,7 +58,7 @@ func TestAddCmd_Error(t *testing.T) {
 
 func TestAdd_MultiSuccess(t *testing.T) {
 	manager := &testutils.FakeManager{
-		AddLicenseFn: func(ctx context.Context, filePath, key, publicKey string) (*db.License, error) {
+		AddLicenseFn: func(ctx context.Context, pool *string, filePath, key, publicKey string) (*db.License, error) {
 			return &db.License{Guid: "test" + key}, nil
 		},
 	}
@@ -81,7 +81,7 @@ func TestAdd_MultiSuccess(t *testing.T) {
 
 func TestAdd_MultiError(t *testing.T) {
 	manager := &testutils.FakeManager{
-		AddLicenseFn: func(ctx context.Context, filePath, key, publicKey string) (*db.License, error) {
+		AddLicenseFn: func(ctx context.Context, pool *string, filePath, key, publicKey string) (*db.License, error) {
 			return &db.License{Guid: "test_" + key}, nil
 		},
 	}

@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
+	"github.com/keygen-sh/keygen-relay/internal/logger"
 )
 
 type Server interface {
@@ -40,21 +40,22 @@ func (s *server) Run() error {
 	defer cancel()
 
 	addr := fmt.Sprintf("%s:%d", s.config.ServerAddr, s.config.ServerPort)
-	slog.Info("starting server", "addr", s.config.ServerAddr, "port", s.config.ServerPort)
+
+	logger.Info("starting server", "addr", s.config.ServerAddr, "port", s.config.ServerPort, "pool", s.config.Pool)
 
 	if s.Config().EnabledHeartbeat {
 		go s.reaper.Start(ctx)
 	}
 
 	if err := http.ListenAndServe(addr, s.router); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		slog.Error("server failed to start", "error", err)
+		logger.Error("server failed to start", "error", err)
 
 		cancel()
 
 		return err
 	}
 
-	slog.Info("server stopped")
+	logger.Info("server stopped")
 
 	return nil
 }

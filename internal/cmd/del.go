@@ -20,7 +20,7 @@ func DelCmd(manager licenses.Manager) *cobra.Command {
 			}
 
 			for _, licenseID := range licenseIDs {
-				err := manager.RemoveLicense(cmd.Context(), licenseID)
+				err := manager.RemoveLicense(cmd.Context(), nil, licenseID)
 				if err != nil {
 					output.PrintError(cmd.ErrOrStderr(), err.Error())
 

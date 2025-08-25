@@ -55,7 +55,7 @@ generate:
 	sqlc generate
 
 .PHONY: build
-build: clean generate
+build: clean fmt generate
 	go build $(BUILD_FLAGS) -ldflags "$(BUILD_LDFLAGS)" -o bin/relay ./cmd/relay
 
 .PHONY: build-linux-386

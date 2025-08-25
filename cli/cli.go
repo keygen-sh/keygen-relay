@@ -1,20 +1,12 @@
 package cli
 
 import (
-	"context"
 	"database/sql"
-	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 	"runtime"
 	"strings"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
-	schema "github.com/keygen-sh/keygen-relay/db"
 	"github.com/keygen-sh/keygen-relay/internal/cmd"
 	"github.com/keygen-sh/keygen-relay/internal/config"
 	"github.com/keygen-sh/keygen-relay/internal/db"
@@ -23,7 +15,6 @@ import (
 	"github.com/keygen-sh/keygen-relay/internal/logger"
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/keygen-sh/keygen-relay/internal/try"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 )
 
@@ -69,17 +60,17 @@ Version:
 
 			// attempt to unlock if relay is node-locked
 			if locker.Locked() {
-				slog.Info("relay is node-locked", "fingerprint", locker.Fingerprint != "", "platform", locker.Platform != "", "hostname", locker.Hostname != "", "ip", locker.IP != "")
-				slog.Debug("locker config", "path", cfg.Locker.MachineFilePath, "key", cfg.Locker.LicenseKey)
+				logger.Info("relay is node-locked", "fingerprint", locker.Fingerprint != "", "platform", locker.Platform != "", "hostname", locker.Hostname != "", "ip", locker.IP != "")
+				logger.Debug("locker config", "path", cfg.Locker.MachineFilePath, "key", cfg.Locker.LicenseKey)
 
 				dataset, err := locker.Unlock(*cfg.Locker)
 				if err != nil {
-					slog.Error("failed to unlock relay", "error", err, "path", cfg.Locker.MachineFilePath, "key", cfg.Locker.LicenseKey)
+					logger.Error("failed to unlock relay", "error", err, "path", cfg.Locker.MachineFilePath, "key", cfg.Locker.LicenseKey)
 
 					return fmt.Errorf("failed to unlock relay: %w", err)
 				}
 
-				slog.Debug("machine file dataset", "dataset", dataset)
+				logger.Debug("machine file dataset", "dataset", dataset)
 			}
 
 			// apply database pragmas
@@ -110,9 +101,9 @@ Version:
 				err   error
 			)
 
-			store, conn, err = initStore(ctx, cfg)
+			store, conn, err = db.Connect(ctx, cfg.DB)
 			if err != nil {
-				slog.Error("failed to initialize store", "error", err)
+				logger.Error("failed to initialize store", "error", err)
 
 				return err
 			}
@@ -124,7 +115,7 @@ Version:
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			if conn != nil {
 				if err := conn.Close(); err != nil {
-					slog.Error("failed to close database connection", "error", err)
+					logger.Error("failed to close database connection", "error", err)
 
 					return err
 				}
@@ -158,58 +149,4 @@ Version:
 	}
 
 	return 0
-}
-
-func initStore(_ context.Context, cfg *config.Config) (*db.Store, *sql.DB, error) {
-	dsn := fmt.Sprintf("file:%s?_txlock=immediate", cfg.DB.DatabaseFilePath)
-	conn, err := sql.Open("sqlite3", dsn)
-	if err != nil {
-		slog.Error("failed to open database", "error", err)
-
-		return nil, nil, err
-	}
-
-	if err := conn.Ping(); err != nil {
-		slog.Error("failed to connect to database", "error", err)
-
-		return nil, nil, err
-	}
-
-	slog.Info("applying database pragmas", "path", cfg.DB.DatabaseFilePath)
-
-	for key, value := range cfg.DB.DatabasePragmas {
-		if _, err := conn.Exec(fmt.Sprintf("PRAGMA %s = %s", key, value)); err != nil {
-			slog.Error("failed to set pragma", "key", key, "value", value, "error", err)
-
-			return nil, nil, err
-		}
-	}
-
-	// apply migrations e.g. initial schema, etc.
-	slog.Info("applying database migrations", "path", cfg.DB.DatabaseFilePath)
-
-	migrations, err := iofs.New(schema.Migrations, "migrations")
-	if err != nil {
-		slog.Error("failed to initialize migrations fs", "error", err)
-
-		return nil, nil, err
-	}
-
-	migrator, err := db.NewMigrator(conn, migrations)
-	if err != nil {
-		slog.Error("failed to initialize migrations", "error", err)
-
-		return nil, nil, err
-	}
-
-	if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		slog.Error("failed to apply migrations", "error", err)
-
-		return nil, nil, err
-	}
-
-	queries := db.New(conn)
-	store := db.NewStore(queries, conn)
-
-	return store, conn, nil
 }

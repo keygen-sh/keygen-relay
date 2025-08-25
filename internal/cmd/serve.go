@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"log/slog"
 	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/locker"
+	"github.com/keygen-sh/keygen-relay/internal/logger"
 	"github.com/keygen-sh/keygen-relay/internal/output"
 	"github.com/keygen-sh/keygen-relay/internal/server"
 	"github.com/keygen-sh/keygen-relay/internal/try"
@@ -19,13 +19,15 @@ const minTTL = 30 * time.Second
 func ServeCmd(srv server.Server) *cobra.Command {
 	cfg := srv.Config()
 
-	handler := server.NewHandler(srv.Manager())
+	handler := server.NewHandler(srv)
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
 
 	router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 		path, _ := route.GetPathTemplate()
-		slog.Debug("route registered", "path", path)
+
+		logger.Debug("route registered", "path", path)
+
 		return nil
 	})
 
@@ -41,12 +43,20 @@ func ServeCmd(srv server.Server) *cobra.Command {
 			if ttl, err := cmd.Flags().GetDuration("ttl"); err == nil {
 				if err := validateTTL(ttl); err != nil {
 					output.PrintError(cmd.ErrOrStderr(), err.Error())
+
 					return err
 				}
 			}
 
 			if disableHeartbeats, err := cmd.Flags().GetBool("no-heartbeats"); err == nil {
 				cfg.EnabledHeartbeat = !disableHeartbeats
+			}
+
+			// workaround for lack of support for nullable string flags
+			if p, err := cmd.Flags().GetString("pool"); err == nil {
+				if p != "" {
+					cfg.Pool = &p
+				}
 			}
 
 			srv.Manager().Config().Strategy = string(cfg.Strategy)
@@ -56,6 +66,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 
 			if err := srv.Run(); err != nil {
 				output.PrintError(cmd.ErrOrStderr(), err.Error())
+
 				return nil
 			}
 
@@ -92,8 +103,10 @@ func ServeCmd(srv server.Server) *cobra.Command {
 	cmd.Flags().Bool("no-heartbeats", try.Try(try.EnvBool("RELAY_NO_HEARTBEATS"), try.Static(false)), "disable node heartbeat monitoring and culling as well as lease extensions [$RELAY_NO_HEARTBEAT=1]")
 	cmd.Flags().Var(&cfg.Strategy, "strategy", `strategy for license distribution e.g. "fifo", "lifo", or "rand" [$RELAY_STRATEGY=rand]`)
 	cmd.Flags().DurationVar(&cfg.CullInterval, "cull-interval", try.Try(try.EnvDuration("RELAY_CULL_INTERVAL"), try.Static(cfg.CullInterval)), "interval at which to cull dead nodes [$RELAY_CULL_INTERVAL=15s]")
+	cmd.Flags().String("pool", try.Try(try.Env("RELAY_POOL"), try.Static("")), "pool to serve licenses from [$RELAY_POOL=prod]")
 
 	_ = cmd.RegisterFlagCompletionFunc("strategy", strategyTypeCompletion)
+	_ = cmd.RegisterFlagCompletionFunc("pool", poolTypeCompletion)
 
 	return cmd
 }
@@ -103,8 +116,4 @@ func validateTTL(ttl time.Duration) error {
 		return fmt.Errorf("time-to-live value must be at least %s", minTTL)
 	}
 	return nil
-}
-
-func strategyTypeCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return []string{"fifo", "lifo", "rand"}, cobra.ShellCompDirectiveDefault
 }

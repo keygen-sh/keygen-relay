@@ -10,6 +10,7 @@ type AuditLog struct {
 	EntityTypeID int64
 	EntityID     int64
 	CreatedAt    int64
+	PoolID       *int64
 }
 
 type EntityType struct {
@@ -31,6 +32,7 @@ type License struct {
 	LastClaimedAt  *int64
 	LastReleasedAt *int64
 	NodeID         *int64
+	PoolID         *int64
 	CreatedAt      int64
 }
 
@@ -40,4 +42,10 @@ type Node struct {
 	LastHeartbeatAt *int64
 	CreatedAt       int64
 	DeactivatedAt   *int64
+}
+
+type Pool struct {
+	ID        int64
+	Name      string
+	CreatedAt int64
 }

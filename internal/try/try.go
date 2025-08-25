@@ -73,7 +73,7 @@ func EnvDuration(key string) func() time.Duration {
 
 func CmdPersistentFlag(cmd *cobra.Command, flag string) func() string {
 	return func() string {
-		if s, err := cmd.Root().PersistentFlags().GetString(flag); err == nil {
+		if s, err := cmd.PersistentFlags().GetString(flag); err == nil {
 			return s
 		} else {
 			return ""
@@ -83,7 +83,7 @@ func CmdPersistentFlag(cmd *cobra.Command, flag string) func() string {
 
 func CmdFlag(cmd *cobra.Command, flag string) func() string {
 	return func() string {
-		if s, err := cmd.Root().Flags().GetString(flag); err == nil {
+		if s, err := cmd.Flags().GetString(flag); err == nil {
 			return s
 		} else {
 			return ""

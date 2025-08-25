@@ -24,8 +24,8 @@ type LicensePredicate struct {
 
 // WithPool queries licenses for a specific pool
 func WithPool(pool *Pool) LicensePredicateFunc {
-	return func(pred *LicensePredicate) {
-		pred.pool = pool
+	return func(predicate *LicensePredicate) {
+		predicate.pool = pool
 	}
 }
 

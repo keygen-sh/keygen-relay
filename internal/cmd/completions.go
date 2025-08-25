@@ -29,13 +29,13 @@ func getPoolNamesForCompletion(cmd *cobra.Command) ([]string, error) {
 
 	store, conn, err := db.Connect(ctx, &db.Config{DatabaseFilePath: path})
 	if err != nil {
-		return []string{}, nil
+		return nil, err
 	}
 	defer conn.Close()
 
 	pools, err := store.GetPools(ctx)
 	if err != nil {
-		return []string{}, nil
+		return nil, err
 	}
 
 	names := make([]string, len(pools))

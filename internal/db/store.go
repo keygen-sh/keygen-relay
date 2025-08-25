@@ -115,32 +115,30 @@ func (s *Store) DeleteLicenseByGUID(ctx context.Context, id string) (*License, e
 }
 
 func (s *Store) GetLicenses(ctx context.Context, predicates ...LicensePredicateFunc) ([]License, error) {
-	preds := applyLicensePredicates(predicates...)
+	predicate := applyLicensePredicates(predicates...)
 
-	if preds.pool != nil {
-		if preds.pool == AnyPool {
-			return s.queries.GetLicenses(ctx)
-		}
-
-		return s.queries.GetLicensesWithPool(ctx, &preds.pool.ID)
+	switch {
+	case predicate.pool == AnyPool:
+		return s.queries.GetLicenses(ctx)
+	case predicate.pool != nil:
+		return s.queries.GetLicensesWithPool(ctx, &predicate.pool.ID)
+	default:
+		return s.queries.GetLicensesWithoutPool(ctx)
 	}
-
-	return s.queries.GetLicensesWithoutPool(ctx)
 }
 
 func (s *Store) GetLicenseByGUID(ctx context.Context, id string, predicates ...LicensePredicateFunc) (*License, error) {
-	preds := applyLicensePredicates(predicates...)
+	predicate := applyLicensePredicates(predicates...)
 
 	var license License
 	var err error
 
-	if preds.pool != nil {
-		if preds.pool == AnyPool {
-			license, err = s.queries.GetLicenseByGUID(ctx, id)
-		} else {
-			license, err = s.queries.GetLicenseWithPoolByGUID(ctx, GetLicenseWithPoolByGUIDParams{id, &preds.pool.ID})
-		}
-	} else {
+	switch {
+	case predicate.pool == AnyPool:
+		license, err = s.queries.GetLicenseByGUID(ctx, id)
+	case predicate.pool != nil:
+		license, err = s.queries.GetLicenseWithPoolByGUID(ctx, GetLicenseWithPoolByGUIDParams{id, &predicate.pool.ID})
+	default:
 		license, err = s.queries.GetLicenseWithoutPoolByGUID(ctx, id)
 	}
 
@@ -152,17 +150,16 @@ func (s *Store) GetLicenseByGUID(ctx context.Context, id string, predicates ...L
 }
 
 func (s *Store) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64, predicates ...LicensePredicateFunc) error {
-	preds := applyLicensePredicates(predicates...)
+	predicate := applyLicensePredicates(predicates...)
 
-	if preds.pool != nil {
-		if preds.pool == AnyPool {
-			return ErrAnyPoolNotSupported
-		}
-
-		return s.queries.ReleaseLicenseWithPoolByNodeID(ctx, ReleaseLicenseWithPoolByNodeIDParams{nodeID, &preds.pool.ID})
+	switch {
+	case predicate.pool == AnyPool:
+		return ErrAnyPoolNotSupported
+	case predicate.pool != nil:
+		return s.queries.ReleaseLicenseWithPoolByNodeID(ctx, ReleaseLicenseWithPoolByNodeIDParams{nodeID, &predicate.pool.ID})
+	default:
+		return s.queries.ReleaseLicenseWithoutPoolByNodeID(ctx, nodeID)
 	}
-
-	return s.queries.ReleaseLicenseWithoutPoolByNodeID(ctx, nodeID)
 }
 
 func (s *Store) ActivateNode(ctx context.Context, fingerprint string) (*Node, error) {
@@ -286,27 +283,28 @@ func (s *Store) BulkInsertAuditLogs(ctx context.Context, logs []BulkInsertAuditL
 }
 
 func (s *Store) ClaimLicenseByStrategy(ctx context.Context, strategy string, nodeID *int64, predicates ...LicensePredicateFunc) (*License, error) {
-	preds := applyLicensePredicates(predicates...)
+	predicate := applyLicensePredicates(predicates...)
 
 	var license License
 	var err error
 
-	if preds.pool != nil {
-		if preds.pool == AnyPool {
-			return nil, ErrAnyPoolNotSupported
-		}
-
+	switch {
+	case predicate.pool == AnyPool:
+		return nil, ErrAnyPoolNotSupported
+	case predicate.pool != nil:
+		// Pool-specific strategy
 		switch strategy {
 		case "fifo":
-			license, err = s.queries.ClaimLicenseWithPoolFIFO(ctx, ClaimLicenseWithPoolFIFOParams{nodeID, &preds.pool.ID})
+			license, err = s.queries.ClaimLicenseWithPoolFIFO(ctx, ClaimLicenseWithPoolFIFOParams{nodeID, &predicate.pool.ID})
 		case "lifo":
-			license, err = s.queries.ClaimLicenseWithPoolLIFO(ctx, ClaimLicenseWithPoolLIFOParams{nodeID, &preds.pool.ID})
+			license, err = s.queries.ClaimLicenseWithPoolLIFO(ctx, ClaimLicenseWithPoolLIFOParams{nodeID, &predicate.pool.ID})
 		case "rand":
-			license, err = s.queries.ClaimLicenseWithPoolRandom(ctx, ClaimLicenseWithPoolRandomParams{nodeID, &preds.pool.ID})
+			license, err = s.queries.ClaimLicenseWithPoolRandom(ctx, ClaimLicenseWithPoolRandomParams{nodeID, &predicate.pool.ID})
 		default:
 			return nil, ErrBadStrategy
 		}
-	} else {
+	default:
+		// No pool strategy
 		switch strategy {
 		case "fifo":
 			license, err = s.queries.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
@@ -327,18 +325,17 @@ func (s *Store) ClaimLicenseByStrategy(ctx context.Context, strategy string, nod
 }
 
 func (s *Store) GetLicenseByNodeID(ctx context.Context, nodeID *int64, predicates ...LicensePredicateFunc) (*License, error) {
-	preds := applyLicensePredicates(predicates...)
+	predicate := applyLicensePredicates(predicates...)
 
 	var license License
 	var err error
 
-	if preds.pool != nil {
-		if preds.pool == AnyPool {
-			return nil, ErrAnyPoolNotSupported
-		}
-
-		license, err = s.queries.GetLicenseWithPoolByNodeID(ctx, GetLicenseWithPoolByNodeIDParams{nodeID, &preds.pool.ID})
-	} else {
+	switch {
+	case predicate.pool == AnyPool:
+		return nil, ErrAnyPoolNotSupported
+	case predicate.pool != nil:
+		license, err = s.queries.GetLicenseWithPoolByNodeID(ctx, GetLicenseWithPoolByNodeIDParams{nodeID, &predicate.pool.ID})
+	default:
 		license, err = s.queries.GetLicenseWithoutPoolByNodeID(ctx, nodeID)
 	}
 

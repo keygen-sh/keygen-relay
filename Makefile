@@ -188,6 +188,10 @@ release-image-new:
 release-image-tarball:
 	keygen upload dist/relay-$(PACKAGE_VERSION).tar --filename relay.tar --release $(PACKAGE_VERSION) --package relay
 
+.PHONY: release-image-publish
+release-image-publish:
+	keygen publish --release $(PACKAGE_VERSION) --package relay
+
 .PHONY: release-image-tag
 release-image-tag:
 ifeq ($(PACKAGE_CHANNEL),stable)
@@ -196,7 +200,7 @@ ifeq ($(PACKAGE_CHANNEL),stable)
 endif
 
 .PHONY: release-image
-release-image: release-image-new release-image-tarball release-image-tag
+release-image: release-image-new release-image-tarball release-image-publish release-image-tag
 
 # FIXME(ezekg) refactor into release-cli and release-oci recipes
 .PHONY: release

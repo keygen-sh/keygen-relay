@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
@@ -17,6 +18,13 @@ type RequestBodyPayload struct {
 type ClaimLicenseResponse struct {
 	LicenseFile []byte `json:"license_file"`
 	LicenseKey  string `json:"license_key"`
+	ExpiresAt   int64  `json:"expires_at"`
+	ExpiresIn   int64  `json:"expires_in"`
+}
+
+type ExtendLicenseResponse struct {
+	ExpiresAt int64 `json:"expires_at"`
+	ExpiresIn int64 `json:"expires_in"`
 }
 
 type Handler interface {
@@ -88,11 +96,18 @@ func (h *handler) ClaimLicense(w http.ResponseWriter, r *http.Request) {
 			resp := ClaimLicenseResponse{
 				LicenseFile: result.License.File,
 				LicenseKey:  result.License.Key,
+				ExpiresAt:   time.Now().Add(h.config.TTL).Unix(),
+				ExpiresIn:   int64(h.config.TTL.Seconds()),
 			}
 			_ = json.NewEncoder(w).Encode(resp)
 		}
 	case licenses.OperationStatusExtended:
 		w.WriteHeader(http.StatusAccepted)
+		resp := ExtendLicenseResponse{
+			ExpiresAt: time.Now().Add(h.config.TTL).Unix(),
+			ExpiresIn: int64(h.config.TTL.Seconds()),
+		}
+		_ = json.NewEncoder(w).Encode(resp)
 	case licenses.OperationStatusConflict:
 		w.WriteHeader(http.StatusConflict)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "failed to claim license due to conflict"})

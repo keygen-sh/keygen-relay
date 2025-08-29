@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-relay/internal/db"
@@ -18,8 +19,9 @@ import (
 )
 
 func TestClaimLicense_NewNode_Success(t *testing.T) {
+	cfg := server.NewConfig()
 	srv := testutils.NewMockServer(
-		server.NewConfig(),
+		cfg,
 		&testutils.FakeManager{
 			ClaimLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
 				return &licenses.LicenseOperationResult{
@@ -49,11 +51,16 @@ func TestClaimLicense_NewNode_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("test_license_file"), resp.LicenseFile)
 	assert.Equal(t, "test_license_key", resp.LicenseKey)
+	assert.WithinDuration(t, time.Now().Add(cfg.TTL), time.Unix(resp.ExpiresAt, 0), cfg.TTL/2)
+	assert.Equal(t, int64(cfg.TTL.Seconds()), resp.ExpiresIn)
 }
 
 func TestClaimLicense_ExistingNode_Extended(t *testing.T) {
+	cfg := server.NewConfig()
+	cfg.TTL = 15 * time.Second
+
 	srv := testutils.NewMockServer(
-		server.NewConfig(),
+		cfg,
 		&testutils.FakeManager{
 			ClaimLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
 				return &licenses.LicenseOperationResult{
@@ -77,7 +84,12 @@ func TestClaimLicense_ExistingNode_Extended(t *testing.T) {
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusAccepted, rr.Code)
-	assert.Empty(t, rr.Body.Bytes())
+
+	var resp server.ExtendLicenseResponse
+	err := json.NewDecoder(rr.Body).Decode(&resp)
+	assert.NoError(t, err)
+	assert.WithinDuration(t, time.Now().Add(cfg.TTL), time.Unix(resp.ExpiresAt, 0), cfg.TTL/2)
+	assert.Equal(t, int64(cfg.TTL.Seconds()), resp.ExpiresIn)
 }
 
 func TestClaimLicense_HeartbeatDisabled_Conflict(t *testing.T) {

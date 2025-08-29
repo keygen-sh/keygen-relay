@@ -5,7 +5,7 @@ exec relay add --file license.lic --key 9E32DD-D8CC22-771926-C2D834-C506DC-V3 --
 env PORT=65003
 
 # start the server with heartbeat enabled (for extension to work)
-exec relay serve --port $PORT &server_process_test&
+exec relay serve --port $PORT --ttl 2m &server_process_test&
 
 # wait for the server to start
 exec sleep 1
@@ -17,6 +17,9 @@ stdout '201'
 # claim the license again with the same fingerprint to trigger an extension
 exec curl -s -o response.txt -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/test_fingerprint
 stdout '202'
+
+# check ttl
+exec grep '"expires_in":120' response.txt
 
 # kill the process (stop the server)
 kill server_process_test

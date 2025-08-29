@@ -223,11 +223,15 @@ will return `410 Gone`.
 ```json
 {
   "license_file": "LS0tLS1CRUdJTiBMSUNFTlNFIEZJTEUtLS0tL...S0NCg0K",
-  "license_key": "9A96B8-FD08CD-8C433B-7657C8-8A8655-V3"
+  "license_key": "9A96B8-FD08CD-8C433B-7657C8-8A8655-V3",
+  "expires_at": 1756478868,
+  "expires_in": 60
 }
 ```
 
-The `license_file` will be base64 encoded.
+The `license_file` will be base64 encoded. In addition, the `expires_at` will
+equal the Unix timestamp at which the lease expires (unless extended), and
+`expires_in` will equal the `--ttl` configured for the server.
 
 #### Release license
 

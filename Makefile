@@ -43,6 +43,10 @@ ifdef BUILD_NODE_LOCKED
 	ifdef BUILD_NODE_LOCKED_PORT
 		BUILD_LDFLAGS += -X $(PACKAGE_NAME)/internal/locker.Port=$(BUILD_NODE_LOCKED_PORT)
 	endif
+
+	ifdef BUILD_NODE_LOCKED_SIGNING_SECRET
+		BUILD_LDFLAGS += -X $(PACKAGE_NAME)/internal/locker.SigningSecret=$(BUILD_NODE_LOCKED_SIGNING_SECRET)
+	endif
 endif
 
 ifdef DEBUG

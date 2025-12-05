@@ -48,6 +48,7 @@ type Config struct {
 	Strategy         StrategyType
 	CullInterval     time.Duration
 	Pool             *string
+	SigningSecret    *string
 }
 
 func NewConfig() *Config {

@@ -14,13 +14,14 @@ import (
 // locks Relay to a specific machine, depending on provided attributes. Relay will
 // error on mismatch, e.g. underlying IP address is different than expected IP.
 var (
-	PublicKey   string // required
-	Fingerprint string // required
-	Platform    string // optional
-	Hostname    string // optional
-	IP          string // optional
-	Addr        string // optional
-	Port        string // optional
+	PublicKey     string // required
+	Fingerprint   string // required
+	Platform      string // optional
+	Hostname      string // optional
+	IP            string // optional
+	Addr          string // optional
+	Port          string // optional
+	SigningSecret string // optional
 )
 
 func init() {
@@ -61,6 +62,11 @@ func LockedAddr() bool {
 // LockedPort returns a boolean whether or not Relay's port is locked
 func LockedPort() bool {
 	return Port != ""
+}
+
+// LockedSigningSecret returns a boolean whether or not Relay's signing secret is locked
+func LockedSigningSecret() bool {
+	return SigningSecret != ""
 }
 
 // Unlock attempts to unlock Relay via a machine file and license key using the

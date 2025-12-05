@@ -2,10 +2,15 @@ package server_test
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -236,4 +241,109 @@ func TestReleaseLicense_InternalServerError(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 	assert.Contains(t, rr.Body.String(), "failed to release license")
+}
+
+func TestClaimLicense_Signature_Enabled(t *testing.T) {
+	secret := "test_secret"
+
+	cfg := server.NewConfig()
+	cfg.SigningSecret = &secret
+
+	srv := testutils.NewMockServer(
+		cfg,
+		&testutils.FakeManager{
+			ClaimLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
+				return &licenses.LicenseOperationResult{
+					License: &db.License{
+						File: []byte("test_license_file"),
+						Key:  "test_license_key",
+					},
+					Status: licenses.OperationStatusCreated,
+				}, nil
+			},
+		},
+	)
+
+	handler := server.NewHandler(srv)
+
+	req := httptest.NewRequest(http.MethodPut, "/v1/nodes/test_fingerprint", nil)
+	rr := httptest.NewRecorder()
+
+	router := mux.NewRouter()
+	router.Use(server.SigningMiddleware(cfg))
+	handler.RegisterRoutes(router)
+	router.ServeHTTP(rr, req)
+
+	sig := rr.Header().Get("Relay-Signature")
+	clock := rr.Header().Get("Relay-Clock")
+
+	assert.NotEmpty(t, sig)
+	assert.NotEmpty(t, clock)
+
+	assert.True(t, verifySignature(secret, sig, rr.Body.String()))
+}
+
+func TestClaimLicense_Signature_Disabled(t *testing.T) {
+	cfg := server.NewConfig()
+	srv := testutils.NewMockServer(
+		cfg,
+		&testutils.FakeManager{
+			ClaimLicenseFn: func(ctx context.Context, pool *string, fingerprint string) (*licenses.LicenseOperationResult, error) {
+				return &licenses.LicenseOperationResult{
+					License: &db.License{
+						File: []byte("test_license_file"),
+						Key:  "test_license_key",
+					},
+					Status: licenses.OperationStatusCreated,
+				}, nil
+			},
+		},
+	)
+
+	handler := server.NewHandler(srv)
+
+	req := httptest.NewRequest(http.MethodPut, "/v1/nodes/test_fingerprint", nil)
+	rr := httptest.NewRecorder()
+
+	router := mux.NewRouter()
+	router.Use(server.SigningMiddleware(cfg))
+	handler.RegisterRoutes(router)
+	router.ServeHTTP(rr, req)
+
+	sig := rr.Header().Get("Relay-Signature")
+	clock := rr.Header().Get("Relay-Clock")
+
+	assert.Empty(t, sig)
+	assert.NotEmpty(t, clock)
+}
+
+func verifySignature(secret string, header string, body string) bool {
+	var t, v1 string
+
+	for _, part := range strings.Split(header, ",") {
+		kv := strings.SplitN(strings.TrimSpace(part), "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+
+		switch kv[0] {
+		case "t":
+			t = kv[1]
+		case "v1":
+			v1 = kv[1]
+		}
+	}
+
+	if t == "" || v1 == "" {
+		return false
+	}
+
+	mac := hmac.New(sha256.New, []byte(secret))
+	msg := fmt.Sprintf("%s.%s", t, body)
+	mac.Write([]byte(msg))
+
+	expected := make([]byte, hex.EncodedLen(mac.Size()))
+	hex.Encode(expected, mac.Sum(nil))
+
+	return hmac.Equal(expected, []byte(v1))
 }

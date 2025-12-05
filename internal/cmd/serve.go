@@ -31,6 +31,7 @@ func ServeCmd(srv server.Server) *cobra.Command {
 		return nil
 	})
 
+	router.Use(server.SigningMiddleware(cfg))
 	router.Use(server.LoggingMiddleware)
 
 	// Mount the router to the server
@@ -52,10 +53,16 @@ func ServeCmd(srv server.Server) *cobra.Command {
 				cfg.EnabledHeartbeat = !disableHeartbeats
 			}
 
-			// workaround for lack of support for nullable string flags
+			// workarounds for lack of support for nullable string flags
 			if p, err := cmd.Flags().GetString("pool"); err == nil {
 				if p != "" {
 					cfg.Pool = &p
+				}
+			}
+
+			if s, err := cmd.Flags().GetString("signing-secret"); err == nil {
+				if s != "" {
+					cfg.SigningSecret = &s
 				}
 			}
 
@@ -97,6 +104,12 @@ func ServeCmd(srv server.Server) *cobra.Command {
 		cfg.ServerPort = port
 	} else {
 		cmd.Flags().IntVarP(&cfg.ServerPort, "port", "p", try.Try(try.EnvInt("RELAY_PORT"), try.EnvInt("PORT"), try.Static(cfg.ServerPort)), "port to run the relay server on [$RELAY_PORT=6349]")
+	}
+
+	if locker.LockedSigningSecret() {
+		cfg.SigningSecret = &locker.SigningSecret
+	} else {
+		cmd.Flags().String("signing-secret", try.Try(try.Env("RELAY_SIGNING_SECRET"), try.Static("")), "secret for signing responses [$RELAY_SIGNING_SECRET=hunter2]")
 	}
 
 	cmd.Flags().DurationVar(&cfg.TTL, "ttl", try.Try(try.EnvDuration("RELAY_LEASE_TTL"), try.Static(cfg.TTL)), "time-to-live for leases [$RELAY_LEASE_TTL=60s]")

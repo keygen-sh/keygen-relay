@@ -247,6 +247,69 @@ Accepts a `fingerprint`, the node fingerprint used for the lease.
 Returns `204 No Content` with no content. If a lease does not exist for the
 node, the server will return a `404 Not Found`.
 
+## Signatures
+
+Relay supports response signatures, useful for detecting simple clock tampering
+and spoofing attempts. When the `--signing-secret` flag is provided, all API
+responses will be cryptographically signed using HMAC-SHA256. The signing
+secret should be shared between Relay and your application.
+
+```
+Relay-Signature:
+  t=1764949490,
+  v1=cc22398a143ebbfc709812fdc2328ca727ed913e5e45250cfb6f3b5dfad2e72d
+```
+
+> [!NOTE]
+> We provide newlines for clarity, but a real `Relay-Signature` header is on a
+> single line.
+
+The signature `v1` is computed over the concatenation of the timestamp `t` with
+the raw response body, delimited by the `.` character. The signature will be in
+hexadecimal format.
+
+### Verifying signatures
+
+To verify a response signature from Relay inside your application:
+
+#### Step 1: Extract the timestamp and signature
+
+Split the `Relay-Signature` header on the `,` character to get its parts. Then
+split each part on `=` to obtain key–value pairs.
+
+The value for `t` is the timestamp, and the value for `v1` is the signature.
+Discard all other pairs to avoid downgrade attacks.
+
+#### Step 2: Prepare the signing data
+
+Construct the signed payload by concatenating:
+
+- The unix timestamp `t` (as a string)
+- The character `.`
+- The raw response body (as a string)
+
+Relay uses a literal period character (`.`) as the delimiter between the
+timestamp and the raw response body.
+
+#### Step 3: Compute the signature
+
+Compute an HMAC using the SHA256 hash function, using your shared signing secret
+as the key. The message is from Step 2. Hex-encode the result.
+
+#### Step 4: Compare the signatures
+
+Compare the received `v1` signature to the signature from Step 3. Before
+accepting the signature, ensure the timestamp is within your allowed tolerance
+window, e.g. 5 minutes, to avoid replay attacks. In addition, it's recommended
+to use a constant-time comparison function to avoid timing attacks.
+
+> [!WARNING]
+> Because all signing secrets are ultimately stored locally and Relay is being
+> run in an untrusted offline environment, there remains the possibility of a
+> bad actor obtaining the signing secrets and spoofing Relay, even when [node-locked](#node-locking).
+> In such environments, we recommend taking advantage of [audit logs](#logs) to
+> periodically audit Relay.
+
 ## Pools
 
 Relay supports a concept called "pools," where, via the `--pool` flag, licenses
@@ -400,6 +463,9 @@ export BUILD_NODE_LOCKED_ADDR='0.0.0.0'
 
 # Relay port (optional)
 export BUILD_NODE_LOCKED_PORT='6349'
+
+# Signing secret (optional)
+export BUILD_NODE_LOCKED_SIGNING_SECRET="hunter2"
 
 # Build the node-locked binary using the above constraints
 BUILD_NODE_LOCKED=1 make build-linux-amd64

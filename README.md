@@ -306,8 +306,7 @@ to use a constant-time comparison function to avoid timing attacks.
 > Because all signing secrets are ultimately stored locally and Relay is being
 > run in an untrusted offline environment, there remains the possibility of a
 > bad actor obtaining the signing secrets and spoofing Relay, even when [node-locked](#node-locking).
-> In such environments, we recommend taking advantage of [audit logs](#logs) to
-> periodically audit Relay.
+> In such environments, we recommend taking advantage of [audit logs](#logs).
 
 ## Pools
 

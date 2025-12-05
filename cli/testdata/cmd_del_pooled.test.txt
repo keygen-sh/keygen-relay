@@ -7,7 +7,7 @@ exec relay add --pool dev --file license_2.lic --key 9A96B8-FD08CD-8C433B-7657C8
 # confirm both licenses are added
 exec relay ls --plain
 stdout 'dcea31a4-1664-4633-9f52-4a1b0b5ea2ef'
-stdout 'e9b6f649-d8c2-49e3-9d41-aab32f0d08a3'
+stdout '592d08c2-4045-462c-a981-dcd2bb78ce06'
 
 # delete license from prod pool using GUID
 exec relay del --license dcea31a4-1664-4633-9f52-4a1b0b5ea2ef
@@ -21,10 +21,10 @@ stdout 'license pool is empty'
 
 # verify the dev pool license still exists
 exec relay ls --pool dev --plain
-stdout 'e9b6f649-d8c2-49e3-9d41-aab32f0d08a3'
+stdout '592d08c2-4045-462c-a981-dcd2bb78ce06'
 
 # delete license from dev pool using GUID
-exec relay del --license e9b6f649-d8c2-49e3-9d41-aab32f0d08a3
+exec relay del --license 592d08c2-4045-462c-a981-dcd2bb78ce06
 
 # expect output indicating success
 stdout 'license deleted successfully'

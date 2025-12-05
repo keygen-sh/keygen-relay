@@ -15,13 +15,13 @@ exec relay ls --pool prod --plain
 
 # expect only the prod pool license
 stdout 'dcea31a4-1664-4633-9f52-4a1b0b5ea2ef'
-! stdout 'e9b6f649-d8c2-49e3-9d41-aab32f0d08a3'
+! stdout '592d08c2-4045-462c-a981-dcd2bb78ce06'
 
-# list licenses in dev pool  
+# list licenses in dev pool
 exec relay ls --pool dev --plain
 
 # expect only the dev pool license
-stdout 'e9b6f649-d8c2-49e3-9d41-aab32f0d08a3'
+stdout '592d08c2-4045-462c-a981-dcd2bb78ce06'
 ! stdout 'dcea31a4-1664-4633-9f52-4a1b0b5ea2ef'
 
 # list all licenses (no pool specified)
@@ -29,4 +29,4 @@ exec relay ls --plain
 
 # expect all licenses to be listed
 stdout 'dcea31a4-1664-4633-9f52-4a1b0b5ea2ef'
-stdout 'e9b6f649-d8c2-49e3-9d41-aab32f0d08a3'
+stdout '592d08c2-4045-462c-a981-dcd2bb78ce06'

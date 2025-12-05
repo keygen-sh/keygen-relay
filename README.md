@@ -275,10 +275,9 @@ To verify a response signature from Relay inside your application:
 #### Step 1: Extract the timestamp and signature
 
 Split the `Relay-Signature` header on the `,` character to get its parts. Then
-split each part on `=` to obtain key–value pairs.
-
-The value for `t` is the timestamp, and the value for `v1` is the signature.
-Discard all other pairs to avoid downgrade attacks.
+split each part on `=` to obtain key–value pairs. The value for `t` is the
+timestamp, and the value for `v1` is the signature. Discard all other pairs
+to avoid signature downgrade attacks.
 
 #### Step 2: Prepare the signing data
 

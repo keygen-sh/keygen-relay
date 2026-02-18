@@ -104,6 +104,11 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 
 	guid := dec.License.ID
 	key := dec.License.Key
+
+	if seats == 0 {
+		seats = seatsFromMetadata(dec.License.Metadata)
+	}
+
 	var pool *db.Pool
 
 	tx, err := m.store.BeginTx(ctx)
@@ -563,6 +568,37 @@ func (m *manager) GetPoolByID(ctx context.Context, id int64) (*db.Pool, error) {
 
 func (m *manager) GetLicenseActiveCount(ctx context.Context, licenseID int64) (int64, error) {
 	return m.store.GetLicenseNodeCount(ctx, licenseID)
+}
+
+// seatsFromMetadata reads the maxMachines key from license metadata, which
+// mirrors the Keygen.sh native attribute name. Falls back to 1 if absent or
+// unparseable. JSON numbers unmarshal as float64 when the target is interface{}.
+func seatsFromMetadata(metadata map[string]interface{}) int64 {
+	if metadata == nil {
+		return 1
+	}
+
+	v, ok := metadata["maxMachines"]
+	if !ok {
+		return 1
+	}
+
+	switch n := v.(type) {
+	case float64:
+		if n >= 1 {
+			return int64(n)
+		}
+	case int64:
+		if n >= 1 {
+			return n
+		}
+	case int:
+		if n >= 1 {
+			return int64(n)
+		}
+	}
+
+	return 1
 }
 
 func isUniqueConstraintError(err error) bool {

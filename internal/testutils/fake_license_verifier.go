@@ -3,8 +3,9 @@ package testutils
 import "github.com/keygen-sh/keygen-go/v3"
 
 type FakeLicenseVerifier struct {
-	LicenseID  string
-	LicenseKey string
+	LicenseID       string
+	LicenseKey      string
+	LicenseMetadata map[string]interface{}
 }
 
 func (f *FakeLicenseVerifier) Verify() error {
@@ -18,8 +19,9 @@ func (f *FakeLicenseVerifier) Decrypt(key string) (*keygen.LicenseFileDataset, e
 
 	return &keygen.LicenseFileDataset{
 		License: keygen.License{
-			ID:  licenseID,
-			Key: key,
+			ID:       licenseID,
+			Key:      key,
+			Metadata: f.LicenseMetadata,
 		},
 	}, nil
 }

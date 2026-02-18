@@ -101,6 +101,44 @@ func TestAdd_MultiError(t *testing.T) {
 	assert.Contains(t, errBuf.String(), "error: number of key and file flags must match")
 }
 
+func TestAddCmd_SeatsAutoDetect(t *testing.T) {
+	var gotSeats int64 = -1
+
+	manager := &testutils.FakeManager{
+		AddLicenseFn: func(ctx context.Context, pool *string, filePath, key, publicKey string, seats int64) (*db.License, error) {
+			gotSeats = seats
+			return &db.License{Guid: "test"}, nil
+		},
+	}
+
+	addCmd := cmd.AddCmd(manager)
+	addCmd.SetOut(new(bytes.Buffer))
+	addCmd.SetErr(new(bytes.Buffer))
+	addCmd.SetArgs([]string{"--file=file.lic", "--key=key", "--public-key=testpublickey"})
+
+	_ = addCmd.Execute()
+	assert.Equal(t, int64(0), gotSeats, "seats should be 0 (auto-detect) when --seats is not set")
+}
+
+func TestAddCmd_SeatsExplicit(t *testing.T) {
+	var gotSeats int64 = -1
+
+	manager := &testutils.FakeManager{
+		AddLicenseFn: func(ctx context.Context, pool *string, filePath, key, publicKey string, seats int64) (*db.License, error) {
+			gotSeats = seats
+			return &db.License{Guid: "test"}, nil
+		},
+	}
+
+	addCmd := cmd.AddCmd(manager)
+	addCmd.SetOut(new(bytes.Buffer))
+	addCmd.SetErr(new(bytes.Buffer))
+	addCmd.SetArgs([]string{"--file=file.lic", "--key=key", "--public-key=testpublickey", "--seats=5"})
+
+	_ = addCmd.Execute()
+	assert.Equal(t, int64(5), gotSeats, "seats should match --seats flag when explicitly set")
+}
+
 func TestAddCmd_MissingRequiredFlags(t *testing.T) {
 	manager := &testutils.FakeManager{}
 

@@ -90,6 +90,52 @@ func TestAddLicense_FileNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "license file not found at 'non_existent.lic'")
 }
 
+func TestAddLicense_SeatsFromMetadata(t *testing.T) {
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	fakeVerifier := &testutils.FakeLicenseVerifier{
+		LicenseMetadata: map[string]interface{}{
+			"maxMachines": float64(7), // JSON numbers unmarshal as float64
+		},
+	}
+
+	manager := licenses.NewManager(
+		&licenses.Config{},
+		func(filename string) ([]byte, error) { return []byte("mock_certificate"), nil },
+		func(cert []byte) licenses.LicenseVerifier { return fakeVerifier },
+	)
+	manager.AttachStore(*store)
+
+	// seats=0 means auto-detect from license metadata
+	license, err := manager.AddLicense(context.Background(), nil, "test.lic", "test_key", "test_public_key", 0)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(7), license.Seats, "seats should be read from maxMachines metadata")
+}
+
+func TestAddLicense_SeatsExplicitOverridesMetadata(t *testing.T) {
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	fakeVerifier := &testutils.FakeLicenseVerifier{
+		LicenseMetadata: map[string]interface{}{
+			"maxMachines": float64(7),
+		},
+	}
+
+	manager := licenses.NewManager(
+		&licenses.Config{},
+		func(filename string) ([]byte, error) { return []byte("mock_certificate"), nil },
+		func(cert []byte) licenses.LicenseVerifier { return fakeVerifier },
+	)
+	manager.AttachStore(*store)
+
+	// explicit seats=3 should win over metadata value of 7
+	license, err := manager.AddLicense(context.Background(), nil, "test.lic", "meta_key", "test_public_key", 3)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), license.Seats, "explicit --seats should override metadata")
+}
+
 func TestAddPooledLicense_Success(t *testing.T) {
 	store, dbConn := testutils.NewMemoryStore(t)
 	defer testutils.CloseMemoryStore(dbConn)

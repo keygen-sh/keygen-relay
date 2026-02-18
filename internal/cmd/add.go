@@ -51,11 +51,18 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 				return nil
 			}
 
+			// 0 signals "auto-detect from license metadata"; only pass an
+			// explicit value when the caller actually set --seats.
+			explicitSeats := int64(0)
+			if cmd.Flags().Changed("seats") {
+				explicitSeats = seats
+			}
+
 			for i := range len(files) {
 				file := files[i]
 				key := strings.TrimSpace(keys[i])
 
-				license, err := manager.AddLicense(cmd.Context(), pool, file, key, publicKey, seats)
+				license, err := manager.AddLicense(cmd.Context(), pool, file, key, publicKey, explicitSeats)
 				if err != nil {
 					output.PrintError(cmd.ErrOrStderr(), err.Error())
 

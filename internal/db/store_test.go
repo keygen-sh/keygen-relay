@@ -63,10 +63,10 @@ func TestStore_GetLicenses(t *testing.T) {
 	require.NoError(t, err)
 
 	// insert test licenses (some with pool, some without)
-	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key")
+	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key", 1)
 	require.NoError(t, err)
 
-	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key")
+	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key", 1)
 	require.NoError(t, err)
 
 	t.Run("without any predicates", func(t *testing.T) {
@@ -115,10 +115,10 @@ func TestStore_GetLicenseByGUID(t *testing.T) {
 	require.NoError(t, err)
 
 	// create licenses
-	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key")
+	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key", 1)
 	require.NoError(t, err)
 
-	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key")
+	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key", 1)
 	require.NoError(t, err)
 
 	t.Run("without any predicates", func(t *testing.T) {
@@ -194,17 +194,17 @@ func TestStore_ReleaseLicenseByNodeID(t *testing.T) {
 	require.NoError(t, err)
 
 	// create licenses and claim them
-	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key")
+	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key", 1)
 	require.NoError(t, err)
 
-	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key")
+	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key", 1)
 	require.NoError(t, err)
 
-	// claim licenses for specific nodes
-	_, err = conn.ExecContext(ctx, "UPDATE licenses SET node_id = ?, last_claimed_at = strftime('%s', 'now') WHERE id = ?", pooledNode.ID, pooledLicense.ID)
+	// claim licenses for specific nodes via license_nodes junction table
+	_, err = conn.ExecContext(ctx, "INSERT INTO license_nodes (license_id, node_id) VALUES (?, ?)", pooledLicense.ID, pooledNode.ID)
 	require.NoError(t, err)
 
-	_, err = conn.ExecContext(ctx, "UPDATE licenses SET node_id = ?, last_claimed_at = strftime('%s', 'now') WHERE id = ?", unpooledNode.ID, unpooledLicense.ID)
+	_, err = conn.ExecContext(ctx, "INSERT INTO license_nodes (license_id, node_id) VALUES (?, ?)", unpooledLicense.ID, unpooledNode.ID)
 	require.NoError(t, err)
 
 	t.Run("with any pool predicate", func(t *testing.T) {
@@ -221,10 +221,13 @@ func TestStore_ReleaseLicenseByNodeID(t *testing.T) {
 		err := store.ReleaseLicenseByNodeID(ctx, &pooledNode.ID, WithPool(testPool))
 		require.NoError(t, err)
 
-		// verify the pooled license was released
+		// verify the pooled license was released (no active nodes)
+		count, err := store.GetLicenseNodeCount(ctx, pooledLicense.ID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), count)
+
 		license, err := store.GetLicenseByGUID(ctx, pooledLicense.Guid, WithPool(testPool))
 		require.NoError(t, err)
-		assert.Nil(t, license.NodeID)
 		assert.NotNil(t, license.LastReleasedAt)
 	})
 
@@ -232,10 +235,13 @@ func TestStore_ReleaseLicenseByNodeID(t *testing.T) {
 		err := store.ReleaseLicenseByNodeID(ctx, &unpooledNode.ID, WithoutPool())
 		require.NoError(t, err)
 
-		// verify the unpooled license was released
+		// verify the unpooled license was released (no active nodes)
+		count, err := store.GetLicenseNodeCount(ctx, unpooledLicense.ID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), count)
+
 		license, err := store.GetLicenseByGUID(ctx, unpooledLicense.Guid, WithoutPool())
 		require.NoError(t, err)
-		assert.Nil(t, license.NodeID)
 		assert.NotNil(t, license.LastReleasedAt)
 	})
 }
@@ -252,10 +258,10 @@ func TestStore_ClaimLicenseByStrategy(t *testing.T) {
 	require.NoError(t, err)
 
 	// create available licenses
-	_, err = store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key")
+	_, err = store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key", 1)
 	require.NoError(t, err)
 
-	_, err = store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key")
+	_, err = store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key", 1)
 	require.NoError(t, err)
 
 	t.Run("with any pool predicate", func(t *testing.T) {
@@ -273,8 +279,12 @@ func TestStore_ClaimLicenseByStrategy(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, license)
 		assert.Equal(t, "pooled-guid", license.Guid)
-		assert.Equal(t, &node.ID, license.NodeID)
 		assert.NotNil(t, license.LastClaimedAt)
+
+		// verify node is active on the license
+		count, err := store.GetLicenseNodeCount(ctx, license.ID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), count)
 	})
 
 	t.Run("without pool predicate", func(t *testing.T) {
@@ -286,8 +296,12 @@ func TestStore_ClaimLicenseByStrategy(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, license)
 		assert.Equal(t, "unpooled-guid", license.Guid)
-		assert.Equal(t, &node2.ID, license.NodeID)
 		assert.NotNil(t, license.LastClaimedAt)
+
+		// verify node2 is active on the license
+		count, err := store.GetLicenseNodeCount(ctx, license.ID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), count)
 	})
 
 	t.Run("strategies", func(t *testing.T) {
@@ -296,7 +310,7 @@ func TestStore_ClaimLicenseByStrategy(t *testing.T) {
 		require.NoError(t, err)
 
 		for i := range 5 {
-			_, err = store.InsertLicense(ctx, testPool, fmt.Sprintf("strategy-test-%d", i), []byte(fmt.Sprintf("file-%d", i)), fmt.Sprintf("key-%d", i))
+			_, err = store.InsertLicense(ctx, testPool, fmt.Sprintf("strategy-test-%d", i), []byte(fmt.Sprintf("file-%d", i)), fmt.Sprintf("key-%d", i), 1)
 			require.NoError(t, err)
 		}
 
@@ -347,17 +361,17 @@ func TestStore_GetLicenseByNodeID(t *testing.T) {
 	require.NoError(t, err)
 
 	// create and claim licenses
-	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key")
+	pooledLicense, err := store.InsertLicense(ctx, testPool, "pooled-guid", []byte("pooled-file"), "pooled-key", 1)
 	require.NoError(t, err)
 
-	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key")
+	unpooledLicense, err := store.InsertLicense(ctx, nil, "unpooled-guid", []byte("unpooled-file"), "unpooled-key", 1)
 	require.NoError(t, err)
 
-	// claim licenses for specific nodes
-	_, err = conn.ExecContext(ctx, "UPDATE licenses SET node_id = ?, last_claimed_at = strftime('%s', 'now') WHERE id = ?", pooledNode.ID, pooledLicense.ID)
+	// claim licenses for specific nodes via license_nodes junction table
+	_, err = conn.ExecContext(ctx, "INSERT INTO license_nodes (license_id, node_id) VALUES (?, ?)", pooledLicense.ID, pooledNode.ID)
 	require.NoError(t, err)
 
-	_, err = conn.ExecContext(ctx, "UPDATE licenses SET node_id = ?, last_claimed_at = strftime('%s', 'now') WHERE id = ?", unpooledNode.ID, unpooledLicense.ID)
+	_, err = conn.ExecContext(ctx, "INSERT INTO license_nodes (license_id, node_id) VALUES (?, ?)", unpooledLicense.ID, unpooledNode.ID)
 	require.NoError(t, err)
 
 	t.Run("with any pool predicate", func(t *testing.T) {
@@ -376,7 +390,6 @@ func TestStore_GetLicenseByNodeID(t *testing.T) {
 		assert.NotNil(t, license)
 		assert.Equal(t, pooledLicense.ID, license.ID)
 		assert.Equal(t, "pooled-guid", license.Guid)
-		assert.Equal(t, &pooledNode.ID, license.NodeID)
 	})
 
 	t.Run("without pool predicate", func(t *testing.T) {
@@ -385,7 +398,6 @@ func TestStore_GetLicenseByNodeID(t *testing.T) {
 		assert.NotNil(t, license)
 		assert.Equal(t, unpooledLicense.ID, license.ID)
 		assert.Equal(t, "unpooled-guid", license.Guid)
-		assert.Equal(t, &unpooledNode.ID, license.NodeID)
 	})
 
 	t.Run("node has no license in specific pool", func(t *testing.T) {
@@ -407,22 +419,24 @@ func TestStore_AdditionalMethods(t *testing.T) {
 		require.NoError(t, err)
 
 		// test with pool
-		license, err := store.InsertLicense(ctx, testPool, "insert-test-guid", []byte("test-file"), "test-key")
+		license, err := store.InsertLicense(ctx, testPool, "insert-test-guid", []byte("test-file"), "test-key", 1)
 		require.NoError(t, err)
 		assert.Equal(t, "insert-test-guid", license.Guid)
 		assert.Equal(t, "test-key", license.Key)
 		assert.Equal(t, &testPool.ID, license.PoolID)
+		assert.Equal(t, int64(1), license.Seats)
 
 		// test without pool
-		license2, err := store.InsertLicense(ctx, nil, "insert-test-guid-2", []byte("test-file-2"), "test-key-2")
+		license2, err := store.InsertLicense(ctx, nil, "insert-test-guid-2", []byte("test-file-2"), "test-key-2", 3)
 		require.NoError(t, err)
 		assert.Equal(t, "insert-test-guid-2", license2.Guid)
 		assert.Nil(t, license2.PoolID)
+		assert.Equal(t, int64(3), license2.Seats)
 	})
 
 	t.Run("DeleteLicenseByGUID", func(t *testing.T) {
 		// insert a license to delete
-		license, err := store.InsertLicense(ctx, nil, "delete-test-guid", []byte("delete-file"), "delete-key")
+		license, err := store.InsertLicense(ctx, nil, "delete-test-guid", []byte("delete-file"), "delete-key", 1)
 		require.NoError(t, err)
 
 		// delete it
@@ -488,5 +502,62 @@ func TestStore_AdditionalMethods(t *testing.T) {
 		// should not be able to get it now
 		_, err = store.GetPoolByID(ctx, pool.ID)
 		assert.Error(t, err)
+	})
+}
+
+func TestStore_FloatingLicense(t *testing.T) {
+	store, _ := newMemoryStore(t)
+	ctx := context.Background()
+
+	t.Run("multi-seat claim and release", func(t *testing.T) {
+		// create a 3-seat license
+		license, err := store.InsertLicense(ctx, nil, "float-guid", []byte("float-file"), "float-key", 3)
+		require.NoError(t, err)
+		assert.Equal(t, int64(3), license.Seats)
+
+		// activate 3 nodes
+		node1, err := store.ActivateNode(ctx, "float-node-1")
+		require.NoError(t, err)
+		node2, err := store.ActivateNode(ctx, "float-node-2")
+		require.NoError(t, err)
+		node3, err := store.ActivateNode(ctx, "float-node-3")
+		require.NoError(t, err)
+		node4, err := store.ActivateNode(ctx, "float-node-4")
+		require.NoError(t, err)
+
+		// first 3 claims succeed
+		l1, err := store.ClaimLicenseByStrategy(ctx, "fifo", &node1.ID, WithoutPool())
+		require.NoError(t, err)
+		assert.Equal(t, license.ID, l1.ID)
+
+		l2, err := store.ClaimLicenseByStrategy(ctx, "fifo", &node2.ID, WithoutPool())
+		require.NoError(t, err)
+		assert.Equal(t, license.ID, l2.ID)
+
+		l3, err := store.ClaimLicenseByStrategy(ctx, "fifo", &node3.ID, WithoutPool())
+		require.NoError(t, err)
+		assert.Equal(t, license.ID, l3.ID)
+
+		// 4th claim fails (no seats)
+		_, err = store.ClaimLicenseByStrategy(ctx, "fifo", &node4.ID, WithoutPool())
+		assert.ErrorIs(t, err, sql.ErrNoRows)
+
+		// verify active count = 3
+		count, err := store.GetLicenseNodeCount(ctx, license.ID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(3), count)
+
+		// release one seat
+		err = store.ReleaseLicenseByNodeID(ctx, &node1.ID, WithoutPool())
+		require.NoError(t, err)
+
+		// now 4th node can claim
+		l4, err := store.ClaimLicenseByStrategy(ctx, "fifo", &node4.ID, WithoutPool())
+		require.NoError(t, err)
+		assert.Equal(t, license.ID, l4.ID)
+
+		count, err = store.GetLicenseNodeCount(ctx, license.ID)
+		require.NoError(t, err)
+		assert.Equal(t, int64(3), count)
 	})
 }

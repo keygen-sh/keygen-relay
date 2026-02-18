@@ -16,7 +16,6 @@ import (
 func TestStatCmd_Success(t *testing.T) {
 	lastReleasedAt, _ := time.Parse(time.RFC3339, "2024-01-05T10:00:00Z")
 	lastClaimedAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
-	nodeID := int64(123)
 
 	manager := &testutils.FakeManager{
 		GetLicenseByGUIDFn: func(ctx context.Context, pool *string, id string) (*db.License, error) {
@@ -27,10 +26,13 @@ func TestStatCmd_Success(t *testing.T) {
 				Guid:           "License_1",
 				Key:            "License_Key1",
 				Claims:         5,
+				Seats:          3,
 				LastReleasedAt: &lastReleasedAt,
 				LastClaimedAt:  &lastClaimedAt,
-				NodeID:         &nodeID,
 			}, nil
+		},
+		GetLicenseActiveCountFn: func(ctx context.Context, licenseID int64) (int64, error) {
+			return 2, nil
 		},
 	}
 
@@ -44,7 +46,6 @@ func TestStatCmd_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Contains(t, outBuf.String(), "License_1")
-	assert.Contains(t, outBuf.String(), "123")
 	assert.Contains(t, outBuf.String(), "2024-01-01T00:00:00Z")
 	assert.Contains(t, outBuf.String(), "2024-01-05T10:00:00Z")
 }

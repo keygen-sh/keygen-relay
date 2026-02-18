@@ -39,10 +39,11 @@ type LicenseOperationResult struct {
 type FileReaderFunc func(filename string) ([]byte, error)
 
 type Manager interface {
-	AddLicense(ctx context.Context, pool *string, licenseFilePath string, licenseKey string, publicKeyPath string) (*db.License, error)
+	AddLicense(ctx context.Context, pool *string, licenseFilePath string, licenseKey string, publicKeyPath string, seats int64) (*db.License, error)
 	RemoveLicense(ctx context.Context, pool *string, id string) error
 	ListLicenses(ctx context.Context, pool *string) ([]db.License, error)
 	GetLicenseByGUID(ctx context.Context, pool *string, id string) (*db.License, error)
+	GetLicenseActiveCount(ctx context.Context, licenseID int64) (int64, error)
 	AttachStore(store db.Store)
 	ClaimLicense(ctx context.Context, pool *string, fingerprint string) (*LicenseOperationResult, error)
 	ReleaseLicense(ctx context.Context, pool *string, fingerprint string) (*LicenseOperationResult, error)
@@ -71,7 +72,7 @@ func (m *manager) AttachStore(store db.Store) {
 	m.store = store
 }
 
-func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFilePath string, licenseKey string, publicKey string) (*db.License, error) {
+func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFilePath string, licenseKey string, publicKey string, seats int64) (*db.License, error) {
 	logger.Debug("starting to add a new license", "pool", poolName, "filePath", licenseFilePath)
 
 	cert, err := m.dataReader(licenseFilePath)
@@ -118,7 +119,7 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 		}
 	}
 
-	license, err := tx.InsertLicense(ctx, pool, guid, cert, key)
+	license, err := tx.InsertLicense(ctx, pool, guid, cert, key, seats)
 	if err != nil {
 		logger.Debug("failed to insert license", "licenseGuid", guid, "error", err)
 
@@ -558,6 +559,10 @@ func (m *manager) GetPoolByID(ctx context.Context, id int64) (*db.Pool, error) {
 	}
 
 	return pool, nil
+}
+
+func (m *manager) GetLicenseActiveCount(ctx context.Context, licenseID int64) (int64, error) {
+	return m.store.GetLicenseNodeCount(ctx, licenseID)
 }
 
 func isUniqueConstraintError(err error) bool {

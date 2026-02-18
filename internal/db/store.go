@@ -86,11 +86,12 @@ func (ts *TxStore) Rollback() error {
 	return ts.tx.Rollback()
 }
 
-func (s *Store) InsertLicense(ctx context.Context, pool *Pool, guid string, file []byte, key string) (*License, error) {
+func (s *Store) InsertLicense(ctx context.Context, pool *Pool, guid string, file []byte, key string, seats int64) (*License, error) {
 	params := InsertLicenseParams{
-		Guid: guid,
-		File: file,
-		Key:  key,
+		Guid:  guid,
+		File:  file,
+		Key:   key,
+		Seats: seats,
 	}
 
 	if pool != nil {
@@ -149,17 +150,53 @@ func (s *Store) GetLicenseByGUID(ctx context.Context, id string, predicates ...L
 	return &license, nil
 }
 
+func (s *Store) GetLicenseByNodeID(ctx context.Context, nodeID *int64, predicates ...LicensePredicateFunc) (*License, error) {
+	predicate := applyLicensePredicates(predicates...)
+
+	var license License
+	var err error
+
+	switch {
+	case predicate.pool == AnyPool:
+		return nil, ErrAnyPoolNotSupported
+	case predicate.pool != nil:
+		license, err = s.queries.GetLicenseByNodeIDWithPool(ctx, GetLicenseByNodeIDWithPoolParams{NodeID: *nodeID, PoolID: &predicate.pool.ID})
+	default:
+		license, err = s.queries.GetLicenseByNodeIDWithoutPool(ctx, *nodeID)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &license, nil
+}
+
 func (s *Store) ReleaseLicenseByNodeID(ctx context.Context, nodeID *int64, predicates ...LicensePredicateFunc) error {
 	predicate := applyLicensePredicates(predicates...)
+
+	license, err := s.GetLicenseByNodeID(ctx, nodeID, predicates...)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
 
 	switch {
 	case predicate.pool == AnyPool:
 		return ErrAnyPoolNotSupported
 	case predicate.pool != nil:
-		return s.queries.ReleaseLicenseWithPoolByNodeID(ctx, ReleaseLicenseWithPoolByNodeIDParams{nodeID, &predicate.pool.ID})
+		if err := s.queries.ReleaseLicenseNodeWithPoolByNodeID(ctx, ReleaseLicenseNodeWithPoolByNodeIDParams{NodeID: *nodeID, PoolID: &predicate.pool.ID}); err != nil {
+			return err
+		}
 	default:
-		return s.queries.ReleaseLicenseWithoutPoolByNodeID(ctx, nodeID)
+		if err := s.queries.ReleaseLicenseNodeWithoutPoolByNodeID(ctx, *nodeID); err != nil {
+			return err
+		}
 	}
+
+	return s.queries.TouchLicenseLastReleasedAt(ctx, license.ID)
 }
 
 func (s *Store) ActivateNode(ctx context.Context, fingerprint string) (*Node, error) {
@@ -285,33 +322,31 @@ func (s *Store) BulkInsertAuditLogs(ctx context.Context, logs []BulkInsertAuditL
 func (s *Store) ClaimLicenseByStrategy(ctx context.Context, strategy string, nodeID *int64, predicates ...LicensePredicateFunc) (*License, error) {
 	predicate := applyLicensePredicates(predicates...)
 
-	var license License
+	var licenseID int64
 	var err error
 
 	switch {
 	case predicate.pool == AnyPool:
 		return nil, ErrAnyPoolNotSupported
 	case predicate.pool != nil:
-		// Pool-specific strategy
 		switch strategy {
 		case "fifo":
-			license, err = s.queries.ClaimLicenseWithPoolFIFO(ctx, ClaimLicenseWithPoolFIFOParams{nodeID, &predicate.pool.ID})
+			licenseID, err = s.queries.ClaimLicenseNodeWithPoolFIFO(ctx, ClaimLicenseNodeWithPoolFIFOParams{NodeID: *nodeID, PoolID: &predicate.pool.ID})
 		case "lifo":
-			license, err = s.queries.ClaimLicenseWithPoolLIFO(ctx, ClaimLicenseWithPoolLIFOParams{nodeID, &predicate.pool.ID})
+			licenseID, err = s.queries.ClaimLicenseNodeWithPoolLIFO(ctx, ClaimLicenseNodeWithPoolLIFOParams{NodeID: *nodeID, PoolID: &predicate.pool.ID})
 		case "rand":
-			license, err = s.queries.ClaimLicenseWithPoolRandom(ctx, ClaimLicenseWithPoolRandomParams{nodeID, &predicate.pool.ID})
+			licenseID, err = s.queries.ClaimLicenseNodeWithPoolRandom(ctx, ClaimLicenseNodeWithPoolRandomParams{NodeID: *nodeID, PoolID: &predicate.pool.ID})
 		default:
 			return nil, ErrBadStrategy
 		}
 	default:
-		// No pool strategy
 		switch strategy {
 		case "fifo":
-			license, err = s.queries.ClaimLicenseWithoutPoolFIFO(ctx, nodeID)
+			licenseID, err = s.queries.ClaimLicenseNodeWithoutPoolFIFO(ctx, *nodeID)
 		case "lifo":
-			license, err = s.queries.ClaimLicenseWithoutPoolLIFO(ctx, nodeID)
+			licenseID, err = s.queries.ClaimLicenseNodeWithoutPoolLIFO(ctx, *nodeID)
 		case "rand":
-			license, err = s.queries.ClaimLicenseWithoutPoolRandom(ctx, nodeID)
+			licenseID, err = s.queries.ClaimLicenseNodeWithoutPoolRandom(ctx, *nodeID)
 		default:
 			return nil, ErrBadStrategy
 		}
@@ -319,41 +354,59 @@ func (s *Store) ClaimLicenseByStrategy(ctx context.Context, strategy string, nod
 
 	if err != nil {
 		return nil, err
+	}
+
+	if err := s.queries.IncrementLicenseClaims(ctx, licenseID); err != nil {
+		return nil, fmt.Errorf("failed to increment license claims: %w", err)
+	}
+
+	license, err := s.queries.GetLicenseByID(ctx, licenseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get license after claim: %w", err)
 	}
 
 	return &license, nil
 }
 
-func (s *Store) GetLicenseByNodeID(ctx context.Context, nodeID *int64, predicates ...LicensePredicateFunc) (*License, error) {
-	predicate := applyLicensePredicates(predicates...)
-
-	var license License
-	var err error
-
-	switch {
-	case predicate.pool == AnyPool:
-		return nil, ErrAnyPoolNotSupported
-	case predicate.pool != nil:
-		license, err = s.queries.GetLicenseWithPoolByNodeID(ctx, GetLicenseWithPoolByNodeIDParams{nodeID, &predicate.pool.ID})
-	default:
-		license, err = s.queries.GetLicenseWithoutPoolByNodeID(ctx, nodeID)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &license, nil
+func (s *Store) GetLicenseNodeCount(ctx context.Context, licenseID int64) (int64, error) {
+	return s.queries.GetLicenseNodeCount(ctx, licenseID)
 }
 
 func (s *Store) ReleaseLicensesFromDeadNodes(ctx context.Context, ttl time.Duration) ([]License, error) {
 	t := fmt.Sprintf("-%d seconds", int(ttl.Seconds()))
 
-	licenses, err := s.queries.ReleaseLicensesFromDeadNodes(ctx, t)
+	licenseIDs, err := s.queries.ReleaseLicenseNodesFromDeadNodes(ctx, t)
 	if err != nil {
-		logger.Error("failed to release licenses from dead nodes", "error", err)
+		logger.Error("failed to release license nodes from dead nodes", "error", err)
 
 		return nil, err
+	}
+
+	// deduplicate license IDs
+	seen := make(map[int64]struct{}, len(licenseIDs))
+	var licenses []License
+
+	for _, id := range licenseIDs {
+		if _, ok := seen[id]; ok {
+			continue
+		}
+
+		seen[id] = struct{}{}
+
+		if err := s.queries.TouchLicenseLastReleasedAt(ctx, id); err != nil {
+			logger.Error("failed to touch license last_released_at", "licenseID", id, "error", err)
+
+			return nil, err
+		}
+
+		license, err := s.queries.GetLicenseByID(ctx, id)
+		if err != nil {
+			logger.Error("failed to get license by ID after release", "licenseID", id, "error", err)
+
+			return nil, err
+		}
+
+		licenses = append(licenses, license)
 	}
 
 	return licenses, nil

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/charmbracelet/bubbles/table"
@@ -63,22 +62,23 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 			columns := []table.Column{
 				{Title: "id", Width: 36},
 				{Title: "pool", Width: 8}, // start with min width
+				{Title: "seats", Width: 6},
+				{Title: "active", Width: 6},
 				{Title: "claims", Width: 8},
-				{Title: "node_id", Width: 8},
 				{Title: "last_claimed_at", Width: 20},
 				{Title: "last_released_at", Width: 20},
 			}
 
 			tableRows := make([]table.Row, 0, len(licensesList))
 			for _, lic := range licensesList {
+				seatsStr := fmt.Sprintf("%d", lic.Seats)
 				claimsStr := fmt.Sprintf("%d", lic.Claims)
 
-				var nodeIDStr string
-				if lic.NodeID != nil {
-					nodeIDStr = strconv.FormatInt(*lic.NodeID, 10)
-				} else {
-					nodeIDStr = "-"
+				activeCount, err := manager.GetLicenseActiveCount(cmd.Context(), lic.ID)
+				if err != nil {
+					activeCount = 0
 				}
+				activeStr := fmt.Sprintf("%d", activeCount)
 
 				var poolStr string
 				if lic.PoolID != nil {
@@ -101,7 +101,7 @@ func LsCmd(manager licenses.Manager) *cobra.Command {
 				lastClaimedAtStr := formatTime(lic.LastClaimedAt)
 				lastReleasedAtStr := formatTime(lic.LastReleasedAt)
 
-				tableRows = append(tableRows, table.Row{lic.Guid, poolStr, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr})
+				tableRows = append(tableRows, table.Row{lic.Guid, poolStr, seatsStr, activeStr, claimsStr, lastClaimedAtStr, lastReleasedAtStr})
 			}
 
 			if err := renderer.Render(tableRows, columns); err != nil {

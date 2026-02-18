@@ -14,6 +14,7 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 	var (
 		publicKey = locker.PublicKey
 		pool      *string
+		seats     int64
 	)
 
 	cmd := &cobra.Command{
@@ -54,7 +55,7 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 				file := files[i]
 				key := strings.TrimSpace(keys[i])
 
-				license, err := manager.AddLicense(cmd.Context(), pool, file, key, publicKey)
+				license, err := manager.AddLicense(cmd.Context(), pool, file, key, publicKey, seats)
 				if err != nil {
 					output.PrintError(cmd.ErrOrStderr(), err.Error())
 
@@ -71,6 +72,7 @@ func AddCmd(manager licenses.Manager) *cobra.Command {
 	cmd.Flags().StringSlice("file", nil, "path to a signed and encrypted license file")
 	cmd.Flags().StringSlice("key", nil, "license key for decryption")
 	cmd.Flags().String("pool", try.Try(try.Env("RELAY_POOL"), try.Static("")), "pool to add the license to [$RELAY_POOL=prod]")
+	cmd.Flags().Int64Var(&seats, "seats", 1, "number of concurrent seats for this license")
 
 	if !locker.Locked() {
 		cmd.Flags().StringVar(&publicKey, "public-key", try.Try(try.Env("RELAY_PUBLIC_KEY"), try.Static("")), "your keygen.sh public key for verification [$KEYGEN_PUBLIC_KEY=e860..48b6]")

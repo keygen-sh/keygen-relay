@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/keygen-sh/keygen-relay/internal/licenses"
@@ -33,8 +32,9 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 			columns := []table.Column{
 				{Title: "id", Width: 36},
 				{Title: "pool", Width: 8}, // start with min width
+				{Title: "seats", Width: 6},
+				{Title: "active", Width: 6},
 				{Title: "claims", Width: 8},
-				{Title: "node_id", Width: 8},
 				{Title: "last_claimed_at", Width: 20},
 				{Title: "last_released_at", Width: 20},
 			}
@@ -58,20 +58,20 @@ func StatCmd(manager licenses.Manager) *cobra.Command {
 				columns[1].Width = 32
 			}
 
+			seatsStr := fmt.Sprintf("%d", license.Seats)
 			claimsStr := fmt.Sprintf("%d", license.Claims)
 
-			var nodeIDStr string
-			if license.NodeID != nil {
-				nodeIDStr = strconv.FormatInt(*license.NodeID, 10)
-			} else {
-				nodeIDStr = "-"
+			activeCount, err := manager.GetLicenseActiveCount(cmd.Context(), license.ID)
+			if err != nil {
+				activeCount = 0
 			}
+			activeStr := fmt.Sprintf("%d", activeCount)
 
 			lastClaimedAtStr := formatTime(license.LastClaimedAt)
 			lastReleasedAtStr := formatTime(license.LastReleasedAt)
 
 			tableRows := []table.Row{
-				{license.Guid, poolStr, claimsStr, nodeIDStr, lastClaimedAtStr, lastReleasedAtStr},
+				{license.Guid, poolStr, seatsStr, activeStr, claimsStr, lastClaimedAtStr, lastReleasedAtStr},
 			}
 
 			var renderer ui.TableRenderer

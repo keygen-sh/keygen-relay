@@ -9,8 +9,10 @@ Relay does not require or utilize an internet connection — it is meant to be
 used stand-alone in an offline or air-gapped network.
 
 Relay has a vendor-facing CLI that can be used to onboard a customer's air-gap
-environment. An admin can initialize Relay with N licenses to be distributed
-across M nodes, ensuring that only N nodes are licensed at one time.
+environment. An admin can initialize Relay with one or more licenses, each
+configured with a number of concurrent seats. Relay ensures that no more than
+the allowed number of nodes hold a lease on a given license at any one time,
+supporting both single-seat and floating (multi-seat) license models.
 
 Relay provides an app-facing REST API that allows nodes to claim a lease on a
 license and release it when no longer needed.
@@ -94,8 +96,29 @@ The `add` command supports the following flags:
 | `--key`              | License key for decryption.                                                                                 |
 | `--public-key`       | Your account's public key for license file verification. (Not available when [node-locked](#node-locking).) |
 | `--pool`             | Add the license to a specific named pool.                                                                   |
+| `--seats`            | Number of concurrent seats for this license. Overrides the value auto-detected from the license file.       |
 
 The `add` command supports multiple `--file` and `--key` pairs.
+
+##### Floating licenses
+
+Relay supports floating licenses, where a single license file can be held
+concurrently by up to N nodes (seats). The seat count is determined in the
+following order of precedence:
+
+1. `--seats` flag, if explicitly provided
+2. `maxMachines` key in the license's metadata (set on the Keygen.sh dashboard)
+3. Default of `1` (single-seat, preserves legacy behavior)
+
+For example, to add a license allowing 5 concurrent nodes:
+
+```bash
+relay add --file license.lic --key xxx --public-key xxx --seats 5
+```
+
+Or, set `maxMachines: 5` in the license metadata on the Keygen.sh dashboard
+and omit `--seats` — Relay will read the value automatically from the
+decrypted license file.
 
 ##### Recipe to bulk add licenses
 
@@ -145,6 +168,10 @@ The `ls` command supports the following flags:
 | `--plain` | Print results non-interactively in plaintext. |
 | `--pool`  | Print licenses from a specific pool.          |
 
+The table includes a `seats` column (maximum concurrent nodes allowed) and an
+`active` column (nodes currently holding a lease). For a floating license with
+5 seats and 3 active nodes, these will show `5` and `3` respectively.
+
 #### Stat license
 
 To retrieve the status of a specific license, use the `stat` command:
@@ -159,6 +186,9 @@ The `stat` command supports the following flags:
 |:------------|:-----------------------------------------------------|
 | `--license` | The unique ID of the license to retrieve info about. |
 | `--plain`   | Print results non-interactively in plaintext.        |
+
+The output includes `seats` (maximum concurrent nodes) and `active` (nodes
+currently holding a lease) alongside the cumulative claim count and timestamps.
 
 ### Server
 

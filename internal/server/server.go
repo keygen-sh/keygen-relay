@@ -43,11 +43,19 @@ func (s *server) Run() error {
 
 	logger.Info("starting server", "addr", s.config.ServerAddr, "port", s.config.ServerPort, "pool", s.config.Pool)
 
+	httpServer := &http.Server{Addr: addr, Handler: s.router}
+
 	if s.Config().EnabledHeartbeat {
 		go s.reaper.Start(ctx)
 	}
 
-	if err := http.ListenAndServe(addr, s.router); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	watchdog := NewWatchdog(s.config, s.manager)
+	go watchdog.Start(ctx, func() {
+		logger.Error("seat tampering detected, shutting down server")
+		httpServer.Shutdown(ctx)
+	})
+
+	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logger.Error("server failed to start", "error", err)
 
 		cancel()

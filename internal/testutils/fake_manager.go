@@ -21,6 +21,7 @@ type FakeManager struct {
 	ConfigFn                func() *licenses.Config
 	GetPoolsFn              func(ctx context.Context) ([]db.Pool, error)
 	GetPoolByIDFn           func(ctx context.Context, id int64) (*db.Pool, error)
+	VerifyLicenseSeatsFn    func(ctx context.Context) error
 }
 
 func (f *FakeManager) AddLicense(ctx context.Context, pool *string, filePath, key, publicKey string, seats int64) (*db.License, error) {
@@ -108,4 +109,12 @@ func (f *FakeManager) GetPoolByID(ctx context.Context, id int64) (*db.Pool, erro
 	}
 
 	return &db.Pool{}, nil
+}
+
+func (f *FakeManager) VerifyLicenseSeats(ctx context.Context) error {
+	if f.VerifyLicenseSeatsFn != nil {
+		return f.VerifyLicenseSeatsFn(ctx)
+	}
+
+	return nil
 }

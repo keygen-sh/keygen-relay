@@ -9,6 +9,7 @@ type Config struct {
 	TTL               time.Duration
 	EnabledAudit      bool
 	ExtendOnHeartbeat bool
+	PublicKey         string
 }
 
 func NewConfig() *Config {

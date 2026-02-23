@@ -51,6 +51,7 @@ type Manager interface {
 	CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.Node, error)
 	GetPools(ctx context.Context) ([]db.Pool, error)
 	GetPoolByID(ctx context.Context, id int64) (*db.Pool, error)
+	VerifyLicenseSeats(ctx context.Context) error
 }
 
 type manager struct {
@@ -574,6 +575,65 @@ func (m *manager) GetPoolByID(ctx context.Context, id int64) (*db.Pool, error) {
 
 func (m *manager) GetLicenseActiveCount(ctx context.Context, licenseID int64) (int64, error) {
 	return m.store.GetLicenseNodeCount(ctx, licenseID)
+}
+
+// VerifyLicenseSeats re-decrypts every stored license file and checks that the
+// seats value recorded in the database does not exceed the maxMachines limit
+// embedded in the (cryptographically signed) license file. It returns an error
+// for the first license where a discrepancy is detected, which prevents the
+// server from starting with tampered data.
+//
+// If Config.PublicKey is set the signature on each file is verified first;
+// otherwise only the decryption-based metadata check is performed (sufficient
+// to catch direct integer edits to the seats column).
+func (m *manager) VerifyLicenseSeats(ctx context.Context) error {
+	licenses, err := m.store.GetLicenses(ctx)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("failed to list licenses for seat verification: %w", err)
+	}
+
+	if m.config.PublicKey != "" {
+		keygen.PublicKey = m.config.PublicKey
+	}
+
+	for _, license := range licenses {
+		if len(license.File) == 0 {
+			continue
+		}
+
+		lic := m.verifier(license.File)
+
+		if m.config.PublicKey != "" {
+			if err := lic.Verify(); err != nil {
+				return fmt.Errorf("license %s: file signature verification failed: %w", license.Guid, err)
+			}
+		}
+
+		dec, err := lic.Decrypt(license.Key)
+		if err != nil {
+			// A genuinely expired offline window is not evidence of tampering;
+			// skip the metadata check for that license.
+			if errors.Is(err, keygen.ErrLicenseFileExpired) {
+				logger.Warn("license file is expired, skipping seat verification", "licenseGuid", license.Guid)
+				continue
+			}
+			return fmt.Errorf("license %s: file decryption failed: %w", license.Guid, err)
+		}
+
+		maxSeats, ok := maxSeatsFromMetadata(dec.License.Metadata)
+		if !ok {
+			continue // no maxMachines in license metadata – operator-defined seats, nothing to verify
+		}
+
+		if license.Seats > maxSeats {
+			return fmt.Errorf(
+				"license %s: seat count %d in database exceeds the license's maximum machine count of %d (possible tampering detected)",
+				license.Guid, license.Seats, maxSeats,
+			)
+		}
+	}
+
+	return nil
 }
 
 // seatsFromMetadata reads the maxMachines key from license metadata, which

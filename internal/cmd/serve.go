@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -69,6 +70,18 @@ func ServeCmd(srv server.Server) *cobra.Command {
 			srv.Manager().Config().Strategy = string(cfg.Strategy)
 			srv.Manager().Config().ExtendOnHeartbeat = cfg.EnabledHeartbeat
 
+			if !locker.Locked() {
+				if pk, err := cmd.Flags().GetString("public-key"); err == nil {
+					srv.Manager().Config().PublicKey = strings.TrimSpace(pk)
+				}
+			}
+
+			if err := srv.Manager().VerifyLicenseSeats(cmd.Context()); err != nil {
+				output.PrintError(cmd.ErrOrStderr(), err.Error())
+
+				return err
+			}
+
 			output.PrintSuccess(cmd.OutOrStdout(), "the server is starting")
 
 			if err := srv.Run(); err != nil {
@@ -117,6 +130,10 @@ func ServeCmd(srv server.Server) *cobra.Command {
 	cmd.Flags().Var(&cfg.Strategy, "strategy", `strategy for license distribution e.g. "fifo", "lifo", or "rand" [$RELAY_STRATEGY=rand]`)
 	cmd.Flags().DurationVar(&cfg.CullInterval, "cull-interval", try.Try(try.EnvDuration("RELAY_CULL_INTERVAL"), try.Static(cfg.CullInterval)), "interval at which to cull dead nodes [$RELAY_CULL_INTERVAL=15s]")
 	cmd.Flags().String("pool", try.Try(try.Env("RELAY_POOL"), try.Static("")), "pool to serve licenses from [$RELAY_POOL=prod]")
+
+	if !locker.Locked() {
+		cmd.Flags().String("public-key", try.Try(try.Env("RELAY_PUBLIC_KEY"), try.Static("")), "your keygen.sh public key for startup seat verification [$RELAY_PUBLIC_KEY=e860..48b6]")
+	}
 
 	_ = cmd.RegisterFlagCompletionFunc("strategy", strategyTypeCompletion)
 	_ = cmd.RegisterFlagCompletionFunc("pool", poolTypeCompletion)

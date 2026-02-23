@@ -1069,3 +1069,96 @@ func TestClaimFloatingLicense_MultiSeat(t *testing.T) {
 	// cleanup
 	_ = dbConn
 }
+
+func TestVerifyLicenseSeats_NoTampering(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	fakeVerifier := &testutils.FakeLicenseVerifier{
+		LicenseMetadata: map[string]interface{}{"maxMachines": float64(5)},
+	}
+
+	manager := licenses.NewManager(
+		&licenses.Config{},
+		func(filename string) ([]byte, error) { return []byte("mock_certificate"), nil },
+		func(cert []byte) licenses.LicenseVerifier { return fakeVerifier },
+	)
+	manager.AttachStore(*store)
+
+	_, err := manager.AddLicense(ctx, nil, "test.lic", "test_key", "test_public_key", 3)
+	assert.NoError(t, err)
+
+	// seats=3 <= maxMachines=5: no tampering
+	err = manager.VerifyLicenseSeats(ctx)
+	assert.NoError(t, err)
+}
+
+func TestVerifyLicenseSeats_TamperedSeats(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	fakeVerifier := &testutils.FakeLicenseVerifier{
+		LicenseMetadata: map[string]interface{}{"maxMachines": float64(3)},
+	}
+
+	manager := licenses.NewManager(
+		&licenses.Config{},
+		func(filename string) ([]byte, error) { return []byte("mock_certificate"), nil },
+		func(cert []byte) licenses.LicenseVerifier { return fakeVerifier },
+	)
+	manager.AttachStore(*store)
+
+	_, err := manager.AddLicense(ctx, nil, "test.lic", "test_key", "test_public_key", 2)
+	assert.NoError(t, err)
+
+	// Simulate direct DB edit: inflate seats beyond maxMachines
+	_, err = dbConn.ExecContext(ctx, `UPDATE licenses SET seats = 99 WHERE guid = 'license_test_key'`)
+	assert.NoError(t, err)
+
+	err = manager.VerifyLicenseSeats(ctx)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "seat count 99 in database exceeds the license's maximum machine count of 3")
+	assert.Contains(t, err.Error(), "possible tampering detected")
+}
+
+func TestVerifyLicenseSeats_NoMaxMachinesInMetadata(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	// verifier returns no maxMachines in metadata
+	fakeVerifier := &testutils.FakeLicenseVerifier{}
+
+	manager := licenses.NewManager(
+		&licenses.Config{},
+		func(filename string) ([]byte, error) { return []byte("mock_certificate"), nil },
+		func(cert []byte) licenses.LicenseVerifier { return fakeVerifier },
+	)
+	manager.AttachStore(*store)
+
+	_, err := manager.AddLicense(ctx, nil, "test.lic", "test_key", "test_public_key", 50)
+	assert.NoError(t, err)
+
+	// even with an operator-set high seat count, no maxMachines means nothing to verify
+	err = manager.VerifyLicenseSeats(ctx)
+	assert.NoError(t, err)
+}
+
+func TestVerifyLicenseSeats_EmptyDatabase(t *testing.T) {
+	ctx := context.Background()
+	store, dbConn := testutils.NewMemoryStore(t)
+	defer testutils.CloseMemoryStore(dbConn)
+
+	manager := licenses.NewManager(
+		&licenses.Config{},
+		func(filename string) ([]byte, error) { return []byte("mock_certificate"), nil },
+		func(cert []byte) licenses.LicenseVerifier { return &testutils.FakeLicenseVerifier{} },
+	)
+	manager.AttachStore(*store)
+
+	// empty DB: nothing to verify
+	err := manager.VerifyLicenseSeats(ctx)
+	assert.NoError(t, err)
+}

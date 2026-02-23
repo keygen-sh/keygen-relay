@@ -51,6 +51,7 @@ type Manager interface {
 	CullDeadNodes(ctx context.Context, ttl time.Duration) ([]db.Node, error)
 	GetPools(ctx context.Context) ([]db.Pool, error)
 	GetPoolByID(ctx context.Context, id int64) (*db.Pool, error)
+	VerifyLicenseSeats(ctx context.Context) error
 }
 
 type manager struct {
@@ -105,8 +106,14 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 	guid := dec.License.ID
 	key := dec.License.Key
 
-	if seats == 0 {
-		seats = seatsFromMetadata(dec.License.Metadata)
+	if maxSeats, ok := maxSeatsFromMetadata(dec.License.Metadata); ok {
+		if seats == 0 {
+			seats = maxSeats
+		} else if seats > maxSeats {
+			return nil, fmt.Errorf("seat count %d exceeds the license's maximum machine count of %d", seats, maxSeats)
+		}
+	} else if seats == 0 {
+		seats = 1
 	}
 
 	var pool *db.Pool
@@ -570,35 +577,107 @@ func (m *manager) GetLicenseActiveCount(ctx context.Context, licenseID int64) (i
 	return m.store.GetLicenseNodeCount(ctx, licenseID)
 }
 
+// VerifyLicenseSeats re-decrypts every stored license file and checks that the
+// seats value recorded in the database does not exceed the maxMachines limit
+// embedded in the (cryptographically signed) license file. It returns an error
+// for the first license where a discrepancy is detected, which prevents the
+// server from starting with tampered data.
+//
+// If Config.PublicKey is set the signature on each file is verified first;
+// otherwise only the decryption-based metadata check is performed (sufficient
+// to catch direct integer edits to the seats column).
+func (m *manager) VerifyLicenseSeats(ctx context.Context) error {
+	licenses, err := m.store.GetLicenses(ctx)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("failed to list licenses for seat verification: %w", err)
+	}
+
+	if m.config.PublicKey != "" {
+		keygen.PublicKey = m.config.PublicKey
+	}
+
+	for _, license := range licenses {
+		if len(license.File) == 0 {
+			continue
+		}
+
+		lic := m.verifier(license.File)
+
+		if m.config.PublicKey != "" {
+			if err := lic.Verify(); err != nil {
+				return fmt.Errorf("license %s: file signature verification failed: %w", license.Guid, err)
+			}
+		}
+
+		dec, err := lic.Decrypt(license.Key)
+		if err != nil {
+			// A genuinely expired offline window is not evidence of tampering;
+			// skip the metadata check for that license.
+			if errors.Is(err, keygen.ErrLicenseFileExpired) {
+				logger.Warn("license file is expired, skipping seat verification", "licenseGuid", license.Guid)
+				continue
+			}
+			return fmt.Errorf("license %s: file decryption failed: %w", license.Guid, err)
+		}
+
+		maxSeats, ok := maxSeatsFromMetadata(dec.License.Metadata)
+		if !ok {
+			continue // no maxMachines in license metadata – operator-defined seats, nothing to verify
+		}
+
+		if license.Seats > maxSeats {
+			return fmt.Errorf(
+				"license %s: seat count %d in database exceeds the license's maximum machine count of %d (possible tampering detected)",
+				license.Guid, license.Seats, maxSeats,
+			)
+		}
+	}
+
+	return nil
+}
+
 // seatsFromMetadata reads the maxMachines key from license metadata, which
 // mirrors the Keygen.sh native attribute name. Falls back to 1 if absent or
 // unparseable. JSON numbers unmarshal as float64 when the target is interface{}.
 func seatsFromMetadata(metadata map[string]interface{}) int64 {
-	if metadata == nil {
+	seats, ok := maxSeatsFromMetadata(metadata)
+	if !ok {
 		return 1
+	}
+
+	return seats
+}
+
+// maxSeatsFromMetadata reads the maxMachines key from license metadata and
+// reports whether the key was present and parseable. Returns (0, false) when
+// the metadata is nil, the key is absent, or the value is not a positive
+// number.
+func maxSeatsFromMetadata(metadata map[string]interface{}) (int64, bool) {
+	if metadata == nil {
+		return 0, false
 	}
 
 	v, ok := metadata["maxMachines"]
 	if !ok {
-		return 1
+		return 0, false
 	}
 
 	switch n := v.(type) {
 	case float64:
 		if n >= 1 {
-			return int64(n)
+			return int64(n), true
 		}
 	case int64:
 		if n >= 1 {
-			return n
+			return n, true
 		}
 	case int:
 		if n >= 1 {
-			return int64(n)
+			return int64(n), true
 		}
 	}
 
-	return 1
+	return 0, false
 }
 
 func isUniqueConstraintError(err error) bool {

@@ -105,8 +105,14 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 	guid := dec.License.ID
 	key := dec.License.Key
 
-	if seats == 0 {
-		seats = seatsFromMetadata(dec.License.Metadata)
+	if maxSeats, ok := maxSeatsFromMetadata(dec.License.Metadata); ok {
+		if seats == 0 {
+			seats = maxSeats
+		} else if seats > maxSeats {
+			return nil, fmt.Errorf("seat count %d exceeds the license's maximum machine count of %d", seats, maxSeats)
+		}
+	} else if seats == 0 {
+		seats = 1
 	}
 
 	var pool *db.Pool
@@ -574,31 +580,44 @@ func (m *manager) GetLicenseActiveCount(ctx context.Context, licenseID int64) (i
 // mirrors the Keygen.sh native attribute name. Falls back to 1 if absent or
 // unparseable. JSON numbers unmarshal as float64 when the target is interface{}.
 func seatsFromMetadata(metadata map[string]interface{}) int64 {
-	if metadata == nil {
+	seats, ok := maxSeatsFromMetadata(metadata)
+	if !ok {
 		return 1
+	}
+
+	return seats
+}
+
+// maxSeatsFromMetadata reads the maxMachines key from license metadata and
+// reports whether the key was present and parseable. Returns (0, false) when
+// the metadata is nil, the key is absent, or the value is not a positive
+// number.
+func maxSeatsFromMetadata(metadata map[string]interface{}) (int64, bool) {
+	if metadata == nil {
+		return 0, false
 	}
 
 	v, ok := metadata["maxMachines"]
 	if !ok {
-		return 1
+		return 0, false
 	}
 
 	switch n := v.(type) {
 	case float64:
 		if n >= 1 {
-			return int64(n)
+			return int64(n), true
 		}
 	case int64:
 		if n >= 1 {
-			return n
+			return n, true
 		}
 	case int:
 		if n >= 1 {
-			return int64(n)
+			return int64(n), true
 		}
 	}
 
-	return 1
+	return 0, false
 }
 
 func isUniqueConstraintError(err error) bool {

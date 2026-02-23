@@ -76,6 +76,10 @@ func ServeCmd(srv server.Server) *cobra.Command {
 				}
 			}
 
+			if srv.Manager().Config().PublicKey == "" {
+				logger.Warn("no public key configured -- license file signature verification is disabled; seat tampering protection is reduced. Set --public-key or RELAY_PUBLIC_KEY to enable full verification.")
+			}
+
 			if err := srv.Manager().VerifyLicenseSeats(cmd.Context()); err != nil {
 				output.PrintError(cmd.ErrOrStderr(), err.Error())
 

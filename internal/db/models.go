@@ -34,6 +34,7 @@ type License struct {
 	Seats          int64
 	PoolID         *int64
 	CreatedAt      int64
+	PublicKey      string
 }
 
 type LicenseNode struct {

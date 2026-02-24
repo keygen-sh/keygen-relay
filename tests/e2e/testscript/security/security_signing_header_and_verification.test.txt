@@ -1,0 +1,21 @@
+# without signing secret -> no Relay-Signature
+env DB1=security-signing-nosig.sqlite
+env PORT=63220
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --database "$3" --file "$4" --key "$key" --public-key "$pub"' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $DB1 $E2E_EXPORT_DIR/license.lic
+exec relay serve --database $DB1 --port $PORT --no-heartbeats &relay_security_nosig&
+exec sleep 1
+exec curl -s -D headers1.txt -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/sec-node-1
+stdout '201'
+! exec grep 'Relay-Signature:' headers1.txt
+kill relay_security_nosig
+
+# with signing secret -> Relay-Signature exists
+env DB2=security-signing-sig.sqlite
+env PORT=63221
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --database "$3" --file "$4" --key "$key" --public-key "$pub"' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $DB2 $E2E_EXPORT_DIR/license.lic
+exec relay serve --database $DB2 --port $PORT --no-heartbeats --signing-secret hunter2 &relay_security_sig&
+exec sleep 1
+exec curl -s -D headers2.txt -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/sec-node-2
+stdout '201'
+exec grep 'Relay-Signature:' headers2.txt
+kill relay_security_sig

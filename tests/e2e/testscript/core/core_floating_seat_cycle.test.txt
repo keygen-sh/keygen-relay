@@ -1,0 +1,26 @@
+# add one 3-seat license
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --file "$3" --key "$key" --public-key "$pub" --seats 3' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $E2E_EXPORT_DIR/license.lic
+
+env PORT=63211
+exec relay serve --port $PORT --no-heartbeats &relay_core_floating&
+exec sleep 1
+
+# three nodes claim successfully
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/node-a
+stdout '201'
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/node-b
+stdout '201'
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/node-c
+stdout '201'
+
+# fourth node is rejected
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/node-d
+stdout '410'
+
+# release one then claim succeeds
+exec curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:$PORT/v1/nodes/node-a
+stdout '204'
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/node-d
+stdout '201'
+
+kill relay_core_floating

@@ -1,0 +1,24 @@
+# no licenses available -> 410
+env PORT=63213
+exec relay serve --port $PORT --no-heartbeats &relay_core_status_empty&
+exec sleep 1
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/none
+stdout '410'
+kill relay_core_status_empty
+
+# add one license
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --file "$3" --key "$key" --public-key "$pub"' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $E2E_EXPORT_DIR/license.lic
+
+env PORT=63214
+exec relay serve --port $PORT --no-heartbeats &relay_core_status&
+exec sleep 1
+
+# 201 create, 409 re-claim when no-heartbeats, 404 missing release
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/repeat-node
+stdout '201'
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/repeat-node
+stdout '409'
+exec curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:$PORT/v1/nodes/ghost-node
+stdout '404'
+
+kill relay_core_status

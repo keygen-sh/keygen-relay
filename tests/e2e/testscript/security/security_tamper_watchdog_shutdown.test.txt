@@ -1,0 +1,15 @@
+# set up DB and one claimed seat
+env DB=tamper-watchdog.sqlite
+env PORT=63224
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --database "$3" --file "$4" --key "$key" --public-key "$pub" --seats 1' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $DB $E2E_EXPORT_DIR/license.lic
+exec relay serve --database $DB --port $PORT --verify-interval 1s --no-heartbeats &relay_tamper_watchdog&
+exec sleep 1
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/tamper-node
+stdout '201'
+
+# tamper stored key while server is running; watchdog should detect and shut down
+exec sh -c 'sqlite3 "$1" "update licenses set key=0 where guid=(select guid from licenses limit 1);"' _ $DB
+exec sleep 3
+
+# server should have exited after tamper detection
+! exec curl -s -o /dev/null -w "%{http_code}" -X GET http://localhost:$PORT/v1/health

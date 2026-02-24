@@ -1,0 +1,22 @@
+# add separate licenses to prod and dev pools
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --pool prod --file "$3" --key "$key" --public-key "$pub"' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $E2E_EXPORT_DIR/license.lic
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --pool dev --file "$3" --key "$key" --public-key "$pub"' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $E2E_EXPORT_DIR/license.lic
+
+env PORT=63212
+exec relay serve --port $PORT --pool prod --no-heartbeats &relay_core_pool&
+exec sleep 1
+
+# explicit mismatch header is rejected
+exec curl -s -o bad.json -w "%{http_code}" -X PUT -H 'Relay-Pool: dev' http://localhost:$PORT/v1/nodes/node-x
+stdout '400'
+exec grep 'unsupported pool header' bad.json
+
+# explicit prod and implicit prod both work
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT -H 'Relay-Pool: prod' http://localhost:$PORT/v1/nodes/node-x
+stdout '201'
+exec curl -s -o /dev/null -w "%{http_code}" -X DELETE -H 'Relay-Pool: prod' http://localhost:$PORT/v1/nodes/node-x
+stdout '204'
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/node-y
+stdout '201'
+
+kill relay_core_pool

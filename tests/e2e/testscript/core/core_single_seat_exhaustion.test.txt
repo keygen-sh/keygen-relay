@@ -1,0 +1,17 @@
+# add one single-seat license
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --file "$3" --key "$key" --public-key "$pub" --seats 1' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $E2E_EXPORT_DIR/license.lic
+
+env PORT=63210
+exec relay serve --port $PORT --no-heartbeats &relay_core_single&
+exec sleep 1
+
+# first node claims seat
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/node-a
+stdout '201'
+
+# second node is rejected (no seats)
+exec curl -s -o response.json -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/node-b
+stdout '410'
+exec grep 'no licenses available' response.json
+
+kill relay_core_single

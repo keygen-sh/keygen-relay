@@ -1,0 +1,23 @@
+# with audit enabled, claims are recorded
+env DB1=security-audit-on.sqlite
+env PORT=63222
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --database "$3" --file "$4" --key "$key" --public-key "$pub"' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $DB1 $E2E_EXPORT_DIR/license.lic
+exec relay serve --database $DB1 --port $PORT --no-heartbeats &relay_security_audit_on&
+exec sleep 1
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/audit-node
+stdout '201'
+kill relay_security_audit_on
+exec sh -c 'sqlite3 "$1" "select count(*) from audit_logs;"' _ $DB1
+! stdout '^0$'
+
+# with audit disabled, no logs
+env DB2=security-audit-off.sqlite
+env PORT=63223
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --no-audit --database "$3" --file "$4" --key "$key" --public-key "$pub"' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $DB2 $E2E_EXPORT_DIR/license.lic
+exec relay serve --database $DB2 --port $PORT --no-heartbeats --no-audit &relay_security_audit_off&
+exec sleep 1
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/audit-node
+stdout '201'
+kill relay_security_audit_off
+exec sh -c 'sqlite3 "$1" "select count(*) from audit_logs;"' _ $DB2
+stdout '^0$'

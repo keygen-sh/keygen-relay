@@ -24,8 +24,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestIntegration(t *testing.T) {
-	t.Parallel()
-
 	testDir := os.Getenv("TESTSCRIPT_DIR")
 	if testDir == "" {
 		testDir = "testdata"

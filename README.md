@@ -574,6 +574,48 @@ To run integration tests, tagged with `// +build integration`:
 make test-integration
 ```
 
+#### E2E Full Matrix (Self-Hosted Keygen API)
+
+Relay also includes a full end-to-end matrix that boots a self-hosted Keygen
+API server, generates real license artifacts, and runs grouped `testscript`
+scenarios in serial order:
+
+```bash
+make test-e2e-full-matrix
+```
+
+This executes group order:
+
+```text
+smoke -> core -> security -> recovery -> chaos
+```
+
+To run a single group:
+
+```bash
+bash tests/e2e/scripts/run_group.sh smoke
+bash tests/e2e/scripts/run_group.sh core
+bash tests/e2e/scripts/run_group.sh security
+bash tests/e2e/scripts/run_group.sh recovery
+bash tests/e2e/scripts/run_group.sh chaos
+```
+
+To preview group order without executing:
+
+```bash
+bash tests/e2e/scripts/run_full_matrix.sh --dry-run
+```
+
+Prerequisites:
+
+- `docker` with `docker compose`
+- `go`
+- `curl`
+- `jq`
+- `sqlite3`
+- `openssl`
+- `uuidgen`
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](https://github.com/keygen-sh/keygen-relay/blob/master/LICENSE) file for details.

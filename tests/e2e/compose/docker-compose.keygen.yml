@@ -1,2 +1,50 @@
-version: "3.9"
-services: {}
+services:
+  setup:
+    profiles: ["setup"]
+    image: keygen/api:latest
+    env_file:
+      - ../.runtime/keygen.env
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+      DISABLE_DATABASE_ENVIRONMENT_CHECK: "1"
+    command: >
+      sh -c "
+        until pg_isready -h postgres -U ${POSTGRES_USER}; do
+          echo 'Waiting for PostgreSQL...'
+          sleep 1
+        done
+        bundle exec rails keygen:setup
+      "
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:17.5
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - keygen_postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    volumes:
+      - keygen_redis:/data
+
+  web:
+    image: keygen/api:latest
+    env_file:
+      - ../.runtime/keygen.env
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+    ports:
+      - "${KEYGEN_HTTP_PORT:-63000}:3000"
+    command: "web"
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  keygen_postgres:
+  keygen_redis:

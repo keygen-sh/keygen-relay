@@ -224,6 +224,10 @@ test-integration:
 .PHONY: test-all
 test-all: test test-integration
 
+.PHONY: test-e2e-full-matrix
+test-e2e-full-matrix:
+	bash tests/e2e/scripts/run_full_matrix.sh
+
 .PHONY: bench
 bench:
 	go test -bench=. -benchmem -run=^# ./...

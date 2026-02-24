@@ -1,0 +1,1 @@
+ALTER TABLE licenses ADD COLUMN public_key TEXT NOT NULL DEFAULT '';

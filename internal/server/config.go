@@ -41,14 +41,15 @@ func isValidStrategy(v string) bool {
 }
 
 type Config struct {
-	ServerAddr       string
-	ServerPort       int
-	EnabledHeartbeat bool
-	TTL              time.Duration
-	Strategy         StrategyType
-	CullInterval     time.Duration
-	Pool             *string
-	SigningSecret    *string
+	ServerAddr        string
+	ServerPort        int
+	EnabledHeartbeat  bool
+	TTL               time.Duration
+	Strategy          StrategyType
+	CullInterval      time.Duration
+	VerifyInterval    time.Duration
+	Pool              *string
+	SigningSecret     *string
 }
 
 func NewConfig() *Config {
@@ -59,5 +60,6 @@ func NewConfig() *Config {
 		EnabledHeartbeat: true,
 		Strategy:         FIFO,
 		CullInterval:     15 * time.Second,
+		VerifyInterval:   5 * time.Minute,
 	}
 }

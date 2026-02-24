@@ -86,12 +86,13 @@ func (ts *TxStore) Rollback() error {
 	return ts.tx.Rollback()
 }
 
-func (s *Store) InsertLicense(ctx context.Context, pool *Pool, guid string, file []byte, key string, seats int64) (*License, error) {
+func (s *Store) InsertLicense(ctx context.Context, pool *Pool, guid string, file []byte, key string, seats int64, publicKey string) (*License, error) {
 	params := InsertLicenseParams{
-		Guid:  guid,
-		File:  file,
-		Key:   key,
-		Seats: seats,
+		Guid:      guid,
+		File:      file,
+		Key:       key,
+		Seats:     seats,
+		PublicKey: publicKey,
 	}
 
 	if pool != nil {

@@ -94,7 +94,7 @@ The `add` command supports the following flags:
 |:---------------------|:------------------------------------------------------------------------------------------------------------|
 | `--file`             | Path to the license file to add to the pool.                                                                |
 | `--key`              | License key for decryption.                                                                                 |
-| `--public-key`       | Your account's public key for license file verification. (Not available when [node-locked](#node-locking).) |
+| `--public-key`       | Your account's public key for license file verification. The key is stored alongside the license and used for ongoing signature verification during `serve`. (Not required when [node-locked](#node-locking) — the key is baked into the binary.) |
 | `--pool`             | Add the license to a specific named pool.                                                                   |
 | `--seats`            | Number of concurrent seats for this license. Overrides the value auto-detected from the license file.       |
 
@@ -209,6 +209,7 @@ The `serve` command supports the following flags:
 | `--cull-interval`    | Specifies how often the server should check for and deactivate inactive or dead nodes.                                                                                                | `15s`            |
 | `--database`         | Specify a custom database file for storing the license and node data.                                                                                                                 | `./relay.sqlite` |
 | `--pool`             | Specify a specific pool to serve licenses from.                                                                                                                                       |                  |
+| `--verify-interval`  | How often to re-verify license seat integrity against stored cryptographic signatures. The server shuts down automatically if tampering is detected.                                   | `5m`             |
 
 E.g. to start the server on port `8080`, with a 30 second node TTL and FIFO
 distribution strategy:

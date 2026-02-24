@@ -135,7 +135,7 @@ func (q *Queries) ClaimLicenseNodeWithoutPoolRandom(ctx context.Context, nodeID 
 const deleteLicenseByGUID = `-- name: DeleteLicenseByGUID :one
 DELETE FROM licenses
 WHERE guid = ?
-RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at, public_key
 `
 
 func (q *Queries) DeleteLicenseByGUID(ctx context.Context, guid string) (License, error) {
@@ -152,12 +152,13 @@ func (q *Queries) DeleteLicenseByGUID(ctx context.Context, guid string) (License
 		&i.Seats,
 		&i.PoolID,
 		&i.CreatedAt,
+		&i.PublicKey,
 	)
 	return i, err
 }
 
 const getLicenseByGUID = `-- name: GetLicenseByGUID :one
-SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at, public_key
 FROM licenses
 WHERE guid = ?
 `
@@ -176,12 +177,13 @@ func (q *Queries) GetLicenseByGUID(ctx context.Context, guid string) (License, e
 		&i.Seats,
 		&i.PoolID,
 		&i.CreatedAt,
+		&i.PublicKey,
 	)
 	return i, err
 }
 
 const getLicenseByID = `-- name: GetLicenseByID :one
-SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at, public_key
 FROM licenses
 WHERE id = ?
 `
@@ -200,12 +202,13 @@ func (q *Queries) GetLicenseByID(ctx context.Context, id int64) (License, error)
 		&i.Seats,
 		&i.PoolID,
 		&i.CreatedAt,
+		&i.PublicKey,
 	)
 	return i, err
 }
 
 const getLicenseByNodeIDWithPool = `-- name: GetLicenseByNodeIDWithPool :one
-SELECT l.id, l.guid, l.file, l."key", l.claims, l.last_claimed_at, l.last_released_at, l.seats, l.pool_id, l.created_at
+SELECT l.id, l.guid, l.file, l."key", l.claims, l.last_claimed_at, l.last_released_at, l.seats, l.pool_id, l.created_at, l.public_key
 FROM licenses l
 JOIN license_nodes ln ON ln.license_id = l.id
 WHERE ln.node_id = ? AND l.pool_id = ?
@@ -231,12 +234,13 @@ func (q *Queries) GetLicenseByNodeIDWithPool(ctx context.Context, arg GetLicense
 		&i.Seats,
 		&i.PoolID,
 		&i.CreatedAt,
+		&i.PublicKey,
 	)
 	return i, err
 }
 
 const getLicenseByNodeIDWithoutPool = `-- name: GetLicenseByNodeIDWithoutPool :one
-SELECT l.id, l.guid, l.file, l."key", l.claims, l.last_claimed_at, l.last_released_at, l.seats, l.pool_id, l.created_at
+SELECT l.id, l.guid, l.file, l."key", l.claims, l.last_claimed_at, l.last_released_at, l.seats, l.pool_id, l.created_at, l.public_key
 FROM licenses l
 JOIN license_nodes ln ON ln.license_id = l.id
 WHERE ln.node_id = ? AND l.pool_id IS NULL
@@ -257,12 +261,13 @@ func (q *Queries) GetLicenseByNodeIDWithoutPool(ctx context.Context, nodeID int6
 		&i.Seats,
 		&i.PoolID,
 		&i.CreatedAt,
+		&i.PublicKey,
 	)
 	return i, err
 }
 
 const getLicenseWithPoolByGUID = `-- name: GetLicenseWithPoolByGUID :one
-SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at, public_key
 FROM licenses
 WHERE guid = ? AND pool_id = ?
 `
@@ -286,12 +291,13 @@ func (q *Queries) GetLicenseWithPoolByGUID(ctx context.Context, arg GetLicenseWi
 		&i.Seats,
 		&i.PoolID,
 		&i.CreatedAt,
+		&i.PublicKey,
 	)
 	return i, err
 }
 
 const getLicenseWithoutPoolByGUID = `-- name: GetLicenseWithoutPoolByGUID :one
-SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at, public_key
 FROM licenses
 WHERE guid = ? AND pool_id IS NULL
 `
@@ -310,12 +316,13 @@ func (q *Queries) GetLicenseWithoutPoolByGUID(ctx context.Context, guid string) 
 		&i.Seats,
 		&i.PoolID,
 		&i.CreatedAt,
+		&i.PublicKey,
 	)
 	return i, err
 }
 
 const getLicenses = `-- name: GetLicenses :many
-SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at, public_key
 FROM licenses
 ORDER BY id
 `
@@ -340,6 +347,7 @@ func (q *Queries) GetLicenses(ctx context.Context) ([]License, error) {
 			&i.Seats,
 			&i.PoolID,
 			&i.CreatedAt,
+			&i.PublicKey,
 		); err != nil {
 			return nil, err
 		}
@@ -355,7 +363,7 @@ func (q *Queries) GetLicenses(ctx context.Context) ([]License, error) {
 }
 
 const getLicensesWithPool = `-- name: GetLicensesWithPool :many
-SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at, public_key
 FROM licenses
 WHERE pool_id = ?
 ORDER BY id
@@ -381,6 +389,7 @@ func (q *Queries) GetLicensesWithPool(ctx context.Context, poolID *int64) ([]Lic
 			&i.Seats,
 			&i.PoolID,
 			&i.CreatedAt,
+			&i.PublicKey,
 		); err != nil {
 			return nil, err
 		}
@@ -396,7 +405,7 @@ func (q *Queries) GetLicensesWithPool(ctx context.Context, poolID *int64) ([]Lic
 }
 
 const getLicensesWithoutPool = `-- name: GetLicensesWithoutPool :many
-SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at
+SELECT id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at, public_key
 FROM licenses
 WHERE pool_id IS NULL
 ORDER BY id
@@ -422,6 +431,7 @@ func (q *Queries) GetLicensesWithoutPool(ctx context.Context) ([]License, error)
 			&i.Seats,
 			&i.PoolID,
 			&i.CreatedAt,
+			&i.PublicKey,
 		); err != nil {
 			return nil, err
 		}
@@ -448,17 +458,18 @@ func (q *Queries) IncrementLicenseClaims(ctx context.Context, id int64) error {
 }
 
 const insertLicense = `-- name: InsertLicense :one
-INSERT INTO licenses (pool_id, guid, file, key, seats)
-VALUES (?, ?, ?, ?, ?)
-RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at
+INSERT INTO licenses (pool_id, guid, file, key, seats, public_key)
+VALUES (?, ?, ?, ?, ?, ?)
+RETURNING id, guid, file, "key", claims, last_claimed_at, last_released_at, seats, pool_id, created_at, public_key
 `
 
 type InsertLicenseParams struct {
-	PoolID *int64
-	Guid   string
-	File   []byte
-	Key    string
-	Seats  int64
+	PoolID    *int64
+	Guid      string
+	File      []byte
+	Key       string
+	Seats     int64
+	PublicKey string
 }
 
 func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) (License, error) {
@@ -468,6 +479,7 @@ func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) (L
 		arg.File,
 		arg.Key,
 		arg.Seats,
+		arg.PublicKey,
 	)
 	var i License
 	err := row.Scan(
@@ -481,6 +493,7 @@ func (q *Queries) InsertLicense(ctx context.Context, arg InsertLicenseParams) (L
 		&i.Seats,
 		&i.PoolID,
 		&i.CreatedAt,
+		&i.PublicKey,
 	)
 	return i, err
 }

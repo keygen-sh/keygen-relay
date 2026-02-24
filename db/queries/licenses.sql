@@ -1,6 +1,6 @@
 -- name: InsertLicense :one
-INSERT INTO licenses (pool_id, guid, file, key, seats)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO licenses (pool_id, guid, file, key, seats, public_key)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetLicenseByID :one

@@ -131,7 +131,7 @@ func (m *manager) AddLicense(ctx context.Context, poolName *string, licenseFileP
 		}
 	}
 
-	license, err := tx.InsertLicense(ctx, pool, guid, cert, key, seats)
+	license, err := tx.InsertLicense(ctx, pool, guid, cert, key, seats, publicKey)
 	if err != nil {
 		logger.Debug("failed to insert license", "licenseGuid", guid, "error", err)
 
@@ -583,17 +583,14 @@ func (m *manager) GetLicenseActiveCount(ctx context.Context, licenseID int64) (i
 // for the first license where a discrepancy is detected, which prevents the
 // server from starting with tampered data.
 //
-// If Config.PublicKey is set the signature on each file is verified first;
-// otherwise only the decryption-based metadata check is performed (sufficient
-// to catch direct integer edits to the seats column).
+// Each license carries its own public key (stored at add time). When the stored
+// key is non-empty the cryptographic signature on the file is verified first,
+// making it impossible for an operator to bypass verification by omitting a
+// runtime flag.
 func (m *manager) VerifyLicenseSeats(ctx context.Context) error {
 	licenses, err := m.store.GetLicenses(ctx)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("failed to list licenses for seat verification: %w", err)
-	}
-
-	if m.config.PublicKey != "" {
-		keygen.PublicKey = m.config.PublicKey
 	}
 
 	for _, license := range licenses {
@@ -603,7 +600,17 @@ func (m *manager) VerifyLicenseSeats(ctx context.Context) error {
 
 		lic := m.verifier(license.File)
 
-		if m.config.PublicKey != "" {
+		// Use the per-license stored public key for signature verification.
+		// Fall back to the config-level key for licenses added before the
+		// public_key column existed (migration backfill leaves it empty).
+		pk := license.PublicKey
+		if pk == "" {
+			pk = m.config.PublicKey
+		}
+
+		if pk != "" {
+			keygen.PublicKey = pk
+
 			if err := lic.Verify(); err != nil {
 				return fmt.Errorf("license %s: file signature verification failed: %w", license.Guid, err)
 			}

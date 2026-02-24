@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -70,10 +69,11 @@ func ServeCmd(srv server.Server) *cobra.Command {
 			srv.Manager().Config().Strategy = string(cfg.Strategy)
 			srv.Manager().Config().ExtendOnHeartbeat = cfg.EnabledHeartbeat
 
-			if !locker.Locked() {
-				if pk, err := cmd.Flags().GetString("public-key"); err == nil {
-					srv.Manager().Config().PublicKey = strings.TrimSpace(pk)
-				}
+			// For node-locked builds, use the baked-in public key as a
+			// fallback for licenses added before the public_key column
+			// existed. New licenses always store the key at add time.
+			if locker.Locked() {
+				srv.Manager().Config().PublicKey = locker.PublicKey
 			}
 
 			if err := srv.Manager().VerifyLicenseSeats(cmd.Context()); err != nil {
@@ -129,11 +129,8 @@ func ServeCmd(srv server.Server) *cobra.Command {
 	cmd.Flags().Bool("no-heartbeats", try.Try(try.EnvBool("RELAY_NO_HEARTBEATS"), try.Static(false)), "disable node heartbeat monitoring and culling as well as lease extensions [$RELAY_NO_HEARTBEAT=1]")
 	cmd.Flags().Var(&cfg.Strategy, "strategy", `strategy for license distribution e.g. "fifo", "lifo", or "rand" [$RELAY_STRATEGY=rand]`)
 	cmd.Flags().DurationVar(&cfg.CullInterval, "cull-interval", try.Try(try.EnvDuration("RELAY_CULL_INTERVAL"), try.Static(cfg.CullInterval)), "interval at which to cull dead nodes [$RELAY_CULL_INTERVAL=15s]")
+	cmd.Flags().DurationVar(&cfg.VerifyInterval, "verify-interval", try.Try(try.EnvDuration("RELAY_VERIFY_INTERVAL"), try.Static(cfg.VerifyInterval)), "interval at which to verify license seat integrity [$RELAY_VERIFY_INTERVAL=5m]")
 	cmd.Flags().String("pool", try.Try(try.Env("RELAY_POOL"), try.Static("")), "pool to serve licenses from [$RELAY_POOL=prod]")
-
-	if !locker.Locked() {
-		cmd.Flags().String("public-key", try.Try(try.Env("RELAY_PUBLIC_KEY"), try.Static("")), "your keygen.sh public key for startup seat verification [$RELAY_PUBLIC_KEY=e860..48b6]")
-	}
 
 	_ = cmd.RegisterFlagCompletionFunc("strategy", strategyTypeCompletion)
 	_ = cmd.RegisterFlagCompletionFunc("pool", poolTypeCompletion)

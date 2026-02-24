@@ -1,0 +1,26 @@
+# add one single-seat license
+env DB=chaos-cull.sqlite
+env PORT=63241
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --database "$3" --file "$4" --key "$key" --public-key "$pub" --seats 1' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $DB $E2E_EXPORT_DIR/license.lic
+
+# run with short allowed ttl and fast cull interval
+exec relay serve --database $DB --port $PORT --ttl 30s --cull-interval 1s &relay_chaos_cull&
+exec sleep 1
+
+# claim seat, age heartbeat, reclaim with another node; repeat once
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/cull-a
+stdout '201'
+exec sh -c 'ts=$(date +%s); old=$((ts-120)); sqlite3 "$1" "update nodes set last_heartbeat_at=${old} where id=(select id from nodes where deactivated_at is null limit 1);"' _ $DB
+exec sleep 2
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/cull-b
+stdout '201'
+
+exec sh -c 'ts=$(date +%s); old=$((ts-120)); sqlite3 "$1" "update nodes set last_heartbeat_at=${old} where id=(select id from nodes where deactivated_at is null limit 1);"' _ $DB
+exec sleep 2
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/cull-c
+stdout '201'
+
+# service remains healthy after cull churn
+exec curl -s -o /dev/null -w "%{http_code}" -X GET http://localhost:$PORT/v1/health
+stdout '200'
+kill relay_chaos_cull

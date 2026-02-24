@@ -1,0 +1,31 @@
+# add one 2-seat license for restart chaos cycle
+env DB=chaos-restart.sqlite
+env PORT=63240
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --database "$3" --file "$4" --key "$key" --public-key "$pub" --seats 2' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $DB $E2E_EXPORT_DIR/license.lic
+
+# cycle 1
+exec relay serve --database $DB --port $PORT --no-heartbeats &relay_chaos_restart_1&
+exec sleep 1
+exec curl -s -o /dev/null -w "%{http_code}" -X GET http://localhost:$PORT/v1/health
+stdout '200'
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/chaos-a
+stdout '201'
+kill relay_chaos_restart_1
+
+# cycle 2
+exec relay serve --database $DB --port $PORT --no-heartbeats &relay_chaos_restart_2&
+exec sleep 1
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/chaos-b
+stdout '201'
+exec curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:$PORT/v1/nodes/chaos-a
+stdout '204'
+kill relay_chaos_restart_2
+
+# cycle 3
+exec relay serve --database $DB --port $PORT --no-heartbeats &relay_chaos_restart_3&
+exec sleep 1
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/chaos-c
+stdout '201'
+exec curl -s -o /dev/null -w "%{http_code}" -X GET http://localhost:$PORT/v1/health
+stdout '200'
+kill relay_chaos_restart_3

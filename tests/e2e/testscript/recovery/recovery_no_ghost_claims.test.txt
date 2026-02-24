@@ -1,0 +1,21 @@
+# add one single-seat license
+env DB=recovery-no-ghost.sqlite
+env PORT=63231
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --database "$3" --file "$4" --key "$key" --public-key "$pub" --seats 1' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $DB $E2E_EXPORT_DIR/license.lic
+
+# with heartbeat enabled, cull stale nodes quickly
+exec relay serve --database $DB --port $PORT --ttl 30s --cull-interval 1s &relay_recovery_ghost&
+exec sleep 1
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/ghost-node
+stdout '201'
+
+# simulate stale heartbeat then allow cull cycle
+exec sh -c 'ts=$(date +%s); old=$((ts-120)); sqlite3 "$1" "update nodes set last_heartbeat_at=${old} where id=(select id from nodes where deactivated_at is null limit 1);"' _ $DB
+exec sleep 2
+
+# seat should now be reusable by a different node
+exec curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/new-node
+stdout '201'
+exec curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:$PORT/v1/nodes/ghost-node
+stdout '404'
+kill relay_recovery_ghost

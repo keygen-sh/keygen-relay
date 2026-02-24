@@ -1,0 +1,23 @@
+# smoke: validate exported artifacts exist
+exec test -s $E2E_EXPORT_DIR/license.lic
+exec test -s $E2E_EXPORT_DIR/license.key
+exec test -s $E2E_EXPORT_DIR/public.key
+
+# import real Keygen-generated license
+exec sh -c 'key=$(cat "$1"); pub=$(cat "$2"); relay add --file "$3" --key "$key" --public-key "$pub"' _ $E2E_EXPORT_DIR/license.key $E2E_EXPORT_DIR/public.key $E2E_EXPORT_DIR/license.lic
+
+# start relay
+env PORT=63200
+exec relay serve --port $PORT &relay_smoke&
+exec sleep 1
+
+# claim and release
+exec curl -s -o claim.json -w "%{http_code}" -X PUT http://localhost:$PORT/v1/nodes/smoke-node
+stdout '201'
+exec grep '"license_file":' claim.json
+exec grep '"license_key":' claim.json
+
+exec curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:$PORT/v1/nodes/smoke-node
+stdout '204'
+
+kill relay_smoke

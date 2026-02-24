@@ -26,8 +26,13 @@ func TestMain(m *testing.M) {
 func TestIntegration(t *testing.T) {
 	t.Parallel()
 
+	testDir := os.Getenv("TESTSCRIPT_DIR")
+	if testDir == "" {
+		testDir = "testdata"
+	}
+
 	testscript.Run(t, testscript.Params{
-		Dir:                 "testdata",
+		Dir:                 testDir,
 		RequireExplicitExec: true,
 		TestWork:            true,
 		Setup:               setup,
@@ -57,7 +62,11 @@ func setupFixtures(env *testscript.Env) error {
 }
 
 func setupEnv(env *testscript.Env) error {
-	// TODO(ezekg) make prestine env
+	if exportDir := os.Getenv("E2E_EXPORT_DIR"); exportDir != "" {
+		env.Setenv("E2E_EXPORT_DIR", exportDir)
+	}
+
+	// TODO(ezekg) make pristine env
 	return nil
 }
 

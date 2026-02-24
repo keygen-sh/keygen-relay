@@ -82,7 +82,7 @@ main() {
   policy_id="$(json_api_post \
     "${KEYGEN_API_URL}/v1/policies" \
     "${token}" \
-    "{\"data\":{\"type\":\"policies\",\"attributes\":{\"name\":\"${policy_name}\",\"floating\":true,\"maxMachines\":${KEYGEN_E2E_MAX_MACHINES}},\"relationships\":{\"product\":{\"data\":{\"type\":\"products\",\"id\":\"${product_id}\"}}}}}" \
+    "{\"data\":{\"type\":\"policies\",\"attributes\":{\"name\":\"${policy_name}\",\"floating\":true,\"encrypted\":false,\"scheme\":\"ED25519_SIGN\",\"maxMachines\":${KEYGEN_E2E_MAX_MACHINES}},\"relationships\":{\"product\":{\"data\":{\"type\":\"products\",\"id\":\"${product_id}\"}}}}}" \
     | jq -er '.data.id')"
 
   license_json="$(json_api_post \
@@ -95,7 +95,7 @@ main() {
   certificate="$(json_api_post \
     "${KEYGEN_API_URL}/v1/licenses/${license_id}/actions/check-out" \
     "${token}" \
-    "{}" | jq -er '.data.attributes.certificate')"
+    "{\"meta\":{\"encrypt\":true}}" | jq -er '.data.attributes.certificate')"
 
   public_key="$(compose_cmd exec -T postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -At -c "select ed25519_public_key from accounts where id='${KEYGEN_ACCOUNT_ID}';" | tr -d '\r')"
 

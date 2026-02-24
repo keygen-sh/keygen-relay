@@ -47,4 +47,4 @@ if [[ "${test_count}" == "0" ]]; then
   exit 0
 fi
 
-echo "group execution wiring for ${GROUP} exists; testscript execution will be enabled in later tasks"
+TESTSCRIPT_DIR="${group_dir}" E2E_EXPORT_DIR="${artifacts_dir}" go test -v -tags=integration ./cli
